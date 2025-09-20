@@ -5282,14 +5282,6 @@ end, autoFarmSection)
 
 createButton("SetSandCframeButton", "Set Sand CFrame", function()
     if getRegion(HumanoidRootPart) == "Deposit" then
-        if AutoFarmState.waterCFrame then
-            local distance = (HumanoidRootPart.Position - AutoFarmState.waterCFrame.Position).Magnitude
-            if distance >= 10 then
-                createNotification("❌ Too far from water CFrame (must be under 10 studs apart)")
-                return
-            end
-        end
-        
         AutoFarmState.sandCFrame = HumanoidRootPart.CFrame
         createNotification("✅ Sand CFrame set")
     else
@@ -5299,14 +5291,6 @@ end, autoFarmSection)
 
 createButton("SetWaterCframeButton", "Set Water CFrame", function()
     if getRegion(HumanoidRootPart) == "Water" then
-        if AutoFarmState.sandCFrame then
-            local distance = (HumanoidRootPart.Position - AutoFarmState.sandCFrame.Position).Magnitude
-            if distance >= 10 then
-                createNotification("❌ Too far from sand CFrame (must be under 10 studs apart)")
-                return
-            end
-        end
-        
         AutoFarmState.waterCFrame = HumanoidRootPart.CFrame
         createNotification("✅ Water CFrame set")
     else
