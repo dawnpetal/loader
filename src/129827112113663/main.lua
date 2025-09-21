@@ -4547,7 +4547,7 @@ local function handlePanAction(mode, actionType, executeToCompletion)
 		collectInterval = 0.05,
 		quickCheck = 0.05,
 		networkTimeout = 0.1,
-		maxRetries = 5,
+		maxRetries = 15,
 		failsPerRetry = 4
 	}
 	local messages = {
