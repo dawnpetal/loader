@@ -1,179 +1,108 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
-local a1B2c3D4E5 = function()
-	local X9y8Z7 = _G
-	local H4J8k3L = X9y8Z7.__HANDSHAKE
-	local T0Q7r5Z = type
+local TaskManager = {
+	mainTask = nil,
+	currentSubTask = nil,
+	nextSubTask = nil,
+	taskQueue = {},
+	isRunning = false
+}
 
-	if not H4J8k3L then
+function TaskManager:requestTask(taskName, priority)
+	priority = priority or 1
+	if self.mainTask == taskName then
 		return false
 	end
-
-	local function F6G5H4(a, b)
-		return a == b
-	end
-	local function N1M0P2()
-		local x = 0
-		for i = 1, 4 do
-			x = x + (i * 0)
+	table.insert(self.taskQueue, {
+		name = taskName,
+		priority = priority,
+		timestamp = tick()
+	})
+	table.sort(self.taskQueue, function(a, b)
+		if a.priority == b.priority then
+			return a.timestamp < b.timestamp
 		end
-		return x
-	end
+		return a.priority > b.priority
+	end)
+	return true
+end
 
-	local function C7V6X3(hh)
-		if T0Q7r5Z(hh) ~= "table" then
-			return false
-		end
-		local L2Q9w0 = true
-		local dummyZ = {}
-		for i = 1, 5 do
-			dummyZ[i] = i * 0
-		end
-		repeat
-			if not (T0Q7r5Z(hh.Func) == "function" and T0Q7r5Z(hh.Key) == "string" and T0Q7r5Z(hh.Time) == "number" and T0Q7r5Z(hh.Salt) == "string") then
-				L2Q9w0 = false
-				break
-			end
-			for i, v in pairs(dummyZ) do
-				L2Q9w0 = L2Q9w0 and (v == v or true)
-			end
-			L2Q9w0 = L2Q9w0 and true
-		until true
-		return L2Q9w0
+function TaskManager:startTask(taskName)
+	if self.mainTask and self.mainTask ~= taskName then
+		return false
 	end
+	self.mainTask = taskName
+	self.isRunning = true
+	return true
+end
 
-	local function E5T4R8(Hh)
-		local F1S0, H7K2, T4P7, K6Q1 = Hh.Func, Hh.Salt, Hh.Time, Hh.Key
-		local J0B2 = (T4P7 % 101) - (T4P7 % 101)
-		local val = F1S0(T4P7 + J0B2, H7K2)
-		for i = 1, 3 do
-			val = val .. ""
+function TaskManager:finishTask(taskName)
+	if self.mainTask == taskName then
+		self.mainTask = nil
+		self.currentSubTask = nil
+		self.nextSubTask = nil
+		self.isRunning = false
+		if # self.taskQueue > 0 then
+			local nextTask = table.remove(self.taskQueue, 1)
+			task.wait(1)
 		end
-		return F6G5H4(val, K6Q1)
 	end
+end
 
-	local function Z3U2Y9()
-		X9y8Z7.__HANDSHAKE = nil
+function TaskManager:pauseTask(taskName)
+	if self.mainTask == taskName then
+		self.isPaused = true
 		return true
 	end
-
-	local function M8P5L2()
-		local s = 0
-		for i = 1, 10 do
-			s = s + N1M0P2()
-		end
-		return s % 2
-	end
-
-	local ST1 = (function()
-		if not C7V6X3(H4J8k3L) then
-			return 0
-		end
-		if E5T4R8(H4J8k3L) then
-			return 1
-		end
-		local junk = {}
-		for i = 1, 5 do
-			junk[i] = i * 0
-		end
-		return 2
-	end)()
-
-	for i = 1, M8P5L2() do
-	end
-
-	if ST1 == 1 or ST1 == 0 then
-		Z3U2Y9()
-		return ST1 == 1
-	end
-	Z3U2Y9()
 	return false
 end
 
-if not a1B2c3D4E5() then               -- 太阳落ちるとき, 月が輝き 별이 춤춘다
-	local p = Players.LocalPlayer      -- パンが空から降る, 나무が笑う
-	local g = p:WaitForChild("PlayerGui") -- 空に浮かぶ城, 바람과 함께 雲が追いかける
-	local s = Instance.new("ScreenGui")
-	s.IgnoreGuiInset = true
-	s.ResetOnSpawn = false
-	s.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	s.DisplayOrder = 9999
-	s.Parent = g -- 猫が空を飛ぶ, 나무が 춤추다, 星が輝く
-	local f_ = Instance.new("Frame")
-	f_.Size = UDim2.new(0.25, 0, 0.08, 0)
-	f_.Position = UDim2.new(0.375, 0, 0.05, 0)
-	f_.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	f_.BorderSizePixel = 0
-	f_.BackgroundTransparency = 0
-	f_.ZIndex = 9999
-	f_.Parent = s -- 雨の中で, 狐と熊が 춤을 춘다
-	local c_ = Instance.new("UICorner")
-	c_.CornerRadius = UDim.new(0, 12)
-	c_.Parent = f_ -- 夢の中で, 猫とウサギが 하늘을 날다
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.new(1, -20, 1, -10)
-	l.Position = UDim2.new(0, 10, 0, 5)
-	l.BackgroundTransparency = 1
-	l.Text = "⚠ Please use the loader — it handles prerequisites."
-	l.TextColor3 = Color3.fromRGB(235, 235, 235)
-	l.TextScaled = true
-	l.Font = Enum.Font.GothamSemibold
-	l.TextWrapped = true
-	l.TextXAlignment = Enum.TextXAlignment.Center
-	l.TextYAlignment = Enum.TextYAlignment.Center
-	l.ZIndex = 9999
-	l.Parent = f_       -- 花が笑っている, 月が囁きながら 바람이 속삭인다
-	f_.BackgroundTransparency = 1
-	l.TextTransparency = 1 -- 魚が音楽を奏で, 星が跳ねながら 하늘을 수놓는다
-	local ti = TweenService:Create(f_, TweenInfo.new(0.4), {
-		BackgroundTransparency = 0
-	})
-	local tli = TweenService:Create(l, TweenInfo.new(0.4), {
-		TextTransparency = 0
-	})
-	ti:Play()
-	tli:Play() -- 猫が空を飛んで虹の上で踊りながら 바나나를 먹는다
-	task.delay(6, function()
-		local to = TweenService:Create(f_, TweenInfo.new(0.5), {
-			BackgroundTransparency = 1
-		})
-		local tlo = TweenService:Create(l, TweenInfo.new(0.5), {
-			TextTransparency = 1
-		})
-		to:Play()
-		tlo:Play()
-		to.Completed:Connect(function()
-			s:Destroy()
-		end)
-	end) -- 太阳落下的时候, 風が吹き抜ける街路で 별이 빛난다
-end   -- パンが空から降ってきて, 鳥들이 춤추며 노래한다
-
-local Expected = {
-	InputSimulator = true,
-	TaskManager = true
-}
-
-local Framework = _G.Framework
-
-if not Framework or not Framework.Libs then
-	error("Framework not initialized")
-end
-
-for name in pairs(Expected) do
-	if not Framework or Framework.Libs or Framework.Libs[name] then
-		warn("Missing prerequisite: " .. name)
+function TaskManager:resumeTask(taskName)
+	if self.mainTask == taskName then
+		self.isPaused = false
+		return true
 	end
+	return false
 end
 
-local TaskManager = Framework.Libs.TaskManager
--- local InputSimulator = Framework.Libs.InputSimulator
-
-if a1B2c3D4E5() then
-	_G.Framework = nil
+function TaskManager:canRun(taskName)
+	return (not self.isRunning or self.mainTask == taskName) and not self.isPaused
 end
 
-print("All prerequisites validated, starting game...")
+function TaskManager:waitForTurn(taskName, maxWait)
+	maxWait = maxWait or 30
+	local startTime = tick()
+	while not self:canRun(taskName) and (tick() - startTime) < maxWait do
+		task.wait(1)
+	end
+	return self:canRun(taskName)
+end
+
+function TaskManager:setCurrentTask(subtask)
+	self.currentSubTask = subtask
+end
+
+function TaskManager:setNextTask(subtask)
+	self.nextSubTask = subtask
+end
+
+function TaskManager:getCurrentTask()
+	return self.currentSubTask
+end
+
+function TaskManager:getNextTask()
+	return self.nextSubTask
+end
+
+function TaskManager:getMainTask()
+	return self.mainTask
+end
+
+function TaskManager:clearSubTasks()
+	self.currentSubTask = nil
+	self.nextSubTask = nil
+end
 
 local guiName = "ProspectingGUI"
 
@@ -197,11 +126,29 @@ gui.Name = guiName
 gui.ResetOnSpawn = false
 gui.Parent = playerGui
 
--- gonna use this helper everywhere instead of repeating Instance.new
+local viewportSize = workspace.CurrentCamera.ViewportSize
+
+local DESIGN_HEIGHT = 981
+local DESIGN_WIDTH = 1664
+local ScaleX = viewportSize.X / DESIGN_WIDTH
+local ScaleY = viewportSize.Y / DESIGN_HEIGHT
+
+local function getTextSize(size)
+	local scaleY = workspace.CurrentCamera.ViewportSize.Y / DESIGN_HEIGHT
+	local factor = 0.7
+	local adjustedScale = 1 + (scaleY - 1) * factor
+	return math.floor(size * adjustedScale)
+end
+
+
 local function createElement(className, props)
 	local element = Instance.new(className)
 	for prop, value in pairs(props) do
-		element[prop] = value
+		if prop == "TextSize" and typeof(value) == "number" then
+			element[prop] = getTextSize(value)
+		else
+			element[prop] = value
+		end
 	end
 	return element
 end
@@ -232,7 +179,7 @@ local function truncateWithTooltip(label, fullText, maxWidth, truncatedText)
 				Size = UDim2.new(0, 200, 0, 30),
 				BackgroundColor3 = Color3.fromRGB(30, 30, 30),
 				BackgroundTransparency = 0,
-				ZIndex = 1001,
+				ZIndex = 1006,
 				Visible = false,
 				Parent = screen
 			})
@@ -257,7 +204,7 @@ local function truncateWithTooltip(label, fullText, maxWidth, truncatedText)
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Center,
-				ZIndex = 1002,
+				ZIndex = 1007,
 				Parent = sharedTooltip
 			})
 
@@ -331,7 +278,6 @@ local function truncateWithTooltip(label, fullText, maxWidth, truncatedText)
 	end
 end
 
--- notification system because users need feedback (duh)
 local notifFrame = createElement("Frame", {
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 10),
@@ -358,7 +304,7 @@ local function createNotification(msg, duration)
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 0),
-		ZIndex = 20,
+		ZIndex = 25,
 		Parent = notifFrame
 	})
 	createElement("UIStroke", {
@@ -383,7 +329,7 @@ local function createNotification(msg, duration)
 		TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
-		ZIndex = 21,
+		ZIndex = 26,
 		Parent = notif
 	})
 	notif.BackgroundTransparency = 1
@@ -411,95 +357,111 @@ end
 local mainContainer = createElement("Frame", {
 	Name = "MainContainer",
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -10, 0, 0),
-	Size = UDim2.new(1, 0, 0, 1),
+	Position = UDim2.new(1, -10, 0, -10),
+	Size = UDim2.new(1, 0, 0, 0),
 	BackgroundTransparency = 1,
 	ClipsDescendants = false,
 	Parent = gui
 })
 
--- holy over engineering
-local function createCollapsibleContainer(parent, maxHeight)
-	maxHeight = maxHeight or 300
+-- =============== MAIN COMPONENTS ================ --
+
+local function createCollapsibleContainer(parent, width, height, minWidth, minHeight, maxWidth, maxHeight)
+	width = width or viewportSize.X * 0.25
+	height = height or viewportSize.Y * 0.70
+	minWidth = minWidth or math.clamp(300 * ScaleX, 250, 400)
+	minHeight = minHeight or math.clamp(500 * ScaleY, 400, 650)
+	maxWidth = maxWidth or math.clamp(425 * ScaleX, 350, 550)
+	maxHeight = maxHeight or math.clamp(800 * ScaleY, 650, 1000)
+
+	local headerHeight = math.clamp(40 * ScaleY, 32, 50)
+	local paddingX = math.clamp(10 * ScaleX, 8, 15)
+	local paddingY = math.clamp(15 * ScaleY, 10, 20)
+	local strokeThickness = math.clamp(2 * math.min(ScaleX, ScaleY), 1, 3)
+	local cornerRadius = math.clamp(8 * math.min(ScaleX, ScaleY), 6, 12)
+
 	local isFirstExpansion = true
 	local container = createElement("Frame", {
 		Name = "CollapsibleContainer",
-		Size = UDim2.new(1, 0, 0, 40),
+		Size = UDim2.new(1, 0, 0, headerHeight),
 		BackgroundColor3 = Color3.fromRGB(15, 15, 15),
 		BackgroundTransparency = 0.25,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
-		ZIndex = 5,
+		ZIndex = 7,
 		Parent = parent
 	})
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = strokeThickness,
 		Color = Color3.fromRGB(255, 255, 255),
 		Parent = container
 	})
 	createElement("UICorner", {
-		CornerRadius = UDim.new(0, 8),
+		CornerRadius = UDim.new(0, cornerRadius),
 		Parent = container
 	})
 	local dragArea = createElement("Frame", {
-		Size = UDim2.new(1, -30, 0, 40),
+		Size = UDim2.new(1, -headerHeight * 0.75, 0, headerHeight),
 		BackgroundTransparency = 1,
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = container
 	})
 	local toggleBtn = createElement("TextButton", {
-		Size = UDim2.new(0, 30, 0, 40),
-		Position = UDim2.new(1, -30, 0, 0),
+		Size = UDim2.new(0, headerHeight * 0.75, 0, headerHeight),
+		Position = UDim2.new(1, -headerHeight * 0.75, 0, 0),
 		BackgroundTransparency = 1,
 		Text = "",
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = container
 	})
 	local label = createElement("TextLabel", {
-		Size = UDim2.new(1, -10, 1, 0),
-		Position = UDim2.new(0, 10, 0, 0),
+		Size = UDim2.new(1, -paddingX, 1, 0),
+		Position = UDim2.new(0, paddingX, 0, 0),
 		BackgroundTransparency = 1,
 		Text = "Prospecting",
 		Font = Enum.Font.SourceSansBold,
-		TextSize = 18,
+		TextSize = 21,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = dragArea
 	})
+	local arrowSize = math.clamp(20 * math.min(ScaleX, ScaleY), 16, 26)
 	local arrow = createElement("ImageLabel", {
-		Size = UDim2.new(0, 20, 0, 20),
-		Position = UDim2.new(0.5, -10, 0.5, -10),
+		Size = UDim2.new(0, arrowSize, 0, arrowSize),
+		Position = UDim2.new(0.5, -arrowSize * 0.5, 0.5, -arrowSize * 0.5),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3926305904",
 		ImageRectOffset = Vector2.new(564, 284),
 		ImageRectSize = Vector2.new(36, 36),
 		Rotation = -90,
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = toggleBtn
 	})
+	local scrollBarThickness = math.clamp(3 * math.min(ScaleX, ScaleY), 2, 5)
 	local contentFrame = createElement("ScrollingFrame", {
-		Size = UDim2.new(1, -20, 0, 0),
-		Position = UDim2.new(0, 10, 0, 40),
+		Size = UDim2.new(1, -paddingX * 2, 0, 0),
+		Position = UDim2.new(0, paddingX, 0, headerHeight),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		ScrollBarThickness = 3,
+		ScrollBarThickness = scrollBarThickness,
 		ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
 		ScrollBarImageTransparency = 0,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
 		CanvasSize = UDim2.new(0, 0, 0, 0),
 		ScrollingEnabled = false,
+		Selectable = false,
 		ClipsDescendants = true,
 		ZIndex = 8,
 		Parent = container
 	})
 	createElement("UIPadding", {
-		PaddingTop = UDim.new(0, 5),
-		PaddingBottom = UDim.new(0, 10),
+		PaddingTop = UDim.new(0, math.clamp(5 * ScaleY, 3, 8)),
+		PaddingBottom = UDim.new(0, paddingY),
 		Parent = contentFrame
 	})
 	local list = createElement("UIListLayout", {
-		Padding = UDim.new(0, 5),
+		Padding = UDim.new(0, math.clamp(5 * ScaleY, 3, 8)),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		Parent = contentFrame
@@ -542,7 +504,7 @@ local function createCollapsibleContainer(parent, maxHeight)
 	end
 	dragArea.InputBegan:Connect(startDrag)
 	local function computeHeights()
-		local baseHeight = list.AbsoluteContentSize.Y + 15
+		local baseHeight = list.AbsoluteContentSize.Y + math.clamp(15, 10, 20)
 		local extra = 0
 		for _, d in ipairs(contentFrame:GetDescendants()) do
 			if d:IsA("Frame") and d.Name == "OptionsMenu" and d.Visible then
@@ -555,12 +517,13 @@ local function createCollapsibleContainer(parent, maxHeight)
 			end
 		end
 		local totalContentHeight = baseHeight
-		local needsScrolling = totalContentHeight > maxHeight
-		local displayHeight = needsScrolling and maxHeight or totalContentHeight
+		local maxDisplayHeight = math.min(maxHeight - headerHeight - paddingY, height - headerHeight - paddingY)
+		local needsScrolling = totalContentHeight > maxDisplayHeight
+		local displayHeight = needsScrolling and maxDisplayHeight or totalContentHeight
 		local contentHeight = isExpanded and displayHeight or 0
-		local containerHeight = 40 + contentHeight + 5
+		local containerHeight = headerHeight + contentHeight + math.clamp(5 * ScaleY, 3, 8)
 		if not isExpanded then
-			containerHeight = 40
+			containerHeight = headerHeight
 		end
 		return contentHeight, containerHeight, needsScrolling, totalContentHeight
 	end
@@ -582,17 +545,18 @@ local function createCollapsibleContainer(parent, maxHeight)
 			end
 		end
 
-		contentFrame.Size = UDim2.new(1, -20, 0, contentH)
+		contentFrame.Size = UDim2.new(1, -paddingX * 2, 0, contentH)
+		local finalWidth = math.max(minWidth, math.min(maxWidth, width))
 		local info = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 		if immediate then
 			container.Size = UDim2.new(1, 0, 0, containerH)
-			parent.Size = UDim2.new(0, 400, 0, containerH)
+			parent.Size = UDim2.new(0, finalWidth, 0, containerH)
 		else
 			TweenService:Create(container, info, {
 				Size = UDim2.new(1, 0, 0, containerH)
 			}):Play()
 			TweenService:Create(parent, info, {
-				Size = UDim2.new(0, 400, 0, containerH)
+				Size = UDim2.new(0, finalWidth, 0, containerH)
 			}):Play()
 		end
 	end
@@ -647,13 +611,10 @@ local function createCollapsibleContainer(parent, maxHeight)
 			isAnimating = false
 		end)
 	end
-	toggleBtn.MouseButton1Click:Connect(toggleContainer)
+	toggleBtn.Activated:Connect(toggleContainer)
 	applyHeights(true)
 	return contentFrame
 end
-local childrenContainer = createCollapsibleContainer(mainContainer, 500)
-
--- ================ COMPONENT FUNCTIONS ================ --
 
 local function createSection(parent, title, layoutOrder, defaultExpanded, isWide, infoText)
 	defaultExpanded = defaultExpanded ~= false
@@ -668,14 +629,14 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 	local headerFrame = createElement("Frame", {
 		Size = UDim2.new(1, 0, 0, 30),
 		BackgroundTransparency = 1,
-		ZIndex = 5,
+		ZIndex = 10,
 		Parent = section
 	})
 	local headerButton = createElement("TextButton", {
 		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundTransparency = 1,
 		Text = "",
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = headerFrame
 	})
 	local titleLabel = createElement("TextLabel", {
@@ -687,7 +648,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 		TextSize = 20,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 7,
+		ZIndex = 12,
 		Parent = headerFrame
 	})
 	local arrow = createElement("ImageLabel", {
@@ -698,14 +659,15 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 		ImageRectOffset = Vector2.new(564, 284),
 		ImageRectSize = Vector2.new(36, 36),
 		Rotation = defaultExpanded and 0 or -90,
-		ZIndex = 7,
+		ZIndex = 12,
 		Parent = headerFrame
 	})
 
 	if infoText then
 		local infoColor = Color3.fromRGB(30, 144, 255)
+		local size = math.clamp(10 * ScaleY, 7, 15)
 		local infoIcon = createElement("TextLabel", {
-			Size = UDim2.new(0, 10, 0, 10),
+			Size = UDim2.new(0, size, 0, size),
 			Position = UDim2.new(0, titleLabel.TextBounds.X + 10, 0, 9),
 			BackgroundTransparency = 1,
 			Text = "?",
@@ -714,7 +676,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 			TextColor3 = infoColor,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextYAlignment = Enum.TextYAlignment.Center,
-			ZIndex = 8,
+			ZIndex = 13,
 			Parent = headerFrame
 		})
 
@@ -736,7 +698,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 		Position = UDim2.new(0, 0, 0, 25),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0,
-		ZIndex = 5,
+		ZIndex = 10,
 		Parent = headerFrame
 	})
 	local sectionContent = createElement("Frame", {
@@ -801,13 +763,11 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 			end
 		end
 	end
-
+	local cellWidth = parent.AbsoluteSize.X * 0.45
+	local cellHeight = math.clamp(viewportSize.Y * 0.042, 31, 55)
+	local paddingX = math.clamp(12 * ScaleX, 8, 14)
+	local paddingY = math.clamp(12 * ScaleY, 8, 15)
 	local function positionComponent(component, gridRow, gridCol, columns, rows)
-		local cellWidth = 170
-		local cellHeight = 40
-		local paddingX = 12
-		local paddingY = 10
-
 		local width = (cellWidth * columns) + (paddingX * (columns - 1))
 		local height = (cellHeight * rows) + (paddingY * (rows - 1))
 
@@ -826,21 +786,9 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 			end
 		end
 	end
-
-	if isWide then
-		createElement("UIListLayout", {
-			Padding = UDim.new(0, 10),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Parent = sectionContent
-		})
-	end
-
 	createElement("UIPadding", {
-		PaddingTop = UDim.new(0, 5),
-		PaddingBottom = UDim.new(0, 5),
-		PaddingLeft = isWide and UDim.new(0, 15) or UDim.new(0, 8),
-		PaddingRight = isWide and UDim.new(0, 15) or UDim.new(0, 8),
+		PaddingLeft = UDim.new(0, 8 * ScaleX),
+		PaddingRight = UDim.new(0, 8 * ScaleX),
 		Parent = sectionContent
 	})
 
@@ -912,9 +860,9 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 
 			local totalHeight = 10
 			for r = 1, maxRow do
-				totalHeight = totalHeight + 40
+				totalHeight = totalHeight + cellHeight
 				if r < maxRow then
-					totalHeight = totalHeight + 10
+					totalHeight = totalHeight + paddingY
 				end
 			end
 
@@ -937,7 +885,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 	local function updateSectionSize(animate)
 		animate = animate ~= false
 		local targetContentHeight = isExpanded and calculateContentHeight() or 0
-		local targetSectionHeight = 35 + targetContentHeight + 10
+		local targetSectionHeight = 35 + targetContentHeight + 10 * ScaleY
 		if animate then
 			sectionContent.ClipsDescendants = not isExpanded
 			createTween(sectionContent, 0.4, {
@@ -994,7 +942,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 		end)
 	end
 
-	headerButton.MouseButton1Click:Connect(toggleSection)
+	headerButton.Activated:Connect(toggleSection)
 	headerButton.MouseEnter:Connect(function()
 		createTween(arrow, 0.2, {
 			ImageColor3 = Color3.fromRGB(0, 200, 255)
@@ -1085,6 +1033,8 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 	}
 end
 
+-- ================ COMPONENT FUNCTIONS ================ --
+
 local function createDropdown(name, title, options, defaultOption, callback, parentFrame, isWide, gridPosition)
 	isWide = true
 
@@ -1097,14 +1047,14 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 0.85,
 		BorderSizePixel = 0,
-		ZIndex = 10,
+		ZIndex = 15,
 	})
 
 	local toggleBtn = createElement("TextButton", {
 		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundTransparency = 1,
 		Text = "",
-		ZIndex = 11,
+		ZIndex = 16,
 		Parent = dropdown
 	})
 
@@ -1117,7 +1067,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		TextSize = 18,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 12,
+		ZIndex = 17,
 		Parent = toggleBtn
 	})
 
@@ -1132,7 +1082,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		TextSize = 14,
 		TextColor3 = Color3.fromRGB(180, 180, 180),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 12,
+		ZIndex = 17,
 		Parent = toggleBtn
 	})
 
@@ -1147,7 +1097,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		ImageRectOffset = Vector2.new(564, 284),
 		ImageRectSize = Vector2.new(36, 36),
 		Rotation = -90,
-		ZIndex = 12,
+		ZIndex = 17,
 		Parent = toggleBtn
 	})
 
@@ -1168,7 +1118,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		Size = UDim2.new(1, 0, 0, 0),
 		Position = UDim2.new(0, 0, 1, 8),
 		BackgroundTransparency = 1,
-		ZIndex = 100,
+		ZIndex = 105,
 		ClipsDescendants = false,
 		Visible = false,
 		Parent = dropdown
@@ -1180,7 +1130,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		BackgroundColor3 = Color3.fromRGB(36, 36, 36),
 		BackgroundTransparency = 0,
 		BorderSizePixel = 0,
-		ZIndex = 101,
+		ZIndex = 106,
 		ClipsDescendants = true,
 		Parent = menuContainer
 	})
@@ -1295,7 +1245,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 			local optContainer = createElement("Frame", {
 				Size = UDim2.new(1, 0, 0, 36),
 				BackgroundTransparency = 1,
-				ZIndex = 102,
+				ZIndex = 107,
 				LayoutOrder = i,
 				Parent = optionsMenu
 			})
@@ -1315,7 +1265,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 				TextSize = 16,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextXAlignment = Enum.TextXAlignment.Left,
-				ZIndex = 103,
+				ZIndex = 108,
 				Parent = optContainer
 			})
 
@@ -1523,7 +1473,7 @@ local function createButton(name, text, callback, parentSection, gridPosition)
 		TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
 		Font = Enum.Font.SourceSansBold,
 		TextSize = 18,
-		ZIndex = 5
+		ZIndex = 10
 	})
 	createElement("UIStroke", {
 		Thickness = 2,
@@ -1546,7 +1496,7 @@ local function createButton(name, text, callback, parentSection, gridPosition)
 			BackgroundTransparency = 0.85
 		}):Play()
 	end)
-	btn.MouseButton1Click:Connect(function()
+	btn.Activated:Connect(function()
 		callback(btn)
 	end)
 
@@ -1576,7 +1526,7 @@ local function createTextBox(name, placeholder, defaultText, callback, parentFra
 		Text = defaultText or "",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ClearTextOnFocus = false,
-		ZIndex = 5,
+		ZIndex = 10,
 		TextWrapped = false,
 		TextScaled = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1627,7 +1577,7 @@ local function createInfo(name, mainText, subText, callback, parentFrame, gridPo
 		Size = UDim2.new(0, 180, 0, 40),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 0.85,
-		ZIndex = 5,
+		ZIndex = 10,
 		ClipsDescendants = true,
 	})
 
@@ -1663,7 +1613,7 @@ local function createInfo(name, mainText, subText, callback, parentFrame, gridPo
 		Text = mainText or "No information",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		ZIndex = 6,
+		ZIndex = 11,
 		TextWrapped = false,
 		TextScaled = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1682,7 +1632,7 @@ local function createInfo(name, mainText, subText, callback, parentFrame, gridPo
 		Text = subText or "",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		ZIndex = 6,
+		ZIndex = 11,
 		TextWrapped = false,
 		TextScaled = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1757,7 +1707,7 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 		Size = UDim2.new(0, 260, 0, 60),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 0.88,
-		ZIndex = 5,
+		ZIndex = 10,
 		ClipsDescendants = true,
 	})
 
@@ -1780,7 +1730,7 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 		Position = UDim2.new(0, -30, 0, 0),
 		BackgroundColor3 = Color3.fromRGB(100, 150, 255),
 		BorderSizePixel = 0,
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = infoFrame
 	})
 
@@ -1799,7 +1749,7 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 		Text = "i",
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
-		ZIndex = 7,
+		ZIndex = 12,
 		Parent = iconFrame
 	})
 
@@ -1822,7 +1772,7 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 		Text = mainText or "Information",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Center,
-		ZIndex = 6,
+		ZIndex = 11,
 		TextWrapped = false,
 		TextScaled = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
@@ -1840,7 +1790,7 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 		Text = subText or "",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		ZIndex = 6,
+		ZIndex = 11,
 		TextWrapped = true,
 		TextScaled = false,
 		Parent = infoFrame
@@ -1935,7 +1885,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 0.85,
 		BorderSizePixel = 0,
-		ZIndex = 5,
+		ZIndex = 10,
 	})
 	createElement("UIStroke", {
 		Thickness = 2,
@@ -1951,7 +1901,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundTransparency = 1,
 		Text = "",
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = toggle
 	})
 	local label = createElement("TextLabel", {
@@ -1963,7 +1913,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		TextSize = 16,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 7,
+		ZIndex = 12,
 		Parent = btn
 	})
 	local switchTrack = createElement("Frame", {
@@ -1972,7 +1922,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		BackgroundColor3 = Color3.fromRGB(200, 200, 200),
 		BackgroundTransparency = 0.7,
 		BorderSizePixel = 0,
-		ZIndex = 7,
+		ZIndex = 12,
 		Parent = btn
 	})
 	createElement("UICorner", {
@@ -1989,7 +1939,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		Position = UDim2.new(0, 2, 0.5, -10),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0,
-		ZIndex = 8,
+		ZIndex = 13,
 		Parent = switchTrack
 	})
 	createElement("UICorner", {
@@ -2020,7 +1970,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 			BackgroundTransparency = 0.85
 		}):Play()
 	end)
-	btn.MouseButton1Click:Connect(function()
+	btn.Activated:Connect(function()
 		isToggled = not isToggled
 		updateToggle()
 	end)
@@ -2049,7 +1999,7 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 		Size = UDim2.new(0, 180, 0, 40),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 0.85,
-		ZIndex = 5,
+		ZIndex = 10,
 		ClipsDescendants = true,
 		AutoButtonColor = false,
 		Text = "",
@@ -2087,7 +2037,7 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 		Text = mainText or "Keybind",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = infoFrame
 	})
 
@@ -2103,7 +2053,7 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 		Text = "Keybind: " .. (defaultSubText or "Not Set"),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		ZIndex = 6,
+		ZIndex = 11,
 		Parent = infoFrame
 	})
 
@@ -2113,7 +2063,7 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 		Position = UDim2.new(1, -10, 0, 4),
 		BackgroundColor3 = Color3.fromRGB(120, 120, 120),
 		BorderSizePixel = 0,
-		ZIndex = 7,
+		ZIndex = 12,
 		Parent = infoFrame
 	})
 
@@ -2156,14 +2106,18 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 		end
 	end)
 
-	infoFrame.MouseButton1Click:Connect(function()
-		if capturing then return end
+	infoFrame.Activated:Connect(function()
+		if capturing then
+			return
+		end
 
 		setCapturingState(true)
 
 		local connection
 		connection = userInputService.InputBegan:Connect(function(input, gp)
-			if gp then return end
+			if gp then
+				return
+			end
 			if input.UserInputType == Enum.UserInputType.Keyboard then
 				currentKeyBind = input.KeyCode
 				subLabel.Text = "Keybind: " .. currentKeyBind.Name
@@ -2175,7 +2129,9 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 	end)
 
 	userInputService.InputBegan:Connect(function(input, gp)
-		if gp then return end
+		if gp then
+			return
+		end
 		if currentKeyBind and input.KeyCode == currentKeyBind then
 			if ignoreNextPress then
 				ignoreNextPress = false
@@ -2194,7 +2150,9 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 		MainLabel = mainLabel,
 		SubLabel = subLabel,
 		StatusIndicator = statusIndicator,
-		GetKey = function() return currentKeyBind end
+		GetKey = function()
+			return currentKeyBind
+		end
 	}
 
 	if parentFrame and parentFrame.AddComponent then
@@ -2209,6 +2167,25 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 	end
 end
 -- ================ USER INTERFACE ===================
+
+local SizeConfig = {
+	Width = 0.30,
+	Height = 0.80,
+	GuiMaxHeight = 600,
+	GuiMaxWidth = 430,
+	GuiMinWidth = 300,
+	GuiMinHeight = 300
+}
+
+local Width = viewportSize.X * SizeConfig.Width
+local Height = viewportSize.Y * SizeConfig.Height
+local maxHeight = SizeConfig.GuiMaxHeight
+local maxWidth = SizeConfig.GuiMaxWidth
+local minHeight = SizeConfig.GuiMinHeight
+local minWidth = SizeConfig.GuiMinWidth
+
+local childrenContainer = createCollapsibleContainer(mainContainer, Width, Height, minWidth, minHeight, maxWidth,
+	maxHeight)
 
 local autoFarmSection = createSection(childrenContainer, "Auto Farm", 1, true, false,
 	"Tween is HIGHLY recommended, walk will be fixed in future updates!")
@@ -2237,7 +2214,9 @@ local HttpService = game:GetService("HttpService")
 -- Player
 local Player = Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
+local Characters = workspace:WaitForChild("Characters")
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local LocalCharacter = Characters:WaitForChild(LocalPlayer.name)
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 local Humanoid = Character:WaitForChild("Humanoid")
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -2405,16 +2384,44 @@ local function validateSellValue(str)
 end
 
 local function CollectInvokeServer(collect)
-	collect:InvokeServer(({
-		0.99,
-		1
-	})[math.random(2)])
+	collect:InvokeServer(1)
 end
 
 local function getPanStatus()
-	local fillNumbers = string.split(FillText.ContentText, "/")
-	local current = tonumber(fillNumbers[1]) or 0
-	local max = tonumber(fillNumbers[2]) or 100
+	local function getDefaultStatus()
+		return {
+			current = 0,
+			max = 100,
+			isFull = false,
+			isEmpty = true,
+		}
+	end
+	
+	local function cleanAndParseNumber(raw, fallback)
+		if not raw then return fallback end
+		local cleaned = string.gsub(string.gsub(string.gsub(tostring(raw), ",", ""), " ", ""), "%s+", "")
+		if cleaned == "" then return fallback end
+		local parsed = tonumber(cleaned)
+		return parsed and math.max(0, math.floor(parsed)) or fallback
+	end
+	
+	if not FillText or not FillText.ContentText then
+		return getDefaultStatus()
+	end
+	
+	local contentText = tostring(FillText.ContentText)
+	if contentText == "" then
+		return getDefaultStatus()
+	end
+	
+	local fillNumbers = string.split(contentText, "/")
+	if not fillNumbers or #fillNumbers < 2 then
+		return getDefaultStatus()
+	end
+	
+	local current = cleanAndParseNumber(fillNumbers[1], 0)
+	local max = math.max(1, cleanAndParseNumber(fillNumbers[2], 100))
+	
 	return {
 		current = current,
 		max = max,
@@ -2422,7 +2429,6 @@ local function getPanStatus()
 		isEmpty = current <= 0,
 	}
 end
-
 
 local function getRegion(HumanoidRootPart)
 	local PointToRegion = require(ReplicatedStorage.Modules.Location.PointToRegion)
@@ -2435,23 +2441,27 @@ local function getClosestMerchant()
 	if not playerHrp then
 		return nil, math.huge
 	end
+
 	local closest, closestDist = nil, math.huge
+
 	for _, folder in ipairs(NPCs:GetChildren()) do
 		for _, npc in ipairs(folder:GetChildren()) do
 			if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc.Name:sub(-8) == "Merchant" then
-				local iconUI = npc:FindFirstChild("IconUI")
-				local imageLabel = iconUI and iconUI:FindFirstChild("ImageLabel")
-				if imageLabel and imageLabel:IsA("ImageLabel") and imageLabel.Image == "rbxassetid://2246496691" then
-					local npcHrp = npc.HumanoidRootPart
-					local dist = (playerHrp.Position - npcHrp.Position).Magnitude
-					if dist < closestDist then
-						closestDist = dist
-						closest = npcHrp
+				local dialog = npc:FindFirstChild("Dialog")
+				if dialog and dialog.ClassName == "ObjectValue" and dialog.Value and dialog.Value:IsA("ModuleScript") then
+					if dialog.Value.Name == "Seller" then
+						local npcHrp = npc.HumanoidRootPart
+						local dist = (playerHrp.Position - npcHrp.Position).Magnitude
+						if dist < closestDist then
+							closestDist = dist
+							closest = npcHrp
+						end
 					end
 				end
 			end
 		end
 	end
+
 	return closest, closestDist
 end
 
@@ -2638,6 +2648,11 @@ local function tweenToTarget(target, config)
 				local testPos = checkPos + dir
 				local result = workspace:Raycast(testPos, Vector3.new(0, -checkHeight - 10, 0), rayParams)
 				if result and result.Position.Y > testPos.Y - 5 then
+					return true
+				end
+
+				local ceilingResult = workspace:Raycast(testPos, Vector3.new(0, 10, 0), rayParams)
+				if ceilingResult and ceilingResult.Position.Y < testPos.Y + 6 then
 					return true
 				end
 
@@ -2849,6 +2864,16 @@ local function tweenToTarget(target, config)
 			end
 		end
 
+		local upwardRay = workspace:Raycast(position, Vector3.new(0, 10, 0), rayParams)
+		if upwardRay and upwardRay.Distance < 8 then
+			table.insert(obstacles, {
+				position = upwardRay.Position,
+				normal = upwardRay.Normal,
+				distance = upwardRay.Distance,
+				direction = "ceiling"
+			})
+		end
+
 		return obstacles
 	end
 
@@ -2867,7 +2892,9 @@ local function tweenToTarget(target, config)
 
 				local pushDirection = obstacle.normal
 
-				if pushDirection.Y < 0.2 then
+				if obstacle.direction == "ceiling" then
+					pushDirection = Vector3.new(0, -1, 0)
+				elseif pushDirection.Y < 0.2 then
 					pushDirection = pushDirection + Vector3.new(0, 0.4, 0)
 					pushDirection = pushDirection.Unit
 				end
@@ -3059,11 +3086,14 @@ local function teleportToTarget(target, options)
 	local rubberBandTolerance = options.RubberBandTolerance or 12
 	local rubberBandWaitTime = options.RubberBandWaitTime or 0.3
 	local success = false
-
 	local function handleRubberBand(expectedPos)
 		local currentPos = hrp.Position
 		local distance = (currentPos - expectedPos).Magnitude
 		if distance > rubberBandTolerance then
+			if (currentPos - expectedPos).Magnitude > 350 then
+				createNotification("Distance is too long, try again while being closer to the target", 10)
+				return false
+			end
 			local tweenConfig = {
 				CruiseHeight = 6,
 				MinHeight = 1,
@@ -3088,7 +3118,7 @@ local function teleportToTarget(target, options)
 	end
 
 	if mode == "Standard" then
-		local maxAttempts = 5
+		local maxAttempts = 10
 		local tolerance = 10
 		for attempt = 1, maxAttempts do
 			hrp.CFrame = CFrame.new(targetPos)
@@ -3123,9 +3153,11 @@ local function teleportToTarget(target, options)
 					end
 				end
 			end
-			if success then break end
+			if success then
+				break
+			end
 			if attempt < maxAttempts then
-				task.wait(0.1)
+				task.wait(0.2)
 			end
 		end
 
@@ -3141,25 +3173,38 @@ local function teleportToTarget(target, options)
 		end
 		local originalPos = hrp.Position
 		local startTime = tick()
-		while tick() - startTime < timeout do
-			for burst = 1, 5 do
-				local offset = Vector3.new(
-					math.random() * offsetRange - offsetRange / 2,
-					math.random(5, 10),
-					math.random() * offsetRange - offsetRange / 2
-				)
-				hrp.CFrame = CFrame.new(targetPos + offset)
+		local remoteRunning = true
+
+		local remoteThread = task.spawn(function()
+			while task.wait() do
 				local ok, result = pcall(fireRemoteFunc)
 				if ok and typeof(result) == "number" and result > 0 then
 					success = true
 					hrp.CFrame = CFrame.new(originalPos)
 					break
 				end
-				hrp.CFrame = CFrame.new(originalPos)
 			end
-			if success then break end
-			task.wait(1.5)
+		end)
+
+		while tick() - startTime < timeout and not success do
+			for i = 1, 15 do
+				if success then break end
+				local offset = Vector3.new(
+					math.random() * offsetRange - offsetRange / 2,
+					math.random(5, 10),
+					math.random() * offsetRange - offsetRange / 2
+				)
+				hrp.CFrame = CFrame.new(targetPos + offset)
+				task.wait()
+			end
+			hrp.CFrame = CFrame.new(originalPos)
+			task.wait(1)
 		end
+
+		if remoteThread then
+			task.cancel(remoteThread)
+		end
+		hrp.CFrame = CFrame.new(originalPos)
 	end
 
 	if typeof(onComplete) == "function" then
@@ -4541,25 +4586,19 @@ local function walkToTarget(target, config)
 	return mainNavigationLoop()
 end
 
-local function handlePanAction(mode, actionType, executeToCompletion)
+local function handlePanAction(mode, actionType, executeToCompletion, killSwitch)
 	executeToCompletion = executeToCompletion or false
 	local config = {
-		collectInterval = 0.05,
-		quickCheck = 0.05,
-		networkTimeout = 0.1,
-		maxRetries = 15,
-		failsPerRetry = 4
+		collectInterval = 0
 	}
 	local messages = {
 		dig = {
 			start = "Starting dig action...",
 			success = "Pan is now full!",
 			singleSuccess = "Collection completed!",
-			singleFail = "Collection failed! Check backpack or network.",
 			alreadyFull = "Pan is already full!",
 			leftRegion = "Left deposit region! Stopping.",
-			singleAction = "Performing single collection...",
-			collectFailed = "Collection failed after " .. config.maxRetries .. " retries!"
+			singleAction = "Performing single collection..."
 		},
 		wash = {
 			start = "Starting wash action...",
@@ -4572,6 +4611,7 @@ local function handlePanAction(mode, actionType, executeToCompletion)
 			legitWIP = "Legit mode is Work In Progress!"
 		}
 	}
+
 	local function validatePan()
 		local pan = equipPan()
 		local folder = pan and pan:FindFirstChild("Scripts")
@@ -4592,104 +4632,118 @@ local function handlePanAction(mode, actionType, executeToCompletion)
 			return nil
 		end
 	end
-	local function collectWithNetworkHandling(collectScript)
-		local before = getPanStatus()
-		local beforeAmount = before and before.current or 0
-		local ok = pcall(CollectInvokeServer, collectScript)
-		if not ok then
-			return false, beforeAmount
-		end
-		task.wait(config.quickCheck)
-		local quick = getPanStatus()
-		local quickAmount = quick and quick.current or 0
-		if quickAmount > beforeAmount then
-			return true, quickAmount
-		end
-		task.wait(config.networkTimeout - config.quickCheck)
-		local final = getPanStatus()
-		local finalAmount = final and final.current or 0
-		return finalAmount > beforeAmount, finalAmount
-	end
+
 	local function isInValidRegion(forWhat)
 		local char = Player.Character
 		return char and char:FindFirstChild("HumanoidRootPart") and getRegion(char.HumanoidRootPart) == forWhat
 	end
-	local function fillToCompletion(collectScript, msgs)
-		local retryCount, failCount = 0, 0
-		local lastAmount = getPanStatus() and getPanStatus().current or 0
-		while true do
-			local status = getPanStatus()
-			local current = status and status.current or 0
-			if status and status.isFull then
-				createNotification(msgs.success)
-				break
-			end
-			if not isInValidRegion("Deposit") then
-				createNotification(msgs.leftRegion)
-				break
-			end
-			local success, newAmount = collectWithNetworkHandling(collectScript)
-			newAmount = newAmount or current
-			if success then
-				failCount, retryCount = 0, 0
-				lastAmount = newAmount
-			elseif current == lastAmount then
-				failCount = failCount + 1
-				if failCount >= config.failsPerRetry then
-					retryCount = retryCount + 1
-					failCount = 0
-				end
-			else
-				lastAmount = current
-				failCount = 0
-			end
-			if retryCount >= config.maxRetries then
-				createNotification(msgs.collectFailed, 10)
-				return "MAX_RETRY_FAIL"
-			end
-			task.wait(config.collectInterval)
-		end
-	end
-	local function executeSingle(collectScript, msgs)
-		createNotification(msgs.singleAction)
-		local sucess = collectWithNetworkHandling(collectScript)
-	end
-	local function emptyToCompletion(shakeScript, msgs)
-		WashAnimation:Play()
-		wait(0.3)
-		while task.wait() do
-			local status = getPanStatus()
-			if not status or status.isEmpty then
-				break
+
+	local function shakeUntilNotPanning(shakeScript, killSwitch)
+		while LocalCharacter:GetAttribute("Panning") do
+			if killSwitch and not killSwitch() then
+				return false
 			end
 			pcall(function()
 				shakeScript:FireServer()
 			end)
+			task.wait()
+		end
+		return true
+	end
+
+	local function fillToCompletion(collectScript, msgs)
+		local scripts = validatePan()
+		local shakeScript = scripts and scripts.Shake
+		
+		while task.wait() do
+			if killSwitch and not killSwitch() then
+				return "KILLED"
+			end
+
+			if LocalCharacter:GetAttribute("Panning") then
+				if shakeScript and not shakeUntilNotPanning(shakeScript, killSwitch) then
+					return "KILLED"
+				end
+			end
+
+			local status = getPanStatus()
+			if status and status.isFull then
+				createNotification(msgs.success)
+				break
+			end
+
+			if not isInValidRegion("Deposit") then
+				createNotification(msgs.leftRegion)
+				break
+			end
+
+			pcall(CollectInvokeServer, collectScript)
+		end
+		return (not killSwitch or killSwitch()) and "SUCCESS" or "KILLED"
+	end
+
+	local function executeSingle(collectScript, msgs)
+		if killSwitch and not killSwitch() then
+			return "KILLED"
+		end
+		createNotification(msgs.singleAction)
+		pcall(CollectInvokeServer, collectScript)
+		createNotification(msgs.singleSuccess)
+		return "SUCCESS"
+	end
+
+	local function emptyToCompletion(shakeScript, msgs)
+		while task.wait() do
+			if killSwitch and not killSwitch() then
+				WashAnimation:Stop()
+				return "KILLED"
+			end
+
+			-- Use helper function to shake until not panning
+			if not shakeUntilNotPanning(shakeScript, killSwitch) then
+				WashAnimation:Stop()
+				return "KILLED"
+			end
+
+			local status = getPanStatus()
+			if not status or status.isEmpty then
+				break
+			end
+
 			pcall(function()
-				ShakeAnimation:Play()
+				shakeScript:FireServer()
 			end)
 		end
 		WashAnimation:Stop()
+		return (not killSwitch or killSwitch()) and "SUCCESS" or "KILLED"
 	end
+
 	local handlers = {
 		Dig = function()
+			if killSwitch and not killSwitch() then
+				return "KILLED"
+			end
+
 			local msgs = messages.dig
 			createNotification(msgs.start)
 			local scripts = validatePan()
 			if not scripts then
-				return
+				return "FAIL"
 			end
 			local collectScript = scripts.Collect
 			if not collectScript then
-				return
+				return "FAIL"
 			end
+
 			local status = getPanStatus()
 			if status and status.isFull then
 				createNotification(msgs.alreadyFull)
-				return
+				return "SUCCESS"
 			end
+
 			if mode == "Legit" then
 				createNotification(messages.general.legitWIP, 3)
+				return "FAIL"
 			elseif mode == "Instant" then
 				if executeToCompletion then
 					return fillToCompletion(collectScript, msgs)
@@ -4697,37 +4751,50 @@ local function handlePanAction(mode, actionType, executeToCompletion)
 					return executeSingle(collectScript, msgs)
 				end
 			end
+			return "FAIL"
 		end,
+
 		Wash = function()
+			if killSwitch and not killSwitch() then
+				return "KILLED"
+			end
+
 			local scripts = validatePan()
 			if not scripts then
-				return
+				return "FAIL"
 			end
 			local shakeScript = scripts.Shake
 			local panScript = scripts.Pan
 			if not shakeScript or not panScript then
-				return
+				return "FAIL"
 			end
+
 			local status = getPanStatus()
 			if status and status.isEmpty then
 				createNotification(messages.wash.PanEmpty)
-				return
+				return "SUCCESS"
 			end
-			panScript:InvokeServer()
-			emptyToCompletion(shakeScript, messages.wash)
+
+			pcall(function()
+				panScript:InvokeServer()
+			end)
+			return emptyToCompletion(shakeScript, messages.wash)
 		end
 	}
+
 	local handler = handlers[actionType]
 	if not handler then
 		createNotification(messages.general.invalidAction)
-		return
+		return "FAIL"
 	end
+
 	local ok, result = pcall(handler)
 	if not ok then
 		warn("PanAction failed: " .. tostring(result))
-		return
+		return "FAIL"
 	end
-	return result
+
+	return result or "SUCCESS"
 end
 
 local function sellInventory(config, mode)
@@ -5087,11 +5154,11 @@ function ConfirmationPrompt.show(config)
 	local function close()
 		gui:Destroy()
 	end
-	cancelBtn.MouseButton1Click:Connect(function()
+	cancelBtn.Activated:Connect(function()
 		close()
 		cancelFunction()
 	end)
-	confirmBtn.MouseButton1Click:Connect(function()
+	confirmBtn.Activated:Connect(function()
 		close()
 		purchaseFunction()
 	end)
@@ -5152,52 +5219,42 @@ local function handlePurchase(itemType, selectedOption)
 	end
 end
 
-local function validateString(value)
-	return type(value) == "string" and value:gsub("%s+", "") ~= ""
-end
+local storedValues = {}
 
 local function lockCharacterAt(targetCFrame)
 	local player = Players.LocalPlayer
 	local char = player.Character
-	if not char then
-		return
-	end
+	if not char then return end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then
-		return
-	end
-
+	if not hrp then return end
 	hrp.CFrame = targetCFrame
 	hrp.Velocity = Vector3.new(0, 0, 0)
 	hrp.RotVelocity = Vector3.new(0, 0, 0)
-
-	hrp.Anchored = true
-
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		hum:ChangeState(Enum.HumanoidStateType.Physics)
+		storedValues[player.UserId] = {
+			WalkSpeed = hum.WalkSpeed,
+			JumpPower = hum.JumpPower
+		}
+		hum.WalkSpeed = 0
+		hum.JumpPower = 0
+		hum:ChangeState(Enum.HumanoidStateType.Seated)
 	end
 end
 
 local function unlockCharacter()
 	local player = Players.LocalPlayer
 	local char = player.Character
-	if not char then
-		return
-	end
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then
-		return
-	end
-
-	hrp.Anchored = false
-
+	if not char then return end
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
+		local values = storedValues[player.UserId] or { WalkSpeed = 16, JumpPower = 50 }
+		hum.WalkSpeed = values.WalkSpeed
+		hum.JumpPower = values.JumpPower
 		hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		storedValues[player.UserId] = nil
 	end
 end
-
 
 createDropdown("SellTypeDropdown", "Sell Type", {
 	"Threshold",
@@ -5281,21 +5338,21 @@ createDropdown("FarmingTravelDropdown", "Select Travel mode", {
 end, autoFarmSection)
 
 createButton("SetSandCframeButton", "Set Sand CFrame", function()
-    if getRegion(HumanoidRootPart) == "Deposit" then
-        AutoFarmState.sandCFrame = HumanoidRootPart.CFrame
-        createNotification("✅ Sand CFrame set")
-    else
-        createNotification("❌ Must be at deposit")
-    end
+	if getRegion(HumanoidRootPart) == "Deposit" then
+		AutoFarmState.sandCFrame = HumanoidRootPart.CFrame
+		createNotification("✅ Sand CFrame set")
+	else
+		createNotification("❌ Must be at deposit")
+	end
 end, autoFarmSection)
 
 createButton("SetWaterCframeButton", "Set Water CFrame", function()
-    if getRegion(HumanoidRootPart) == "Water" then
-        AutoFarmState.waterCFrame = HumanoidRootPart.CFrame
-        createNotification("✅ Water CFrame set")
-    else
-        createNotification("❌ Must be at water")
-    end
+	if getRegion(HumanoidRootPart) == "Water" then
+		AutoFarmState.waterCFrame = HumanoidRootPart.CFrame
+		createNotification("✅ Water CFrame set")
+	else
+		createNotification("❌ Must be at water")
+	end
 end, autoFarmSection)
 
 createToggleButton("AutoFarmToggle", "Auto Farm", false, function(state)
@@ -5303,75 +5360,63 @@ createToggleButton("AutoFarmToggle", "Auto Farm", false, function(state)
 	AutoFarmState.interrupted = false
 	if state then
 		if not AutoFarmState.travelMode or AutoFarmState.travelMode == "" then
-			createNotification("❌ Please select a travel mode first!")
+			createNotification("❌ Select travel mode!")
 			AutoFarmState.active = false
 			return
 		end
 		if not AutoFarmState.actionMode or AutoFarmState.actionMode == "" then
-			createNotification("❌ Please select a farming mode first!")
+			createNotification("❌ Select farming mode!")
 			AutoFarmState.active = false
 			return
 		end
 		if not (AutoFarmState.sandCFrame and AutoFarmState.waterCFrame) then
-			createNotification("❌ Please set both Sand and Water CFrames first!")
+			createNotification("❌ Set CFrames!")
 			AutoFarmState.active = false
 			return
 		end
-		createNotification("🚀 Auto Farm Started!")
+		createNotification("🚀 Starting!")
 		task.spawn(function()
 			while AutoFarmState.active do
 				if not TaskManager:requestTask("AutoFarm", 1) then
-					task.wait(2)
+					task.wait(0.1)
 					continue
 				end
-				if not TaskManager:waitForTurn("AutoFarm", 10) then
-					task.wait(1)
+				if not TaskManager:waitForTurn("AutoFarm", 5) then
 					continue
 				end
 				if not TaskManager:startTask("AutoFarm") then
-					task.wait(2)
+					task.wait(0.1)
 					continue
 				end
-				local function validateCharacter()
-					return Players.LocalPlayer and Players.LocalPlayer.Character and
-						Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-				end
+
 				local function moveToLocation(targetCFrame, locationName)
-					if AutoFarmState.locked then
-						unlockCharacter()
-						AutoFarmState.locked = false
-					end
-					createNotification("🚶 Moving to " .. locationName .. "...", 2)
-					local completed = false
-					local success = false
+					local completed, success = false, false
 					local config = {
-						Offset = Vector3.new(0, 5, 0),
-						Speed = 20,
-						StopDistance = 3,
-						AgentRadius = 2,
+						Offset = Vector3.new(0, 3, 0),
+						Speed = 35,
+						StopDistance = 2,
+						AgentRadius = 1.5,
 						AgentCanJump = true,
-						UseSmartLanding = true,
+						UseSmartLanding = false,
 						OnComplete = function(moveSuccess)
 							success = moveSuccess or false
 							completed = true
 						end
 					}
-					local targetObj = {
-						Position = targetCFrame.Position,
-						CFrame = targetCFrame
-					}
+					local targetObj = { Position = targetCFrame.Position, CFrame = targetCFrame }
+
 					if AutoFarmState.travelMode == "Tween" then
 						tweenToTarget(targetObj, {
-							CruiseHeight = 6,
+							CruiseHeight = 4,
 							MinHeight = 1,
-							MaxHeight = 10,
-							LongDistanceThreshold = 150,
-							DirectFlightThreshold = 50,
-							AdaptiveHeight = true,
+							MaxHeight = 6,
+							LongDistanceThreshold = 100,
+							DirectFlightThreshold = 30,
+							AdaptiveHeight = false,
 							UseDirectFlight = true,
 							HoverDuration = 0,
-							LandingDuration = 1.2,
-							StopDistance = 10,
+							LandingDuration = 0.3,
+							StopDistance = 5,
 							OnComplete = function(moveSuccess)
 								success = moveSuccess or false
 								completed = true
@@ -5390,93 +5435,83 @@ createToggleButton("AutoFarmToggle", "Auto Farm", false, function(state)
 					else
 						return false
 					end
-					local timeout = 45
+
+					local timeout = 15
 					local elapsed = 0
 					while not completed and elapsed < timeout and AutoFarmState.active do
-						task.wait(0.5)
-						elapsed = elapsed + 0.5
+						task.wait(0.050)
+						elapsed = elapsed + 0.050
 					end
+
 					if success then
-						createNotification("✅ Reached " .. locationName, 2)
-						task.wait(0.1)
 						lockCharacterAt(targetCFrame)
 						AutoFarmState.locked = true
-					else
-						createNotification("❌ Failed to reach " .. locationName, 3)
 					end
 					return success
 				end
+
 				local function doAction(actionType, expectedRegion)
 					local success, result = pcall(function()
-						createNotification("🔧 Equipping pan...", 2)
 						local pan = equipPan()
-						if not pan then
-							createNotification("❌ Failed to equip pan", 3)
-							return false
-						end
-						task.wait(0.5)
+						if not pan then return false end
+
 						local currentRegion = getRegion(HumanoidRootPart)
-						if currentRegion ~= expectedRegion then
-							createNotification("❌ Wrong location for " .. actionType, 3)
-							return false
-						end
-						createNotification("⛏️ " .. (actionType == "Dig" and "Digging sand..." or "Washing pan..."), 2)
-						local actionResult = handlePanAction(AutoFarmState.actionMode, actionType, true)
-						local actionSuccess = actionResult ~= "MAX_RETRY_FAIL"
-						if actionSuccess then
-							createNotification("✅ " .. actionType .. " completed", 2)
-						else
-							createNotification("❌ " .. actionType .. " failed", 3)
-						end
-						return actionSuccess
+						if currentRegion ~= expectedRegion then return false end
+
+						local killSwitch = function() return AutoFarmState.active end
+						local actionResult = handlePanAction(AutoFarmState.actionMode, actionType, true, killSwitch)
+						return actionResult ~= "MAX_RETRY_FAIL" and actionResult ~= "KILLED"
 					end)
 					return success and result
 				end
+
 				local function performTask(taskName, nextTask, targetCFrame, actionType, expectedRegion, locationName)
 					TaskManager:setNextTask(nextTask)
 					TaskManager:setCurrentTask(taskName)
-					if moveToLocation(targetCFrame, locationName) then
-						task.wait(0.100)
+
+					local startTime = os.clock()
+
+					local reached = moveToLocation(targetCFrame, locationName)
+
+					local duration = os.clock() - startTime
+					warn(string.format("[AutoFarm] moveToLocation -> %s took %.2f seconds", locationName, duration))
+
+					if reached then
+						local actionStart = os.clock()
 						if doAction(actionType, expectedRegion) then
+							local actionDuration = os.clock() - actionStart
+							warn(string.format("[AutoFarm] doAction -> %s took %.2f seconds", actionType, actionDuration))
+
 							TaskManager:setCurrentTask("AutoFarm")
 							return true
 						end
 					end
+
 					return false
 				end
+
 				local function checkAndDoSell()
-					if not SellSettings.autoSell then
-						return false
-					end
+					if not SellSettings.autoSell then return false end
+
 					local shouldSell = false
 					local type = SellSettings.type or "Threshold"
 					if type == "Threshold" then
-						local threshold = tonumber(SellThreshold) or 50
-						local invCount = getInventoryCount()
-						shouldSell = invCount >= threshold
+						shouldSell = getInventoryCount() >= (tonumber(SellThreshold) or 50)
 					elseif type == "Time" then
-						local delay = tonumber(SellDelay) or 300
-						shouldSell = SellSettings._scheduledSell or (os.clock() - (SellSettings._lastSell or 0) >= delay)
+						shouldSell = SellSettings._scheduledSell or
+							(os.clock() - (SellSettings._lastSell or 0) >= (tonumber(SellDelay) or 300))
 					end
+
 					if shouldSell then
-						if AutoFarmState.locked then
-							unlockCharacter()
-							AutoFarmState.locked = false
-						end
-						createNotification("💰 Auto Sell executing...")
 						local sellSuccess = sellInventory({}, SellSettings.mode or "Teleport")
 						if sellSuccess then
 							SellSettings._lastSell = os.clock()
 							SellSettings._scheduledSell = false
-							createNotification("✅ Auto Sell completed")
 							if Players.LocalPlayer and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-								local hrp = Players.LocalPlayer.Character.HumanoidRootPart
-								lockCharacterAt(hrp.CFrame)
+								lockCharacterAt(Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
 								AutoFarmState.locked = true
 							end
 							return true
-						else
-							createNotification("❌ Auto Sell failed")
 						end
 					end
 					return false
@@ -5489,87 +5524,66 @@ createToggleButton("AutoFarmToggle", "Auto Farm", false, function(state)
 							AutoFarmState.locked = false
 						end
 						while AutoFarmState.interrupted and AutoFarmState.active do
-							task.wait(0.1)
+							task.wait(0.050)
 						end
 						continue
 					end
+
 					local success, errorMsg = pcall(function()
-						if not validateCharacter() then
-							if AutoFarmState.locked then
-								unlockCharacter()
-								AutoFarmState.locked = false
-							end
-							createNotification("❌ Character not found, stopping farm", 5)
+						if not (Players.LocalPlayer and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) then
 							AutoFarmState.active = false
 							return
 						end
+
 						PanStatus = getPanStatus()
 						if not PanStatus then
-							createNotification("❌ Could not get pan status", 3)
-							task.wait(2)
+							task.wait(0.050)
 							return
 						end
+
 						if PanStatus.isFull then
-							createNotification("Pan is full, going to wash", 2)
 							if performTask("MovingToWater", "WashPan", AutoFarmState.waterCFrame, "Wash", "Water", "water") then
-								if checkAndDoSell() then
-									task.wait(2)
-								end
+								checkAndDoSell()
 							else
-								if AutoFarmState.locked then
-									unlockCharacter()
-									AutoFarmState.locked = false
-								end
-								createNotification("❌ Water task failed, stopping farm", 5)
 								AutoFarmState.active = false
 							end
 						elseif PanStatus.isEmpty or not PanStatus.isFull then
-							createNotification("Pan needs filling, going to dig", 2)
 							if not performTask("MovingToSand", "DigSand", AutoFarmState.sandCFrame, "Dig", "Deposit", "sand deposit") then
-								if AutoFarmState.locked then
-									unlockCharacter()
-									AutoFarmState.locked = false
-								end
-								createNotification("❌ Sand task failed, stopping farm", 5)
 								AutoFarmState.active = false
 							end
 						end
 					end)
+
 					if not success then
 						if AutoFarmState.locked then
 							unlockCharacter()
 							AutoFarmState.locked = false
 						end
-						createNotification("⚠️ Auto Farm error, retrying...", 3)
-						warn("[AutoFarm] Error in main loop: ", errorMsg)
-						task.wait(3)
+						task.wait(0.050)
 					end
+
 					if AutoFarmState.active then
-						task.wait(0.1)
+						task.wait(0.01)
 					end
 				end
-				if AutoFarmState.locked then
-					unlockCharacter()
-					AutoFarmState.locked = false
-				end
+
 				TaskManager:finishTask("AutoFarm")
-				task.wait(0.5)
 			end
 			if AutoFarmState.locked then
 				unlockCharacter()
 				AutoFarmState.locked = false
 			end
-			createNotification("🛑 Auto Farm Stopped")
+			unlockCharacter()
+			createNotification("🛑 Stopped")
 		end)
 	else
-		createNotification("🛑 Stopping Auto Farm...")
-		if AutoFarmState.locked then
-			unlockCharacter()
-			AutoFarmState.locked = false
-		end
 		TaskManager:clearSubTasks()
 		if TaskManager:getMainTask() == "AutoFarm" then
 			TaskManager:finishTask("AutoFarm")
+		end
+		if AutoFarmState.locked then
+			unlockCharacter()
+			AutoFarmState.locked = false
 		end
 	end
 end, autoFarmSection)
@@ -5579,7 +5593,9 @@ createButton("UnlockCharacterAutoFarmButton", "Unstuck Character", function()
 end, autoFarmSection)
 
 createButton("CalibrateButton", "Calibrate Teleport", function(btn)
-	if btn.Text == "Testing..." then return end
+	if btn.Text == "Testing..." then
+		return
+	end
 	btn.Text = "Testing..."
 	btn.TextColor3 = Color3.fromRGB(255, 255, 100)
 	task.spawn(function()
@@ -5604,10 +5620,7 @@ createButton("CalibrateButton", "Calibrate Teleport", function(btn)
 			local angle = math.random() * math.pi * 2
 			local distance = math.random(120, 300)
 			local teleportTarget = currentPos + Vector3.new(
-				math.cos(angle) * distance,
-				math.random(40, 150),
-				math.sin(angle) * distance
-			)
+				math.cos(angle) * distance, math.random(40, 150), math.sin(angle) * distance)
 
 			hrp.CFrame = CFrame.new(teleportTarget)
 			hrp.AssemblyLinearVelocity = Vector3.zero
@@ -5644,35 +5657,36 @@ createButton("CalibrateButton", "Calibrate Teleport", function(btn)
 		local rbRate = rubberBands / tests
 
 		if rbRate >= 0.9 then
-			btn.Text = "PERFECT! Safe to farm (" .. rubberBands .. "/" .. tests .. ")"
+			btn.Text = "PERFECT! (" .. rubberBands .. "/" .. tests .. ")"
 			btn.TextColor3 = Color3.fromRGB(100, 255, 100)
 		elseif rbRate >= 0.75 then
-			btn.Text = "GOOD! Recommended re-run (" .. rubberBands .. "/" .. tests .. ")"
+			btn.Text = "GOOD! (" .. rubberBands .. "/" .. tests .. ")"
 			btn.TextColor3 = Color3.fromRGB(150, 255, 100)
 		elseif rbRate >= 0.5 then
-			btn.Text = "WEAK! Highly recommended re-run (" .. rubberBands .. "/" .. tests .. ")"
+			btn.Text = "WEAK! (" .. rubberBands .. "/" .. tests .. ")"
 			btn.TextColor3 = Color3.fromRGB(255, 200, 100)
 		elseif rbRate >= 0.25 then
-			btn.Text = "POOR! Compulsory re-run (" .. rubberBands .. "/" .. tests .. ")"
+			btn.Text = "POOR! (" .. rubberBands .. "/" .. tests .. ")"
 			btn.TextColor3 = Color3.fromRGB(255, 150, 100)
 		else
 			btn.Text = "NO SYNC! Compulsory re-run (" .. rubberBands .. "/" .. tests .. ")"
 			btn.TextColor3 = Color3.fromRGB(255, 100, 100)
 		end
-
-		task.wait(10)
+		createNotification(
+			"Calibration complete. (P.S. bad scores don't make you useless at all! teleport farming still works!)", 10)
+		task.wait(5)
 		btn.Text = "Calibrate Teleport"
 		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	end)
-end, autoFarmSection, { 2, 1 })
+end, autoFarmSection, {
+	2,
+	1
+})
 
 createInfo2("AutoFarmCalibrateWarning", "Calibrate", "Please run calibrate once before using teleport for auto farm.",
 	function()
 		-- empty
-	end, autoFarmSection, {
-		2,
-		1
-	})
+	end, autoFarmSection, { 2, 1 })
 
 local teleportDropdown = createDropdown("TeleportDownload", "Select Waypoint", {}, nil, function(opt)
 	local waypoints = workspace.Map.Waypoints
@@ -5798,6 +5812,7 @@ createButton("ReforgePriceSetterButton", "Get Price", function()
 	end
 end, reforgeSection)
 
+local CraftingRemotes = ReplicatedStorage.Remotes.Crafting
 createButton("ReforgeButton", "Reforge!", function()
 	if not equipment or equipment.Parent ~= BackpackTwo then
 		createNotification("Select an Equipment from your Backpack first! Or if you're holding it, unequip it.")
@@ -5805,36 +5820,62 @@ createButton("ReforgeButton", "Reforge!", function()
 	end
 
 	local selectedGUID = equipment:GetAttribute("GUID")
-	local ReforgeRemote = game:GetService("ReplicatedStorage").Remotes.Crafting.ReforgeEquipment
+
 	local success, result = pcall(function()
-		return ReforgeRemote:InvokeServer(equipment)
+		return CraftingRemotes.ReforgeEquipment:InvokeServer(equipment)
 	end)
 
-	if success then
-		createNotification("Reforge successful!")
+	if not success then
+		createNotification("Reforge failed: " .. tostring(result))
+		return
+	end
 
+	createNotification("Reforge successful!")
+
+	local newEquipment
+	local timeout = 2
+	local startTime = os.clock()
+
+	while os.clock() - startTime < timeout do
 		for _, child in ipairs(BackpackTwo:GetChildren()) do
 			if child:GetAttribute("GUID") == selectedGUID then
-				equipment = child
+				newEquipment = child
 				break
 			end
 		end
-
-		local newCost = game:GetService("ReplicatedStorage").Remotes.Crafting.GetReforgeCost:InvokeServer(equipment)
-		priceLabel.SetSubText("Price: " .. formatPrice(newCost))
-
-		equipmentNames = {}
-		for _, child in ipairs(BackpackTwo:GetChildren()) do
-			if child:GetAttribute("ItemType") == "Equipment" then
-				table.insert(equipmentNames, child.Name)
-			end
+		if newEquipment then
+			break
 		end
-		reforgeDropdown.ClearOptions()
-		reforgeDropdown.AddChildren(equipmentNames)
-		reforgeDropdown.SetSelected(equipment.Name)
-	else
-		createNotification("Reforge failed: " .. tostring(result))
+		task.wait(0.1)
 	end
+
+	if not newEquipment then
+		createNotification(
+			"Reforge succeeded, but updated item not found in Backpack, re equip the item from the dropdown.")
+		return
+	end
+
+	equipment = newEquipment
+
+	local newCostSuccess, newCost = pcall(function()
+		return CraftingRemotes.GetReforgeCost:InvokeServer(equipment)
+	end)
+	if newCostSuccess and newCost then
+		priceLabel.SetSubText("Price: " .. formatPrice(newCost))
+	else
+		priceLabel.SetSubText("Price: ???")
+	end
+
+	equipmentNames = {}
+	for _, child in ipairs(BackpackTwo:GetChildren()) do
+		if child:GetAttribute("ItemType") == "Equipment" then
+			table.insert(equipmentNames, child.Name)
+		end
+	end
+
+	reforgeDropdown.ClearOptions()
+	reforgeDropdown.AddChildren(equipmentNames)
+	reforgeDropdown.SetSelected(equipment.Name)
 end, reforgeSection)
 
 
@@ -6025,10 +6066,33 @@ createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
 	end
 end, utilitySection)
 
-createKeyBindButton("ToggleUIBind", "Toggle UI Visibility", nil, function(key)
-	mainContainer.Visible = not mainContainer.Visible
-	createNotification("UI visibility is toggled", 5)
-end, utilitySection)
+
+if UserInputService.TouchEnabled then
+	local toggleButton = Instance.new("ImageButton")
+	toggleButton.Name = "ToggleUIButton"
+	toggleButton.Size = UDim2.new(0, 60, 0, 60)
+	toggleButton.Position = UDim2.new(0, 10, 0.5, -30)
+	toggleButton.BackgroundTransparency = 1
+	toggleButton.Image = "rbxassetid://85554515603237"
+	toggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+	toggleButton.Parent = gui
+
+	toggleButton.Activated:Connect(function()
+		if mainContainer.Visible then
+			mainContainer.Visible = false
+			toggleButton.Image = "rbxassetid://122746616080790"
+		else
+			mainContainer.Visible = true
+			toggleButton.Image = "rbxassetid://85554515603237"
+		end
+		toggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+	end)
+else
+	createKeyBindButton("ToggleUIBind", "Toggle UI Visibility", nil, function(key)
+		mainContainer.Visible = not mainContainer.Visible
+		createNotification("UI visibility is toggled", 5)
+	end, utilitySection)
+end
 
 createButton("RejoinServerButton", "Rejoin Server", function()
 	if # Players:GetPlayers() <= 1 then
