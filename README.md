@@ -10,7 +10,8 @@ The hub currently supports the following Roblox games:
 
 | Game Name   | Place ID           | Link                                                                 | Description                     |
 |------------|------------------|----------------------------------------------------------------------|---------------------------------|
-| Prospecting | 129827112113663  | [Play Prospecting](https://www.roblox.com/games/129827112113663/Prospecting) | Auto Farm & Auto Sell script |
+| Prospecting | 129827112113663  | [Play Prospecting](https://www.roblox.com/games/129827112113663) | Auto Farm & A LOT more |
+| Dig to Earth's core | 81440632616906  | [Play Dig to Earth's core](https://www.roblox.com/games/81440632616906) | Auto Farm, Auto Treasure etc |
 
 ---
 
