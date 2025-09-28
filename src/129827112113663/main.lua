@@ -436,7 +436,7 @@ local mainContainer = createElement("Frame", {
 
 -- =============== MAIN COMPONENTS ================ --
 
-local function createCollapsibleContainer(parent, width, height, minWidth, minHeight, maxWidth, maxHeight)
+local function createCollapsibleContainer(title, parent, width, height, minWidth, minHeight, maxWidth, maxHeight)
 	width = width or viewportSize.X * 0.25
 	height = height or viewportSize.Y * 0.70
 	minWidth = minWidth or math.clamp(300 * ScaleX, 250, 400)
@@ -488,7 +488,7 @@ local function createCollapsibleContainer(parent, width, height, minWidth, minHe
 		Size = UDim2.new(1, -paddingX, 1, 0),
 		Position = UDim2.new(0, paddingX, 0, 0),
 		BackgroundTransparency = 1,
-		Text = "Prospecting",
+		Text = title or "Simple Scripts",
 		Font = Enum.Font.SourceSansBold,
 		TextSize = 21,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -2281,8 +2281,7 @@ local maxWidth = SizeConfig.GuiMaxWidth
 local minHeight = SizeConfig.GuiMinHeight
 local minWidth = SizeConfig.GuiMinWidth
 
-local childrenContainer = createCollapsibleContainer(mainContainer, Width, Height, minWidth, minHeight, maxWidth,
-	maxHeight)
+local childrenContainer = createCollapsibleContainer("Prospecting", mainContainer, Width, Height, minWidth, minHeight, maxWidth, maxHeight)
 
 local autoFarmSection = createSection(childrenContainer, "Auto Farm", 1, true, false,
 	"Tween is HIGHLY recommended, walk will be fixed in future updates!")
