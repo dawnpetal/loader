@@ -910,11 +910,11 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 
 	local function calculateContentHeight()
 		local totalHeight = 10
-        for _, componentData in ipairs(gridComponents) do
-            local componentHeight = (cellHeight * componentData.rows) + (paddingY * (componentData.rows - 1))
-            local rowTop = (componentData.row - 1) * (cellHeight + paddingY)
-            totalHeight = math.max(totalHeight, rowTop + componentHeight)
-        end
+		for _, componentData in ipairs(gridComponents) do
+			local componentHeight = (cellHeight * componentData.rows) + (paddingY * (componentData.rows - 1))
+			local rowTop = (componentData.row - 1) * (cellHeight + paddingY)
+			totalHeight = math.max(totalHeight, rowTop + componentHeight)
+		end
 
 		local maxOverflow = 0
 		for _, desc in ipairs(sectionContent:GetDescendants()) do
@@ -2281,7 +2281,8 @@ local maxWidth = SizeConfig.GuiMaxWidth
 local minHeight = SizeConfig.GuiMinHeight
 local minWidth = SizeConfig.GuiMinWidth
 
-local childrenContainer = createCollapsibleContainer("Prospecting", mainContainer, Width, Height, minWidth, minHeight, maxWidth, maxHeight)
+local childrenContainer = createCollapsibleContainer("Prospecting", mainContainer, Width, Height, minWidth, minHeight,
+	maxWidth, maxHeight)
 
 local autoFarmSection = createSection(childrenContainer, "Auto Farm", 1, true, false,
 	"Tween is HIGHLY recommended, walk will be fixed in future updates!")
@@ -3597,10 +3598,18 @@ local function handleVoidSellRequest()
 	})
 
 	if sellSuccess then
+		local success
 		task.wait(3)
 		createNotification("Returning to The Void...", 5)
 		local voidportal = workspace.Map.EventStuff.VoidPortal
-		HumanoidRootPart.CFrame = CFrame.new(voidportal.WorldPivot.Position + Vector3.new(0, 5, 0))
+		teleportToTarget(voidportal.WorldPivot.Position, {
+			Mode = "Standard",
+			OnComplete = function(moveSuccess)
+				success = moveSuccess or false
+			end
+		})
+		task.wait()
+		return success
 	end
 
 	return sellSuccess
