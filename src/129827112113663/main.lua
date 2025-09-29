@@ -3559,7 +3559,7 @@ local function handleVoidSellRequest()
 	HumanoidRootPart.CFrame = CFrame.new(workspace.Map.EventStuff["The Void"].Model.ExitPortal.CFrame.Position +
 		Vector3.new(0, 3, 0))
 
-	local maxWait = tick() + 5
+	local maxWait = tick() + 7
 	repeat
 		task.wait(0.1)
 	until (LocalPlayer:GetAttribute("CurrentArea") == "Fortune River" and LocalPlayer:GetAttribute("GameplayPaused") == false) or tick() > maxWait
@@ -3597,7 +3597,7 @@ local function handleVoidSellRequest()
 	})
 
 	if sellSuccess then
-		task.wait(1)
+		task.wait(3)
 		createNotification("Returning to The Void...", 5)
 		HumanoidRootPart.CFrame = CFrame.new(workspace.Map.EventStuff.VoidPortal.Part.CFrame.Position +
 			Vector3.new(0, 3, 0))
