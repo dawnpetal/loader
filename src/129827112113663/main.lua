@@ -3599,8 +3599,8 @@ local function handleVoidSellRequest()
 	if sellSuccess then
 		task.wait(3)
 		createNotification("Returning to The Void...", 5)
-		HumanoidRootPart.CFrame = CFrame.new(workspace.Map.EventStuff.VoidPortal.Part.CFrame.Position +
-			Vector3.new(0, 3, 0))
+		local voidportal = workspace.Map.EventStuff.VoidPortal
+		HumanoidRootPart.CFrame = CFrame.new(voidportal.WorldPivot.Position + Vector3.new(0, 5, 0))
 	end
 
 	return sellSuccess
