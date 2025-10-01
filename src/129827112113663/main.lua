@@ -175,7 +175,7 @@ end
 
 print("All prerequisites validated, starting game...")
 
-local guiName = "ProspectingGUI"
+local guiName = "SimpleScriptsGUI"
 
 local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local oldGui = playerGui:FindFirstChild(guiName)
