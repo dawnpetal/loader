@@ -3,6 +3,8 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
 
+repeat task.wait() until Players.LocalPlayer:GetAttribute("DataLoaded")
+
 local a1B2c3D4E5 = function()
 	local X9y8Z7 = _G
 	local H4J8k3L = X9y8Z7.__HANDSHAKE
