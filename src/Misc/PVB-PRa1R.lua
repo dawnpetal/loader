@@ -3528,7 +3528,7 @@ end, UtilitySection)
 -- Temporary fix.
 task.spawn(function()
 	local p = game.Players.LocalPlayer
-	local inventory = getPlayerInventory(true))
+	local inventory = getPlayerInventory(true)
 	if not (inventory and inventory.ChildAdded) then return end
 
 	inventory.ChildAdded:Connect(function(item)
