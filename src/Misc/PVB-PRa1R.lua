@@ -1,9 +1,10 @@
+task.wait(10)
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
 
-repeat task.wait() until Players.LocalPlayer:GetAttribute("DataLoaded")
 
 local a1B2c3D4E5 = function()
 	local X9y8Z7 = _G
@@ -2991,8 +2992,9 @@ local function getMaxInventorySize()
 	return require(game:GetService("ReplicatedStorage").Modules.Utility.Util).GetMaxInventorySpace(_, LocalPlayer) or 250
 end
 
-local function getPlayerInventory()
-	return game:GetService("Players").LocalPlayer:WaitForChild("Backpack"):GetChildren()
+local function getPlayerInventory(raw)
+	local backpack = game:GetService("Players").LocalPlayer:WaitForChild("Backpack")
+	return raw and backpack or backpack:GetChildren()
 end
 
 local function isItemFavorite(tool)
@@ -3525,32 +3527,28 @@ end, UtilitySection)
 
 -- Temporary fix.
 task.spawn(function()
-	local inventory = getPlayerInventory()
-	if not inventory then return end
+	local p = game.Players.LocalPlayer
+	local inventory = getPlayerInventory(true))
+	if not (inventory and inventory.ChildAdded) then return end
 
 	inventory.ChildAdded:Connect(function(item)
 		task.wait(0.5)
 		local rarityFilter = SelectedBrainrotRarityFilter or {}
 		if #rarityFilter <= 1 then return end
 
-		local itemName = item.Name
-		local brainrotCheck = item:GetAttribute("Brainrot")
-		if not (itemName and brainrotCheck and brainrotCheck == itemName) then return end
+		local name, brainrot = item.Name, item:GetAttribute("Brainrot")
+		if brainrot ~= name then return end
 
-		local rarity
 		for _, child in ipairs(item:GetChildren()) do
-			if (child:GetAttribute("ItemName") or child.Name) == itemName then
-				rarity = child:GetAttribute("Rarity")
+			if (child:GetAttribute("ItemName") or child.Name) == name then
+				local rarity = child:GetAttribute("Rarity")
+				if rarity and table.find(rarityFilter, rarity) then
+					local id = item:GetAttribute("ID")
+					if id then massFavouriteItemsAndCheck({id}) end
+				end
 				break
-			end
-		end
-		if not rarity or rarity == "" then return end
-
-		if table.find(rarityFilter, rarity) then
-			local id = item:GetAttribute("ID")
-			if id then
-				massFavouriteItemsAndCheck({ id })
 			end
 		end
 	end)
 end)
+
