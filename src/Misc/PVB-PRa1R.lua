@@ -1,10 +1,7 @@
-task.wait(10)
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
-
 
 local a1B2c3D4E5 = function()
 	local X9y8Z7 = _G
@@ -182,6 +179,8 @@ end
 print("All prerequisites validated, starting game...")
 ]]
 
+-- ======================= TEMPORARY FRAMEWORK =====================
+
 local LoopFramework = {}
 LoopFramework.tasks = {}
 LoopFramework.running = false
@@ -229,7 +228,7 @@ function LoopFramework:start(tickRate)
     if self.running then return self end
     
     self.running = true
-    tickRate = tickRate or 0.1
+    tickRate = tickRate or 0.016
     
     task.spawn(function()
         while self.running do
@@ -2864,7 +2863,7 @@ local maxWidth = SizeConfig.GuiMaxWidth
 local minHeight = SizeConfig.GuiMinHeight
 local minWidth = SizeConfig.GuiMinWidth
 
-local childrenContainer = createCollapsibleContainer("Plants vs Brainrots - Prototype Build 0.1.1a", mainContainer, Width, Height, minWidth,
+local childrenContainer = createCollapsibleContainer("Plants Vs Brainrots", mainContainer, Width, Height, minWidth,
 	minHeight, maxWidth, maxHeight)
 
 local GuideSection = createSection(childrenContainer, "Guide", 1)
@@ -2882,10 +2881,20 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- Remotes / Locals
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Plots = workspace:WaitForChild("Plots")
-local BuySeedRemote = ReplicatedStorage.Remotes:WaitForChild("BuyItem")
-local BuyGearRemote = ReplicatedStorage.Remotes:WaitForChild("BuyGear")
-local ItemSellRemote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ItemSell")
+local BuySeedRemote = Remotes:WaitForChild("BuyItem")
+local BuyGearRemote = Remotes:WaitForChild("BuyGear")
+local ItemSellRemote = Remotes:WaitForChild("ItemSell")
+
+-- Modules
+local BrainrotMutations = require(game:GetService("ReplicatedStorage").Modules.Library.BrainrotMutations).Colors
+local PlantMutations = require(game:GetService("ReplicatedStorage").Modules.Library.PlantMutations).Colors
+local Rarities = require(game:GetService("ReplicatedStorage").Modules.Library.Chances)
+local PlayerData = require(ReplicatedStorage.PlayerData)
+local BrainrotRegistry = require(ReplicatedStorage.Modules.Registries.BrainrotRegistry)
+local EventTracksPrison = require(ReplicatedStorage.Modules.Library.EventTracks.Prison)
+
 
 -- ========= HELPER FUNCTIONS ==========
 local function getPlayerPlot()
@@ -2978,7 +2987,7 @@ end
 
 local function sellItems(sellType)
 	if sellType == "Brainrots" then
-		ItemSellRemote:FireServer()
+		ItemSellRemote:FireServer(nil, nil, true)
 	elseif sellType == "Plants" then
 		ItemSellRemote:FireServer(nil, true)
 	elseif sellType == "This" then
@@ -3013,7 +3022,7 @@ end
 
 local function favouriteItem(itemID)
 	pcall(function()
-		game:GetService("ReplicatedStorage").Remotes.FavoriteItem:FireServer(itemID)
+		Remotes.FavoriteItem:FireServer(itemID)
 	end)
 end
 
@@ -3042,6 +3051,38 @@ local function getKeys(tbl)
 		table.insert(keys, k)
 	end
 	return keys
+end
+
+local function getNextPrisonBrainrot()
+    local claimed = PlayerData:GetData().Data.ClaimedRewards.Prison or 0
+    local nextName = EventTracksPrison[claimed + 1]
+    if nextName then
+        local info = BrainrotRegistry[nextName]
+        return nextName, info
+    else
+        return nil
+    end
+end
+
+local function resetPrisonBrainrotProgress()
+    local data = PlayerData:GetData()
+    
+    if data and data.Data and data.Data.ClaimedRewards then
+        data.Data.ClaimedRewards.Prison = 0
+        return true
+    else
+        return false
+    end
+end
+
+local function submitPrisonBrainrot()
+    if Remotes and Remotes:FindFirstChild("Events") and Remotes.Events:FindFirstChild("Prison") then
+        Remotes.Events.Prison.Interact:FireServer("TurnIn")
+        return true
+    else
+        warn("Prison remote not found!")
+        return false
+    end
 end
 
 local function debugLogTable(tbl, indentLevel)
@@ -3110,6 +3151,7 @@ local function debugLogTable(tbl, indentLevel)
 	print(serialize(tbl, indentLevel))
 end
 
+
 -- Common Labels
 local SelectedSeeds = {}
 local SelectedGears = {}
@@ -3120,17 +3162,14 @@ local AutoEquipBestBrainrot = true
 local AutoSellPlantsEnabled = true
 local PlaceId = game.PlaceId
 local JobId = game.JobId
-local SeedsTable = makeToolTable(game:GetService("ReplicatedStorage").Assets.Seeds)
-local GearsTable = makeToolTable(game:GetService("ReplicatedStorage").Assets.Gears)
-local BrainrotMutations = require(game:GetService("ReplicatedStorage").Modules.Library.BrainrotMutations).Colors
-local PlantMutations = require(game:GetService("ReplicatedStorage").Modules.Library.PlantMutations).Colors
-local Rarities = require(game:GetService("ReplicatedStorage").Modules.Library.Chances)
 local SelectedBrainrotRarityFilter = {}
 local SelectedBrainrotModifierFilter = {}
 local SelectedBrainrotWeightFilter = {}
 local SelectedPlantsRarityFilter = {}
 local SelectedPlantsWeightFilter = {}
 local FilterCombination = nil
+local SeedsTable = makeToolTable(game:GetService("ReplicatedStorage").Assets.Seeds)
+local GearsTable = makeToolTable(game:GetService("ReplicatedStorage").Assets.Gears)
 
 
 -- ========= GUIDE SECTION ==========
@@ -3193,9 +3232,17 @@ end, GuideSection)
 
 -- ========= AUTO FARM SECTION ==========
 
+createToggleButton("AutoMovePlantsToHighestPriorityRow", "Single Farm", false, function()
+
+end, AutoFarmSection)
+
+createToggleButton("AutoMovePlantsToHighestPriorityRow", "Hybrid Farm", false, function()
+
+end, AutoFarmSection)
+
 LoopFramework:registerTask("AutoEquipBestBrainrot", 5, function()
-	if AutoEquipBestBrainrot then	
-		game:GetService("ReplicatedStorage").Remotes.EquipBestBrainrots:FireServer()
+	if AutoEquipBestBrainrot then
+		Remotes.EquipBestBrainrots:FireServer()
 	end
 end)
 createToggleButton("AutoEquipSetBrainrot", "Equip Best", true, function(state)
@@ -3424,6 +3471,32 @@ createDropdown("AutoSellCombineFilters", "Combine Filters",
 	{ "Rarity + Modifier", "Rarity + Weight", "Modifier + Weight" }, nil, function()
 	end, AutoSellSection, nil, { 2, 1 })
 
+createGhostText(AutoSellSection, {
+	Text = "Plants Sell Config",
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	Font = Enum.Font.SourceSansBold,
+	TextSize = 20,
+	TextWrapped = true,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Bottom,
+})
+
+createToggleButton("AutoSellPlantsWhenFullButton", "Sell Plants", false, function(state)
+	AutoSellInventoryEnabled = state
+	if not state then return end
+	createNotification("This feature is not available yet..", 10)
+end, AutoSellSection)
+
+createDropdown("AutoSellIgnorePlantsWeight", "Weight Threshold", { "Above", "Below" }, nil, function(selected)
+	SelectedPlantWeightFilter = SelectedPlantWeightFilter or {}
+	SelectedPlantWeightFilter.Direction = { selected }
+end, AutoSellSection, true)
+
+createTextBox("AutoSellPlantWeightTextBox", "Enter Weight", nil, function(text)
+	SelectedPlantWeightFilter = SelectedPlantWeightFilter or {}
+	SelectedPlantWeightFilter.Weight = tonumber(text) or 0
+end, AutoSellSection)
+
 -- ========= UTILITY SECTION ==========
 
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
@@ -3524,8 +3597,7 @@ end, UtilitySection)
 
 
 
-
--- Temporary fix.
+-- Temporary Fix
 task.spawn(function()
 	local p = game.Players.LocalPlayer
 	local inventory = getPlayerInventory(true)
@@ -3551,4 +3623,3 @@ task.spawn(function()
 		end
 	end)
 end)
-
