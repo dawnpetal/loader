@@ -189,78 +189,78 @@ local pendingTasks = {}
 local taskList = {}
 
 function LoopFramework:registerTask(taskName, interval, callback, priority)
-    self.tasks[taskName] = {
-        interval = interval,
-        callback = callback,
-        lastRun = 0,
-        priority = priority or 1,
-        enabled = true
-    }
-    return self
+	self.tasks[taskName] = {
+		interval = interval,
+		callback = callback,
+		lastRun = 0,
+		priority = priority or 1,
+		enabled = true
+	}
+	return self
 end
 
 function LoopFramework:unregisterTask(taskName)
-    self.tasks[taskName] = nil
-    return self
+	self.tasks[taskName] = nil
+	return self
 end
 
 function LoopFramework:setTaskEnabled(taskName, enabled)
-    local task = self.tasks[taskName]
-    if task then
-        task.enabled = enabled
-    end
-    return self
+	local task = self.tasks[taskName]
+	if task then
+		task.enabled = enabled
+	end
+	return self
 end
 
 function LoopFramework:getTask(taskName)
-    return self.tasks[taskName]
+	return self.tasks[taskName]
 end
 
 function LoopFramework:reset(taskName)
-    local task = self.tasks[taskName]
-    if task then
-        task.lastRun = 0
-    end
-    return self
+	local task = self.tasks[taskName]
+	if task then
+		task.lastRun = 0
+	end
+	return self
 end
 
 function LoopFramework:start(tickRate)
-    if self.running then return self end
-    
-    self.running = true
-    tickRate = tickRate or 0.016
-    
-    task.spawn(function()
-        while self.running do
-            local now = os.clock()
-            local count = 0
-            
-            table.clear(pendingTasks)
-            
-            for name, taskData in pairs(self.tasks) do
-                if taskData.enabled and now - taskData.lastRun >= taskData.interval then
-                    count += 1
-                    pendingTasks[count] = taskData
-                    taskData.lastRun = now
-                end
-            end
-            
-            for i = 1, count do
-                if not self.running then break end
-                pcall(pendingTasks[i].callback)
-                if i % 3 == 0 then task.wait() end
-            end
-            
-            task.wait(tickRate)
-        end
-    end)
-    
-    return self
+	if self.running then return self end
+
+	self.running = true
+	tickRate = tickRate or 0.016
+
+	task.spawn(function()
+		while self.running do
+			local now = os.clock()
+			local count = 0
+
+			table.clear(pendingTasks)
+
+			for name, taskData in pairs(self.tasks) do
+				if taskData.enabled and now - taskData.lastRun >= taskData.interval then
+					count += 1
+					pendingTasks[count] = taskData
+					taskData.lastRun = now
+				end
+			end
+
+			for i = 1, count do
+				if not self.running then break end
+				pcall(pendingTasks[i].callback)
+				if i % 3 == 0 then task.wait() end
+			end
+
+			task.wait(tickRate)
+		end
+	end)
+
+	return self
 end
 
 function LoopFramework:stop()
-    self.running = false
-    return self
+	self.running = false
+	return self
 end
 
 LoopFramework:start()
@@ -2863,14 +2863,13 @@ local maxWidth = SizeConfig.GuiMaxWidth
 local minHeight = SizeConfig.GuiMinHeight
 local minWidth = SizeConfig.GuiMinWidth
 
-local childrenContainer = createCollapsibleContainer("Plants Vs Brainrots", mainContainer, Width, Height, minWidth,
-	minHeight, maxWidth, maxHeight)
-
-local GuideSection = createSection(childrenContainer, "Guide", 1)
-local AutoFarmSection = createSection(childrenContainer, "Auto Farm", 2)
-local AutoBuySection = createSection(childrenContainer, "Auto Buy", 3)
-local AutoSellSection = createSection(childrenContainer, "Auto Sell", 4)
-local UtilitySection = createSection(childrenContainer, "Utility", 5)
+local childrenContainer = createCollapsibleContainer("Plants Vs Brainrots - Alpha 0.12.1", mainContainer, Width, Height,
+	minWidth, minHeight, maxWidth, maxHeight)
+local MiscellaneousSection = createSection(childrenContainer, "Miscellaneous")
+local AutoFarmSection = createSection(childrenContainer, "Auto Farm")
+local AutoBuySection = createSection(childrenContainer, "Auto Buy")
+local AutoSellSection = createSection(childrenContainer, "Auto Sell")
+local UtilitySection = createSection(childrenContainer, "Utility")
 
 
 -- Services
@@ -2892,8 +2891,7 @@ local BrainrotMutations = require(game:GetService("ReplicatedStorage").Modules.L
 local PlantMutations = require(game:GetService("ReplicatedStorage").Modules.Library.PlantMutations).Colors
 local Rarities = require(game:GetService("ReplicatedStorage").Modules.Library.Chances)
 local PlayerData = require(ReplicatedStorage.PlayerData)
-local BrainrotRegistry = require(ReplicatedStorage.Modules.Registries.BrainrotRegistry)
-local EventTracksPrison = require(ReplicatedStorage.Modules.Library.EventTracks.Prison)
+local GeneralData = require(game:GetService("ReplicatedStorage").Modules.Library.General)
 
 
 -- ========= HELPER FUNCTIONS ==========
@@ -2907,19 +2905,33 @@ end
 
 local function getPlotPlants()
 	local plot = getPlayerPlot()
-	if not plot then return end
-	return plot:WaitForChild("Plants")
+	local folder = plot and plot:FindFirstChild("Plants")
+	if not folder then return {} end
+
+	local valid = {}
+	for _, obj in ipairs(folder:GetChildren()) do
+		if obj:GetAttribute("ID") then
+			valid[#valid + 1] = obj
+		end
+	end
+	return valid
 end
 
-local function getPlotRows()
+
+local function getPlotColumns()
 	local plot = getPlayerPlot()
 	if not plot then return end
 	return plot.Rows
+	--[[
+	workspace.Plots["2"].Rows <- Multiple Rows / Not always 7, but at max it's 7, minimum is 0, but the tutorial makes the user unlock 1 for free
+	workspace.Plots["2"].Rows["1"].Grass <- Multiple parts,
+	]]
 end
 
 local function getCurrentBrainrots()
 	return workspace:WaitForChild("ScriptedMap"):WaitForChild("Brainrots")
 	--[[
+	These are basically the enemies
 	Each brainrot has these attributes:
 		Brainrot = Name | string
 		Boss = Boolean
@@ -2931,6 +2943,52 @@ local function getCurrentBrainrots()
 		Rariy = string
 		Speed = number
 	]] --
+end
+
+local function removeItem(brainrotID)
+	game:GetService("ReplicatedStorage").Remotes.RemoveItem:FireServer(brainrotID)
+end
+
+local function placeItem(args)
+	game:GetService("ReplicatedStorage").Remotes.PlaceItem:FireServer(args)
+	--[[
+	Example:
+    game:GetService("ReplicatedStorage").Remotes.PlaceItem:FireServer({
+        ID = "f553b402-4b7a-4118-8e05-58148abc2a6c",
+        CFrame = CFrame.new(-27, 7, 610, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+        Item = "Eggplant",
+        Floor = workspace.Plots["2"].Rows["1"].Grass["1"]
+	})
+]]
+end
+
+local function getPlayerInventory(raw)
+	local backpack = game:GetService("Players").LocalPlayer:WaitForChild("Backpack")
+	return raw and backpack or backpack:GetChildren()
+end
+
+local function getPlayerInventoryPlants()
+	--[[
+		Filters the player's backpack to return only items that qualify as plants.
+		A plant is defined as any item where:
+			GetAttribute("IsPlant") == GetAttribute("ItemName")
+
+		Attributes of interest for each plant:
+		- Colors: String — represents the mutation or variant of the plant.
+		- Damage: Number — numeric value, possibly used for interaction strength or decay.
+		- ID: String/Number — unique identifier, used in various plant-related functions.
+	]] --
+
+	local backpackItems = getPlayerInventory()
+	local plants = {}
+
+	for _, item in ipairs(backpackItems) do
+		if item:GetAttribute("IsPlant") == item:GetAttribute("ItemName") then
+			table.insert(plants, item)
+		end
+	end
+
+	return plants
 end
 
 local function getAvailableItems(itemType)
@@ -3001,11 +3059,6 @@ local function getMaxInventorySize()
 	return require(game:GetService("ReplicatedStorage").Modules.Utility.Util).GetMaxInventorySpace(_, LocalPlayer) or 250
 end
 
-local function getPlayerInventory(raw)
-	local backpack = game:GetService("Players").LocalPlayer:WaitForChild("Backpack")
-	return raw and backpack or backpack:GetChildren()
-end
-
 local function isItemFavorite(tool)
 	local inventory = LocalPlayer.PlayerGui.BackpackGui.Backpack.Inventory.ScrollingFrame.UIGridFrame
 
@@ -3036,12 +3089,6 @@ local function massFavouriteItemsAndCheck(IdArray)
 				end
 			end
 		end
-
-		for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
-			local toolID = tool:GetAttribute("ID")
-			if toolID and table.find(IdArray, toolID) then
-			end
-		end
 	end)
 end
 
@@ -3053,37 +3100,41 @@ local function getKeys(tbl)
 	return keys
 end
 
-local function getNextPrisonBrainrot()
-    local claimed = PlayerData:GetData().Data.ClaimedRewards.Prison or 0
-    local nextName = EventTracksPrison[claimed + 1]
-    if nextName then
-        local info = BrainrotRegistry[nextName]
-        return nextName, info
-    else
-        return nil
-    end
+local function clearGarden(Humanoid)
+	if not Humanoid then
+		AutoequipRunning = false
+		return false, "ERR_NO_HUMANOID"
+	end
+
+	local plot = getPlayerPlot()
+	if not plot then
+		AutoequipRunning = false
+		return false, "ERR_NO_PLOT"
+	end
+
+	local plotPlants = getPlotPlants()
+	local requiredSpace = #plotPlants + 5
+
+	local inventory = getPlayerInventory()
+	if getMaxInventorySize() - #inventory < requiredSpace then
+		createNotification("Not enough space in inventory, sell first")
+		AutoequipRunning = false
+		return false, "ERR_INVENTORY_FULL"
+	end
+
+	if #plotPlants > 0 then
+		local removeCount = 0
+		for _, plant in ipairs(plotPlants) do
+			removeItem(plant:GetAttribute("ID"))
+			removeCount += 1
+		end
+	end
+
+	repeat task.wait(1) until #getPlotPlants() == 0
+
+	return true, "SUCCESS"
 end
 
-local function resetPrisonBrainrotProgress()
-    local data = PlayerData:GetData()
-    
-    if data and data.Data and data.Data.ClaimedRewards then
-        data.Data.ClaimedRewards.Prison = 0
-        return true
-    else
-        return false
-    end
-end
-
-local function submitPrisonBrainrot()
-    if Remotes and Remotes:FindFirstChild("Events") and Remotes.Events:FindFirstChild("Prison") then
-        Remotes.Events.Prison.Interact:FireServer("TurnIn")
-        return true
-    else
-        warn("Prison remote not found!")
-        return false
-    end
-end
 
 local function debugLogTable(tbl, indentLevel)
 	indentLevel = indentLevel or 0
@@ -3151,7 +3202,6 @@ local function debugLogTable(tbl, indentLevel)
 	print(serialize(tbl, indentLevel))
 end
 
-
 -- Common Labels
 local SelectedSeeds = {}
 local SelectedGears = {}
@@ -3168,87 +3218,176 @@ local SelectedBrainrotWeightFilter = {}
 local SelectedPlantsRarityFilter = {}
 local SelectedPlantsWeightFilter = {}
 local FilterCombination = nil
+local MaxPlantsPerColumn = GeneralData.MaxPlantsPerRow or 5
+local AutoequipRunning = false
 local SeedsTable = makeToolTable(game:GetService("ReplicatedStorage").Assets.Seeds)
 local GearsTable = makeToolTable(game:GetService("ReplicatedStorage").Assets.Gears)
 
 
--- ========= GUIDE SECTION ==========
+-- ========= MISCELLANEOUS SECTION ==========
 
-createButton("GuideCreateButton", "Create Guide", function()
-	if SimpleScriptsGui:FindFirstChild("GuideContainer") then
-		SimpleScriptsGui.GuideContainer:Destroy()
+createButton("SeedsUIButton", "Seeds UI", function()
+	game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("OpenUI"):Fire(
+		game:GetService("Players").LocalPlayer.PlayerGui.Main.Seeds, true)
+end, MiscellaneousSection)
+
+createButton("GearsUIButton", "Gears UI", function()
+	game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("OpenUI"):Fire(
+		game:GetService("Players").LocalPlayer.PlayerGui.Main.Gears, true)
+end, MiscellaneousSection)
+
+createButton("ClearGardenButton", "Clear Garden", function()
+	local LocalPlayer = game:GetService("Players").LocalPlayer
+	local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+	local success, code = clearGarden(Humanoid)
+
+	if not success then
+		createNotification("Failed to clear garden, try again later. ERROR CODE: " .. code.tostring())
 	end
-
-	local GuideContainer = createElement("Frame", {
-		Name = "GuideContainer",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(0.3, -10, 0, -10),
-		Size = UDim2.new(1, 0, 0, 0),
-		BackgroundTransparency = 1,
-		ClipsDescendants = false,
-		Parent = SimpleScriptsGui
-	})
-
-	local Width = viewportSize.X * SizeConfig.Width
-	local Height = viewportSize.Y * SizeConfig.Height
-	local maxHeight = SizeConfig.GuiMaxHeight
-	local maxWidth = SizeConfig.GuiMaxWidth
-	local minHeight = SizeConfig.GuiMinHeight
-	local minWidth = SizeConfig.GuiMinWidth
-	local GuideChildrenContainer = createCollapsibleContainer("Guide", GuideContainer, Width, Height, minWidth, minHeight,
-		maxWidth, maxHeight)
-	local AutofarmSectionGuide = createSection(GuideChildrenContainer, "Autofarm Section Guide", 1, true)
-	local SellSectionGuide = createSection(GuideChildrenContainer, "Sell Section Guide", 2, true)
-
-
-	createInfo3("AutoFarmInfoComponent", "AUTO FARM USAGE GUIDE",
-		"Single (Row) Farming removes all existing plants and consolidates them into a single row, automatically prioritizing brainrots with the highest HP. The prioritization criteria can be customized, but lower-tier brainrots will be excluded by default.\n\nHybrid (Row) Farming maintains a balanced distribution of plants across rows, but temporarily switches to Single Row mode when high-priority brainrots are detected",
-		function()
-		end, AutofarmSectionGuide, { 2, 3.1 })
-
-	createInfo3("AutoFarmInfoWright", "AUTO SELL WEIGHT USAGE",
-		"Weight Threshold Guide:\n- Above: Automatically sell brainrots that exceed the specified weight. Use this to get lighter brainrots.\n- Below: Automatically sell brainrots that fall below the specified weight. Use this to get heavier brainrots.",
-		function()
-		end, SellSectionGuide, { 2, 2.1 })
-
-	createInfo3("FiltersGuideInfo", "ITEM FILTERS GUIDE",
-		"Filters let you control which items are affected by automated actions like selling or combining. They work by excluding items that match specific criteria, such as rarity, type, modifier, or weight.\n\nYou can combine multiple filters for precision—for example, excluding items that are both Rare and have a certain modifier. This ensures valuable or important items are never processed automatically.\n\nTips:\n- Double-check active filters before running automation.\n- Combine filters carefully to avoid unintentional exclusions.\n- Use clear notes for complex filter setups for easy reference.",
-		function()
-		end, SellSectionGuide, { 2, 4.7 })
-
-	createInfo3("AutoSellCombineFiltersInfo", "AUTO SELL FILTERS GUIDE",
-		"Combine Filters lets you EXCLUDE items only when they match both selected criteria. This allows for precise control over what gets sold.\n\nOptions:\n- Rarity + Modifier: Excludes items only if they match the selected rarity AND have the selected modifier.\n\n- Rarity + Weight: Excludes items only if they match the selected rarity AND have the selected weight.\n\n- Modifier + Weight: Excludes items only if they have the selected modifier AND the selected weight.\n\nUse this to prevent accidentally excluding items that only meet one criterion, giving you more control over automated selling.",
-		function()
-		end, SellSectionGuide, { 2, 4.9 })
-end, GuideSection)
-
-createButton("GuideVisibilityButton", "Guide Visibility", function()
-	local guide = SimpleScriptsGui:FindFirstChild("GuideContainer")
-	if guide then
-		guide.Visible = not guide.Visible
-	end
-end, GuideSection)
+end, MiscellaneousSection)
 
 
 -- ========= AUTO FARM SECTION ==========
 
-createToggleButton("AutoMovePlantsToHighestPriorityRow", "Single Farm", false, function()
-
-end, AutoFarmSection)
-
-createToggleButton("AutoMovePlantsToHighestPriorityRow", "Hybrid Farm", false, function()
-
-end, AutoFarmSection)
-
-LoopFramework:registerTask("AutoEquipBestBrainrot", 5, function()
-	if AutoEquipBestBrainrot then
-		Remotes.EquipBestBrainrots:FireServer()
+createButton("AutoEquipBestPlants", "Auto Equip Best Plants", function()
+	if AutoequipRunning then
+		return createNotification("Auto Equip already running — please wait.")
 	end
-end)
-createToggleButton("AutoEquipSetBrainrot", "Equip Best", true, function(state)
+	AutoequipRunning = true
+
+	task.spawn(function()
+		local LocalPlayer = game:GetService("Players").LocalPlayer
+		local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+		local success, code = clearGarden(Humanoid)
+
+		if not success then
+			AutoequipRunning = false
+			createNotification("Failed to clear garden, try again later. ERROR CODE: " .. code)
+			return
+		end
+
+		local items = getPlayerInventoryPlants()
+		local sortedItems = {}
+		for _, item in ipairs(items) do
+			local id = item:GetAttribute("ID")
+			local damage = item:GetAttribute("Damage")
+			local model = item:FindFirstChildWhichIsA("Model")
+			local cooldown = model and model:GetAttribute("Cooldown")
+
+			if id and damage and cooldown and cooldown > 0 then
+				local dps = damage / cooldown
+				table.insert(sortedItems, {
+					ID = id,
+					Name = item:GetAttribute("ItemName"),
+					Damage = damage,
+					Cooldown = cooldown,
+					DPS = dps,
+				})
+			end
+		end
+		table.sort(sortedItems, function(a, b)
+			return a.DPS > b.DPS
+		end)
+
+		local Columns = getPlotColumns()
+		if not Columns then
+			AutoequipRunning = false
+			return
+		end
+
+		local plotColumns = Columns:GetChildren()
+		local totalColumns = #plotColumns
+		if totalColumns == 0 then
+			AutoequipRunning = false
+			return
+		end
+
+		local General = require(game:GetService("ReplicatedStorage").Modules.Library.General)
+		local MaxPlantsPerColumn = General.MaxPlantsPerRow
+		local maxPlants = totalColumns * MaxPlantsPerColumn
+
+		local Plants = {}
+		for i = 1, math.min(#sortedItems, maxPlants) do
+			table.insert(Plants, sortedItems[i])
+		end
+
+		local columnData = {}
+		for i = 1, totalColumns do
+			columnData[i] = {
+				name = plotColumns[i].Name or ("Column" .. i),
+				totalDamage = 0,
+				plants = {}
+			}
+		end
+
+		for _, plant in ipairs(Plants) do
+			local bestColumn, lowestDamage = nil, math.huge
+			for i, col in ipairs(columnData) do
+				if #col.plants < MaxPlantsPerColumn and col.totalDamage < lowestDamage then
+					bestColumn = col
+					lowestDamage = col.totalDamage
+				end
+			end
+			if bestColumn then
+				table.insert(bestColumn.plants, plant)
+				bestColumn.totalDamage += plant.Damage
+			end
+		end
+
+		local columnGrass = {}
+		for i, column in ipairs(plotColumns) do
+			local grass = column:FindFirstChild("Grass")
+			columnGrass[i] = grass and grass:GetChildren() or {}
+		end
+
+		local minDmg, maxDmg = math.huge, 0
+		for columnIndex = 1, totalColumns do
+			local grassParts = columnGrass[columnIndex]
+			if not grassParts or #grassParts == 0 then continue end
+
+			for slot = 1, MaxPlantsPerColumn do
+				local plantData = columnData[columnIndex].plants[slot]
+				if not plantData then continue end
+
+				local matchedItem
+				for _, invItem in ipairs(items) do
+					if invItem:GetAttribute("ID") == plantData.ID then
+						matchedItem = invItem
+						break
+					end
+				end
+
+				if matchedItem then
+					local grassPart = grassParts[((slot - 1) % #grassParts) + 1]
+					pcall(function() Humanoid:EquipTool(matchedItem) end)
+					task.wait(0.1)
+					placeItem({
+						ID = matchedItem:GetAttribute("ID"),
+						CFrame = grassPart.CFrame,
+						Item = matchedItem:GetAttribute("ItemName"),
+						Floor = grassPart
+					})
+					task.wait(0.25)
+					pcall(function() Humanoid:UnequipTools() end)
+				end
+			end
+
+			local dmg = columnData[columnIndex].totalDamage
+			if dmg < minDmg then minDmg = dmg end
+			if dmg > maxDmg then maxDmg = dmg end
+		end
+
+		print("\nDamage spread:", maxDmg - minDmg)
+		AutoequipRunning = false
+	end)
+end, AutoFarmSection, { 1.1, 1 })
+
+createToggleButton("AutoEquipSetBrainrot", "Equip Best", false, function(state)
 	AutoEquipBestBrainrot = state
-	LoopFramework:setTaskEnabled("AutoEquipBestBrainrot", state)
-end, AutoFarmSection)
+end, AutoFarmSection, { 0.9, 1 })
 
 -- ========= AUTO BUY SECTION ==========
 createGhostText(AutoBuySection, {
@@ -3329,7 +3468,7 @@ end, AutoBuySection)
 -- BUY SELECTED GEAR
 LoopFramework:registerTask("AutoBuySelectedGearLoop", 0.5, function()
 	if AutoBuyGearEnabled then
-		for gear, price in pairs(SelectedGears) do
+		for gear, _ in pairs(SelectedGears) do
 			buyItem(gear, true)
 		end
 	end
@@ -3430,12 +3569,19 @@ LoopFramework:registerTask("AutoSellBrainrotLoop", 5, function()
 
 	if #brainrotsToSell > 0 then
 		print(string.format("[AutoSell] Selling %d brainrots...", #brainrotsToSell))
+
+		if AutoEquipBestBrainrot then
+			Remotes.EquipBestBrainrots:FireServer()
+			print(string.format("[AutoSell] Equipping best brainrots before selling...."))
+		end
+
+		task.wait(2)
+
 		sellItems("Brainrots")
 	end
 
 	print(string.format("[AutoSell] Processed %d | To Sell: %d | To Favorite: %d", processed, sellCount, favoriteCount))
 end)
-
 createToggleButton("AutoSellInventoryWhenFullButton", "Sell Brainrots", false, function(state)
 	AutoSellBrainrotEnabled = state
 	LoopFramework:setTaskEnabled("AutoSellBrainrotLoop", state)
@@ -3467,6 +3613,7 @@ createTextBox("AutoSellBrainrotWeightTextBox", "Enter Weight", nil, function(tex
 	SelectedBrainrotWeightFilter.Weight = tonumber(text) or 0
 end, AutoSellSection)
 
+--[[
 createDropdown("AutoSellCombineFilters", "Combine Filters",
 	{ "Rarity + Modifier", "Rarity + Weight", "Modifier + Weight" }, nil, function()
 	end, AutoSellSection, nil, { 2, 1 })
@@ -3496,6 +3643,7 @@ createTextBox("AutoSellPlantWeightTextBox", "Enter Weight", nil, function(text)
 	SelectedPlantWeightFilter = SelectedPlantWeightFilter or {}
 	SelectedPlantWeightFilter.Weight = tonumber(text) or 0
 end, AutoSellSection)
+]]
 
 -- ========= UTILITY SECTION ==========
 
@@ -3533,7 +3681,6 @@ createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
 		print("Anti-AFK Disabled")
 	end
 end, UtilitySection)
-
 
 if UserInputService.TouchEnabled then
 	local toggleButton = Instance.new("ImageButton")
@@ -3591,15 +3738,8 @@ createButton("ServerHopButton", "Server Hop", function()
 	createNotification("Couldn't fetch servers to hop", 5)
 end, UtilitySection)
 
-
-
-
-
-
-
 -- Temporary Fix
 task.spawn(function()
-	local p = game.Players.LocalPlayer
 	local inventory = getPlayerInventory(true)
 	if not (inventory and inventory.ChildAdded) then return end
 
@@ -3616,7 +3756,7 @@ task.spawn(function()
 				local rarity = child:GetAttribute("Rarity")
 				if rarity and table.find(rarityFilter, rarity) then
 					local id = item:GetAttribute("ID")
-					if id then massFavouriteItemsAndCheck({id}) end
+					if id then massFavouriteItemsAndCheck({ id }) end
 				end
 				break
 			end
