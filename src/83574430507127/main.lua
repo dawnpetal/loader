@@ -2871,15 +2871,168 @@ createDropdown("FlipSideDropdown", "Choose Side", { "Heads", "Tails", "Random" }
     SelectedSide = input
 end, AutoFarm)
 
-LoopFramework:registerTask("AutoFlipCoin", 0.750, function()
-    if not AutoFlipping then return end
+local whatDidIPickLast = nil
+local howManyTimesInARow = 0
+local dontClickUntil = 0
+local clicksSinceITookABreak = 0
+local whenDidIStartThis = os.clock()
+local myBrainIsDrifting = 0
+local howAwakeAmI = math.random(70, 100)
+local fingerTwitchiness = 0
+local blinkHappening = false
+local lastBlinkTime = os.clock()
+local nextBlinkIn = math.random(3, 9)
+local muscleTension = 0
+local recentClickPattern = {}
+local ohShitMoment = false
+local iJustZonedOut = 0
 
-    local side = SelectedSide
-    if side == "Random" then
-        side = (math.random(1, 2) == 1) and "Heads" or "Tails"
-    end
+local function getWeirdVibes()
+	local time = os.clock()
+	local vibe1 = math.sin(time * 2.3) * math.cos(time * 0.7)
+	local vibe2 = math.sin(time * 1.1 + 50) * 0.5
+	local vibe3 = math.cos(time * 0.4 + 100) * 0.3
+	return (vibe1 + vibe2 + vibe3) * 0.15
+end
 
-    sendRoll:InvokeServer(side)
+local function updateMyBodyStuff()
+	howAwakeAmI = math.max(30, howAwakeAmI - math.random(0.01, 0.05))
+	myBrainIsDrifting = math.min(100, myBrainIsDrifting + math.random(0.4, 1.5))
+	fingerTwitchiness = fingerTwitchiness * 0.95 + math.random(-0.1, 0.1)
+	muscleTension = math.min(60, muscleTension + math.random(0.1, 0.3))
+	
+	if os.clock() - lastBlinkTime > nextBlinkIn then
+		blinkHappening = true
+		lastBlinkTime = os.clock()
+		nextBlinkIn = math.random(2, 8)
+		task.delay(math.random(0.1, 0.2), function()
+			blinkHappening = false
+		end)
+	end
+end
+
+LoopFramework:registerTask("AutoFlipCoin", 0.350, function()
+	if not AutoFlipping then return end
+	
+	local now = os.clock()
+	updateMyBodyStuff()
+	clicksSinceITookABreak += 1
+	
+	local howLongNow = now - whenDidIStartThis
+	local gettingTired = 1 + (howLongNow / 300) * math.random(0.2, 0.5)
+	
+	if now < dontClickUntil then
+		iJustZonedOut = math.max(0, iJustZonedOut - 0.1)
+		return
+	end
+	
+	iJustZonedOut = math.min(100, iJustZonedOut + math.random(0.3, 1.2))
+	
+	local pauseChance = 0.0005 + (iJustZonedOut / 10000) + (myBrainIsDrifting / 10000)
+	
+	if math.random() < pauseChance then
+		local whatHappened = math.random()
+		local waitTime
+		
+		if whatHappened < 0.85 then
+			waitTime = math.random(20, 80) / 1000
+			muscleTension = math.max(0, muscleTension - 3)
+		else
+			waitTime = math.random(80, 165) / 1000
+			myBrainIsDrifting = math.max(0, myBrainIsDrifting - 15)
+			muscleTension = math.max(0, muscleTension - 8)
+		end
+		
+		dontClickUntil = now + waitTime
+		iJustZonedOut = 0
+		return
+	end
+	
+	if math.random() < 0.00001 then
+		ohShitMoment = true
+		dontClickUntil = now + math.random(0.5, 1.5)
+		iJustZonedOut = 0
+		myBrainIsDrifting = 0
+		task.delay(math.random(0.3, 0.8), function()
+			ohShitMoment = false
+		end)
+		return
+	end
+	
+	local whichOne = SelectedSide
+	if whichOne == "Random" then
+		if not whatDidIPickLast then
+			whichOne = (math.random(1, 2) == 1) and "Heads" or "Tails"
+			howManyTimesInARow = 1
+		else
+			local tiredMisclick = (howLongNow > 200) and math.random(-0.1, 0.1) or 0
+			local notPayingAttention = (myBrainIsDrifting > 40) and math.random(-0.08, 0.08) or 0
+			local sameThingAgain = math.min(howManyTimesInARow, 6)
+			
+			local maybeSwitch = 0.2 + (sameThingAgain * 0.13)
+			local actuallySwitch = math.clamp(
+				maybeSwitch + tiredMisclick + notPayingAttention + math.random(-0.1, 0.15),
+				0.15,
+				0.85
+			)
+			
+			if math.random() < actuallySwitch then
+				whichOne = (whatDidIPickLast == "Heads") and "Tails" or "Heads"
+				howManyTimesInARow = 1
+				
+				if math.random() < 0.1 then
+					fingerTwitchiness += math.random(0.1, 0.3)
+				end
+			else
+				whichOne = whatDidIPickLast
+				howManyTimesInARow += 1
+			end
+		end
+	end
+	
+	sendRoll:InvokeServer(whichOne)
+	whatDidIPickLast = whichOne
+	
+	table.insert(recentClickPattern, now)
+	if #recentClickPattern > 8 then
+		table.remove(recentClickPattern, 1)
+	end
+	
+	local timeOfDay = (now % 86400) / 3600
+	local sleepyTime = 1 + math.sin((timeOfDay - 15) * math.pi / 12) * 0.1
+	
+	local normalSpeed = 0.250 + math.sin(now * math.random(1.5, 3.5)) * 0.015
+	normalSpeed = normalSpeed * gettingTired * sleepyTime
+	
+	local shakiness = 0.08 + (myBrainIsDrifting / 400) + ((100 - howAwakeAmI) / 500)
+	shakiness = shakiness + (muscleTension / 400)
+	
+	local weirdVibes = getWeirdVibes()
+	local handSlip = (math.random() - 0.5) * shakiness + fingerTwitchiness * 0.3 + weirdVibes
+	
+	if blinkHappening then
+		handSlip += math.random(0.02, 0.08)
+	end
+	
+	if clicksSinceITookABreak > 40 and math.random() < 0.2 then
+		handSlip += math.random(0.05, 0.15)
+	end
+	
+	if howManyTimesInARow > 5 and math.random() < 0.15 then
+		handSlip += math.random(0.03, 0.12)
+	end
+	
+	if ohShitMoment then
+		handSlip += math.random(-0.2, 0.3)
+	end
+	
+	if math.random() < 0.02 then
+		handSlip += math.random(-0.15, 0.25)
+	end
+	
+	local finalWait = math.clamp(normalSpeed + handSlip, 0.250, 0.300)
+	
+	task.wait(finalWait)
 end)
 createToggleButton("AutoFlipToggle", "Auto Flip", false, function(state)
     AutoFlipping = state
