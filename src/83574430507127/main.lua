@@ -2841,6 +2841,7 @@ local utilitySection = createSection(childrenContainer, "Utility")
 -- Locals
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local sendRoll = ReplicatedStorage:WaitForChild("sendRoll")
 local ShopItems = ReplicatedStorage:WaitForChild("ShopItems")
