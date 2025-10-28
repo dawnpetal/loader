@@ -2871,7 +2871,7 @@ createDropdown("FlipSideDropdown", "Choose Side", { "Heads", "Tails", "Random" }
     SelectedSide = input
 end, AutoFarm)
 
-LoopFramework:registerTask("AutoFlipCoin", 0.05, function()
+LoopFramework:registerTask("AutoFlipCoin", 0.750, function()
     if not AutoFlipping then return end
 
     local side = SelectedSide
