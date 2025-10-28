@@ -167,7 +167,7 @@ for name in pairs(Expected) do
 	end
 end
 
-local LoopFramework = Framework.Libs.LoopFramework:start(0.1)
+local LoopFramework = Framework.Libs.LoopFramework:start(0.01)
 
 if a1B2c3D4E5() then
 	_G.Framework = nil
@@ -2870,7 +2870,7 @@ createDropdown("FlipSideDropdown", "Choose Side", { "Heads", "Tails", "Random" }
     SelectedSide = input
 end, AutoFarm)
 
-LoopFramework:registerTask("AutoFlipCoin", 0.1, function()
+LoopFramework:registerTask("AutoFlipCoin", 0.05, function()
     if not AutoFlipping then return end
 
     local side = SelectedSide
