@@ -1,0 +1,14 @@
+{
+  "name": "Just Flip Bro",
+  "version": "0.1.0-alpha",
+  "description": "",
+  "author": "DawnPetal",
+  "last_updated": "2025-10-29",
+  "features": [
+    "Auto Flip",
+    "Auto Buy"
+  ],
+    "prerequisites": {
+    "LoopFramework": "utils/LoopFramework.lua"
+  }
+}
