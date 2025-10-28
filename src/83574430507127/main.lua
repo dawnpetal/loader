@@ -167,7 +167,7 @@ for name in pairs(Expected) do
 	end
 end
 
-local LoopFramework = Framework.Libs.LoopFramework
+local LoopFramework = Framework.Libs.LoopFramework:start(0.1)
 
 if a1B2c3D4E5() then
 	_G.Framework = nil
@@ -2844,42 +2844,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local sendRoll = ReplicatedStorage:WaitForChild("sendRoll")
 local ShopItems = ReplicatedStorage:WaitForChild("ShopItems")
-local EquipItem = ReplicatedStorage:WaitForChild("EquipItem")
-local Tables = ShopItems:WaitForChild("Tables")
-local Coins = ShopItems:WaitForChild("Coins")
 
 local Player = Players.LocalPlayer
+local LocalPlayer = Player
 local PlaceId = game.PlaceId
 local JobId = game.JobId
 
 local SelectedSide = "Random"
 local AutoFlipping = false
-local AutoBuyingCoin = false
-local AutoBuyingTable = false
-
-
-local function getItemCost(folder, itemName)
-    local item = folder:FindFirstChild(itemName)
-    if not item then return -1 end
-    local info = item:FindFirstChild("Info")
-    if not info or not info:FindFirstChild("Cost") then return -1 end
-    return info.Cost.Value
-end
-
-local function getBestAffordableItem(folder, currentCost, availablePoints)
-    local bestName, bestCost = nil, currentCost
-    for _, item in pairs(folder:GetChildren()) do
-        local info = item:FindFirstChild("Info")
-        if info and info:FindFirstChild("Cost") then
-            local cost = info.Cost.Value
-            if cost ~= -1 and cost > bestCost and cost <= availablePoints then
-                bestCost = cost
-                bestName = item.Name
-            end
-        end
-    end
-    return bestName, bestCost
-end
 
 -- ========= AUTO FARM SECTION ==========
 
@@ -2896,10 +2868,9 @@ createGhostText(AutoFarm, {
 
 createDropdown("FlipSideDropdown", "Choose Side", { "Heads", "Tails", "Random" }, "Random", function(input)
     SelectedSide = input
-    print(SelectedSide, input)
 end, AutoFarm)
 
-LoopFramework:registerTask("AutoFlipCoin", 0.05, function()
+LoopFramework:registerTask("AutoFlipCoin", 0.1, function()
     if not AutoFlipping then return end
 
     local side = SelectedSide
@@ -2914,6 +2885,7 @@ createToggleButton("AutoFlipToggle", "Auto Flip", false, function(state)
     LoopFramework:setTaskEnabled("AutoFlipCoin", AutoFlipping)
 end, AutoFarm)
 
+--[[
 -- ========= AUTOBUY SECTION ==========
 
 LoopFramework:registerTask("AutoBuyBestTable", 1, function()
@@ -2928,7 +2900,7 @@ createToggleButton("AutoBuyBestTable", "Auto Buy Best Table", false, function(st
     AutoBuyingTable = state
     LoopFramework:setTaskEnabled("AutoBuyBestTable", AutoBuyingTable)
 end, AutoBuy, {2, 1})
-
+]]
 
 -- ========= UTILITY SECTION ==========
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
