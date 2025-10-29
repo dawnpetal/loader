@@ -2909,7 +2909,7 @@ LoopFramework:registerTask("AutoFlipCoin", 0.700, function()
         task.wait(extraDelay)
     end
 end)
-createToggleButton("AutoFlipToggle", "Auto Flip", false, function(state)
+createToggleButton("AutoFlipToggle", "Auto Flip", true, function(state)
     AutoFlipping = state
     LoopFramework:setTaskEnabled("AutoFlipCoin", AutoFlipping)
 end, AutoFarm)
@@ -2934,10 +2934,8 @@ end, AutoBuy, {2, 1})
 -- ========= UTILITY SECTION ==========
 LoopFramework:registerTask("KeepAlive", 300, function()
     if not KeepAlive then return end
-    getgenv().AntiAFKConnection = LocalPlayer.Idled:Connect(function()
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-    end)
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
 end)
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
     KeepAlive = state
