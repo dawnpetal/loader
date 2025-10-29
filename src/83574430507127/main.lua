@@ -2850,7 +2850,7 @@ local JobId = game.JobId
 local KeepAlive = true
 
 local SelectedSide = "Random"
-local AutoFlipping = false
+local AutoFlipping = true
 
 -- ========= AUTO FARM SECTION ==========
 
