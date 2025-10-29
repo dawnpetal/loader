@@ -2473,7 +2473,7 @@ local function validateSellValue(str)
 		end
 	else
 		-- Treat as sell value
-		if n >= 10 and n <= 999 then
+		if n >= 10 and n <= 2000 then
 			return n, "value"
 		else
 			return nil, nil
@@ -4028,7 +4028,7 @@ createTextBox("SellTextBox", "Enter Sell Int or Time", nil, function(value)
 		end
 	else
 		createNotification(
-			"❌ Invalid input. Use either Threshold from 10 to 900 items OR use Time from 30 seconds to 1 day.", 10)
+			"❌ Invalid input. Use either Threshold from 10 to 2000 items OR use Time from 30 seconds to 1 day.", 10)
 	end
 end, sellSection)
 
