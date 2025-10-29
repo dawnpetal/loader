@@ -2871,7 +2871,7 @@ end, AutoFarm)
 
 local dontClickUntil = 0
 
-LoopFramework:registerTask("AutoFlipCoin", 0.575, function()
+LoopFramework:registerTask("AutoFlipCoin", 0.670, function()
     if not AutoFlipping then return end
 
     local now = os.clock()
