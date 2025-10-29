@@ -150,7 +150,7 @@ if not a1B2c3D4E5() then               -- 太阳落ちるとき, 月が輝き �
 end   -- パンが空から降ってきて, 鳥들이 춤추며 노래한다
 
 local Expected = {
-	InputSimulator = true
+	TaskManager = true
 }
 
 local Framework = _G.Framework
@@ -184,30 +184,201 @@ end
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
 
-local cframes = {
-	Sand = nil,
-	Water = nil
-}
+-- ======================== SIMPLE SCRIPTS ========================
+
+local GuiName = "SimpleScripts"
+
+local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+local OldGui = PlayerGui:FindFirstChild(GuiName)
+
+if OldGui then OldGui:Destroy() end
+
+local SimpleScriptsGui = Instance.new("ScreenGui")
+SimpleScriptsGui.Name = GuiName
+SimpleScriptsGui.ResetOnSpawn = false
+SimpleScriptsGui.Parent = PlayerGui
+
+-- Some Important Variables
 local openDropdowns = {}
-
-local gui = Instance.new("ScreenGui")
-gui.Name = guiName
-gui.ResetOnSpawn = false
-gui.Parent = playerGui
-
+local sharedTooltip
 local viewportSize = workspace.CurrentCamera.ViewportSize
-
 local DESIGN_HEIGHT = 981
 local DESIGN_WIDTH = 1664
 local ScaleX = viewportSize.X / DESIGN_WIDTH
 local ScaleY = viewportSize.Y / DESIGN_HEIGHT
+local DefaultUIProps = {
+	CollapsibleContainer = {
+		container = {
+			backgroundColor = Color3.fromRGB(15, 15, 15),
+			backgroundTransparency = 0.15,
+			borderColor = Color3.fromRGB(255, 255, 255),
+			borderThickness = 2,
+			strokeThickness = nil,
+			strokeTransparency = 0,
+			cornerRadius = nil,
+			paddingX = nil,
+			paddingY = nil,
+			zIndex = 7
+		},
+		header = {
+			height = nil,
+			backgroundColor = nil,
+			backgroundTransparency = 1,
+			dragEnabled = true,
+			toggleButtonSize = 0.75,
+			zIndex = 11
+		},
+		content = {
+			backgroundColor = Color3.fromRGB(0, 0, 0),
+			backgroundTransparency = 1,
+			listPadding = nil,
+			paddingTop = nil,
+			paddingBottom = nil,
+			paddingLeft = 0,
+			paddingRight = 0,
+			horizontalAlignment = Enum.HorizontalAlignment.Center,
+			verticalAlignment = Enum.VerticalAlignment.Top,
+			zIndex = 8
+		},
+		text = {
+			color = Color3.fromRGB(255, 255, 255),
+			size = 21,
+			font = Enum.Font.SourceSansBold,
+			transparency = 0,
+			alignment = Enum.TextXAlignment.Left,
+			yAlignment = Enum.TextYAlignment.Center
+		},
+		arrow = {
+			size = nil,
+			image = "rbxassetid://3926305904",
+			imageRectOffset = Vector2.new(564, 284),
+			imageRectSize = Vector2.new(36, 36),
+			color = Color3.fromRGB(255, 255, 255),
+			transparency = 0,
+			rotationCollapsed = -90,
+			rotationExpanded = 0
+		},
+		scroll = {
+			barThickness = nil,
+			barColor = Color3.fromRGB(255, 255, 255),
+			barTransparency = 0,
+			barVisibleTransparency = 0.3,
+			barHiddenTransparency = 1
+		},
+		animation = {
+			duration = 0.5,
+			style = Enum.EasingStyle.Quart,
+			direction = Enum.EasingDirection.Out,
+			arrowDuration = 0.4
+		}
+	},
+	Section = {
+		container = {
+			backgroundColor = Color3.fromRGB(0, 0, 0),
+			backgroundTransparency = 1,
+			clipDescendants = true,
+			zIndex = 1
+		},
+		header = {
+			height = 30,
+			backgroundColor = Color3.fromRGB(0, 0, 0),
+			backgroundTransparency = 1,
+			separatorColor = Color3.fromRGB(255, 255, 255),
+			separatorHeight = 2,
+			separatorTransparency = 0,
+			separatorOffsetX = 10,
+			separatorPositionY = 25,
+			zIndex = 10,
+			buttonZIndex = 11
+		},
+		title = {
+			color = Color3.fromRGB(255, 255, 255),
+			size = 20,
+			font = Enum.Font.SourceSansBold,
+			transparency = 0,
+			alignment = Enum.TextXAlignment.Left,
+			yAlignment = Enum.TextYAlignment.Center,
+			offsetX = 0,
+			offsetY = 0,
+			sizeOffsetX = -30,
+			height = 25,
+			zIndex = 12
+		},
+		arrow = {
+			size = 20,
+			image = "rbxassetid://3926305904",
+			imageRectOffset = Vector2.new(564, 284),
+			imageRectSize = Vector2.new(36, 36),
+			color = Color3.fromRGB(255, 255, 255),
+			colorHover = Color3.fromRGB(0, 200, 255),
+			transparency = 0,
+			rotationCollapsed = -90,
+			rotationExpanded = 0,
+			positionOffsetX = -35,
+			positionOffsetY = 2.5,
+			zIndex = 12
+		},
+		info = {
+			color = Color3.fromRGB(30, 144, 255),
+			size = nil,
+			text = "?",
+			fontSize = 13,
+			font = Enum.Font.SourceSansBold,
+			offsetX = 10,
+			offsetY = 9,
+			cornerRadius = 1,
+			strokeThickness = 1,
+			zIndex = 13
+		},
+		content = {
+			backgroundColor = Color3.fromRGB(0, 0, 0),
+			backgroundTransparency = 1,
+			positionY = 35,
+			paddingLeft = nil,
+			paddingRight = nil,
+			paddingTop = 0,
+			paddingBottom = 0,
+			initialHeight = 100,
+			zIndex = 1
+		},
+		grid = {
+			cellWidth = nil,
+			cellHeight = nil,
+			paddingX = nil,
+			paddingY = nil,
+			topOffset = 5,
+			maxColumns = 2,
+			maxRows = 6,
+			minColumns = 0.5,
+			minRows = 0.5
+		},
+		animation = {
+			duration = 0.4,
+			style = Enum.EasingStyle.Sine,
+			direction = Enum.EasingDirection.Out,
+			arrowStyle = Enum.EasingStyle.Back,
+			arrowDirection = Enum.EasingDirection.Out,
+			hoverDuration = 0.2,
+			scrollDelay = 0.3,
+			scrollOffset = 10,
+			debounceTime = 0.1
+		},
+		behavior = {
+			defaultExpanded = true,
+			autoScroll = true,
+			clipWhenCollapsed = false
+		}
+	}
+}
+
+-- ======================== HELPER FUNCTIONS ========================
 
 local function getTextSize(size)
-	local factor = 0.7
+	local factor = 0.5
 	local adjustedScale = 1 + (ScaleY - 1) * factor
 	return math.floor(size * adjustedScale)
 end
-
 
 local function createElement(className, props)
 	local element = Instance.new(className)
@@ -225,8 +396,6 @@ local function createTween(object, duration, props, style, direction)
 	return TweenService:Create(object,
 		TweenInfo.new(duration, style or Enum.EasingStyle.Quad, direction or Enum.EasingDirection.Out), props)
 end
-
-local sharedTooltip
 
 local function truncateWithTooltip(label, fullText, maxWidth, truncatedText)
 	local function performTruncation()
@@ -347,11 +516,12 @@ local function truncateWithTooltip(label, fullText, maxWidth, truncatedText)
 end
 
 local notifFrame = createElement("Frame", {
+	Name = "NotificationFrame",
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 10),
 	Size = UDim2.new(0, 300, 1, 0),
 	BackgroundTransparency = 1,
-	Parent = gui
+	Parent = SimpleScriptsGui
 })
 
 createElement("UIListLayout", {
@@ -376,7 +546,7 @@ local function createNotification(msg, duration)
 		Parent = notifFrame
 	})
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = 1,
 		Color = Color3.fromRGB(220, 200, 200),
 		Parent = notif
 	})
@@ -422,6 +592,28 @@ local function createNotification(msg, duration)
 	end)
 end
 
+local function deepMerge(default, override)
+	if not override then
+		return default
+	end
+	local result = {}
+	for k, v in pairs(default) do
+		if type(v) == "table" and type(override[k]) == "table" then
+			result[k] = deepMerge(v, override[k])
+		else
+			result[k] = override[k] ~= nil and override[k] or v
+		end
+	end
+	for k, v in pairs(override) do
+		if result[k] == nil then
+			result[k] = v
+		end
+	end
+	return result
+end
+
+-- =============== MAIN COMPONENTS ================ --
+
 local mainContainer = createElement("Frame", {
 	Name = "MainContainer",
 	AnchorPoint = Vector2.new(1, 0),
@@ -429,12 +621,10 @@ local mainContainer = createElement("Frame", {
 	Size = UDim2.new(1, 0, 0, 0),
 	BackgroundTransparency = 1,
 	ClipsDescendants = false,
-	Parent = gui
+	Parent = SimpleScriptsGui
 })
 
--- =============== MAIN COMPONENTS ================ --
-
-local function createCollapsibleContainer(title, parent, width, height, minWidth, minHeight, maxWidth, maxHeight)
+local function createCollapsibleContainer(title, parent, width, height, minWidth, minHeight, maxWidth, maxHeight, uiProps)
 	width = width or viewportSize.X * 0.25
 	height = height or viewportSize.Y * 0.70
 	minWidth = minWidth or math.clamp(300 * ScaleX, 250, 400)
@@ -442,96 +632,160 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 	maxWidth = maxWidth or math.clamp(425 * ScaleX, 350, 550)
 	maxHeight = maxHeight or math.clamp(800 * ScaleY, 650, 1000)
 
-	local headerHeight = math.clamp(40 * ScaleY, 32, 50)
-	local paddingX = math.clamp(10 * ScaleX, 8, 15)
-	local paddingY = math.clamp(15 * ScaleY, 10, 20)
-	local strokeThickness = math.clamp(2 * math.min(ScaleX, ScaleY), 1, 3)
-	local cornerRadius = math.clamp(8 * math.min(ScaleX, ScaleY), 6, 12)
+	local props = deepMerge(DefaultUIProps.CollapsibleContainer, uiProps or {})
+
+	local container = props.container
+	local header = props.header
+	local content = props.content
+	local text = props.text
+	local arrow = props.arrow
+	local scroll = props.scroll
+	local animation = props.animation
+
+	local headerHeight = header.height or math.clamp(40 * ScaleY, 32, 50)
+	local paddingX = container.paddingX or math.clamp(10 * ScaleX, 8, 15)
+	local paddingY = container.paddingY or math.clamp(15 * ScaleY, 10, 20)
+	local strokeThickness = container.strokeThickness or
+		math.clamp(container.borderThickness * math.min(ScaleX, ScaleY), 1, 3)
+	local cornerRadius = container.cornerRadius or math.clamp(8 * math.min(ScaleX, ScaleY), 6, 12)
+	local scrollBarThickness = scroll.barThickness or math.clamp(3 * math.min(ScaleX, ScaleY), 2, 5)
+	local arrowSize = arrow.size or math.clamp(20 * math.min(ScaleX, ScaleY), 16, 26)
+
+	local bgColor = container.backgroundColor
+	local bgTransparency = container.backgroundTransparency
+	local borderColor = container.borderColor
+	local textColor = text.color
+	local textSize = text.size
+	local textFont = text.font
+	local textAlignment = text.alignment
+
+	local headerBgColor = header.backgroundColor or bgColor
+	local headerBgTransparency = header.backgroundTransparency
+	local contentBgColor = content.backgroundColor
+	local contentBgTransparency = content.backgroundTransparency
+
+	local arrowRotationCollapsed = arrow.rotationCollapsed
+	local arrowRotationExpanded = arrow.rotationExpanded
+	local arrowImage = arrow.image
+	local arrowImageRectOffset = arrow.imageRectOffset
+	local arrowImageRectSize = arrow.imageRectSize
+	local arrowColor = arrow.color
+	local arrowTransparency = arrow.transparency
+
+	local scrollBarColor = scroll.barColor
+	local scrollBarTransparency = scroll.barTransparency
+	local scrollBarVisibleTransparency = scroll.barVisibleTransparency
+	local scrollBarHiddenTransparency = scroll.barHiddenTransparency
+
+	local listPadding = content.listPadding or math.clamp(5 * ScaleY, 3, 8)
+	local contentPaddingTop = content.paddingTop or math.clamp(5 * ScaleY, 3, 8)
+	local contentPaddingBottom = content.paddingBottom or paddingY
+
+	local animationDuration = animation.duration
+	local animationStyle = animation.style
+	local animationDirection = animation.direction
+	local arrowAnimationDuration = animation.arrowDuration
+
+	local zIndexContainer = container.zIndex
+	local zIndexContent = content.zIndex
+	local zIndexHeader = header.zIndex
+
+	local dragEnabled = header.dragEnabled
+	local toggleButtonSize = header.toggleButtonSize
 
 	local isFirstExpansion = true
-	local container = createElement("Frame", {
+	local containerFrame = createElement("Frame", {
 		Name = "CollapsibleContainer",
 		Size = UDim2.new(1, 0, 0, headerHeight),
-		BackgroundColor3 = Color3.fromRGB(15, 15, 15),
-		BackgroundTransparency = 0.25,
+		BackgroundColor3 = bgColor,
+		BackgroundTransparency = bgTransparency,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
-		ZIndex = 7,
+		ZIndex = zIndexContainer,
 		Parent = parent
 	})
 	createElement("UIStroke", {
 		Thickness = strokeThickness,
-		Color = Color3.fromRGB(255, 255, 255),
-		Parent = container
+		Color = borderColor,
+		Transparency = container.strokeTransparency,
+		Parent = containerFrame
 	})
 	createElement("UICorner", {
 		CornerRadius = UDim.new(0, cornerRadius),
-		Parent = container
+		Parent = containerFrame
 	})
 	local dragArea = createElement("Frame", {
-		Size = UDim2.new(1, -headerHeight * 0.75, 0, headerHeight),
-		BackgroundTransparency = 1,
-		ZIndex = 11,
-		Parent = container
+		Size = UDim2.new(1, -headerHeight * toggleButtonSize, 0, headerHeight),
+		BackgroundColor3 = headerBgColor,
+		BackgroundTransparency = headerBgTransparency,
+		BorderSizePixel = 0,
+		ZIndex = zIndexHeader,
+		Parent = containerFrame
 	})
 	local toggleBtn = createElement("TextButton", {
-		Size = UDim2.new(0, headerHeight * 0.75, 0, headerHeight),
-		Position = UDim2.new(1, -headerHeight * 0.75, 0, 0),
+		Size = UDim2.new(0, headerHeight * toggleButtonSize, 0, headerHeight),
+		Position = UDim2.new(1, -headerHeight * toggleButtonSize, 0, 0),
 		BackgroundTransparency = 1,
 		Text = "",
-		ZIndex = 11,
-		Parent = container
+		ZIndex = zIndexHeader,
+		Parent = containerFrame
 	})
 	local label = createElement("TextLabel", {
 		Size = UDim2.new(1, -paddingX, 1, 0),
 		Position = UDim2.new(0, paddingX, 0, 0),
 		BackgroundTransparency = 1,
 		Text = title or "Simple Scripts",
-		Font = Enum.Font.SourceSansBold,
-		TextSize = 21,
-		TextColor3 = Color3.fromRGB(255, 255, 255),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 11,
+		Font = textFont,
+		TextSize = textSize,
+		TextColor3 = textColor,
+		TextTransparency = text.transparency,
+		TextXAlignment = textAlignment,
+		TextYAlignment = text.yAlignment,
+		ZIndex = zIndexHeader,
 		Parent = dragArea
 	})
-	local arrowSize = math.clamp(20 * math.min(ScaleX, ScaleY), 16, 26)
-	local arrow = createElement("ImageLabel", {
+	local arrowImageLabel = createElement("ImageLabel", {
 		Size = UDim2.new(0, arrowSize, 0, arrowSize),
 		Position = UDim2.new(0.5, -arrowSize * 0.5, 0.5, -arrowSize * 0.5),
 		BackgroundTransparency = 1,
-		Image = "rbxassetid://3926305904",
-		ImageRectOffset = Vector2.new(564, 284),
-		ImageRectSize = Vector2.new(36, 36),
-		Rotation = -90,
-		ZIndex = 11,
+		Image = arrowImage,
+		ImageRectOffset = arrowImageRectOffset,
+		ImageRectSize = arrowImageRectSize,
+		ImageColor3 = arrowColor,
+		ImageTransparency = arrowTransparency,
+		Rotation = arrowRotationCollapsed,
+		ZIndex = zIndexHeader,
 		Parent = toggleBtn
 	})
-	local scrollBarThickness = math.clamp(3 * math.min(ScaleX, ScaleY), 2, 5)
 	local contentFrame = createElement("ScrollingFrame", {
 		Size = UDim2.new(1, -paddingX * 2, 0, 0),
 		Position = UDim2.new(0, paddingX, 0, headerHeight),
-		BackgroundTransparency = 1,
+		BackgroundColor3 = contentBgColor,
+		BackgroundTransparency = contentBgTransparency,
 		BorderSizePixel = 0,
 		ScrollBarThickness = scrollBarThickness,
-		ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-		ScrollBarImageTransparency = 0,
+		ScrollBarImageColor3 = scrollBarColor,
+		ScrollBarImageTransparency = scrollBarTransparency,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
 		CanvasSize = UDim2.new(0, 0, 0, 0),
 		ScrollingEnabled = false,
 		Selectable = false,
 		ClipsDescendants = true,
-		ZIndex = 8,
-		Parent = container
+		ZIndex = zIndexContent,
+		Parent = containerFrame
 	})
 	createElement("UIPadding", {
-		PaddingTop = UDim.new(0, math.clamp(5 * ScaleY, 3, 8)),
-		PaddingBottom = UDim.new(0, paddingY),
+		PaddingTop = UDim.new(0, contentPaddingTop),
+		PaddingBottom = UDim.new(0, contentPaddingBottom),
+		PaddingLeft = UDim.new(0, content.paddingLeft),
+		PaddingRight = UDim.new(0, content.paddingRight),
 		Parent = contentFrame
 	})
 	local list = createElement("UIListLayout", {
-		Padding = UDim.new(0, math.clamp(5 * ScaleY, 3, 8)),
+		Padding = UDim.new(0, listPadding),
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		HorizontalAlignment = content.horizontalAlignment,
+		VerticalAlignment = content.verticalAlignment,
 		Parent = contentFrame
 	})
 	local isExpanded = false
@@ -542,35 +796,39 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 	local dragConnection = nil
 	local releaseConnection = nil
 	local UserInputService = game:GetService("UserInputService")
-	local function startDrag(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			isDragging = true
-			dragStart = Vector2.new(input.Position.X, input.Position.Y)
-			startPos = parent.Position
-			dragConnection = UserInputService.InputChanged:Connect(function(inputChanged)
-				if (inputChanged.UserInputType == Enum.UserInputType.MouseMovement or inputChanged.UserInputType == Enum.UserInputType.Touch) and isDragging then
-					local currentPos = Vector2.new(inputChanged.Position.X, inputChanged.Position.Y)
-					local delta = currentPos - dragStart
-					parent.Position = UDim2.new(
-						startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-				end
-			end)
-			releaseConnection = UserInputService.InputEnded:Connect(function(inputEnded)
-				if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 or inputEnded.UserInputType == Enum.UserInputType.Touch then
-					isDragging = false
-					if dragConnection then
-						dragConnection:Disconnect()
-						dragConnection = nil
+
+	if dragEnabled then
+		local function startDrag(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				isDragging = true
+				dragStart = Vector2.new(input.Position.X, input.Position.Y)
+				startPos = parent.Position
+				dragConnection = UserInputService.InputChanged:Connect(function(inputChanged)
+					if (inputChanged.UserInputType == Enum.UserInputType.MouseMovement or inputChanged.UserInputType == Enum.UserInputType.Touch) and isDragging then
+						local currentPos = Vector2.new(inputChanged.Position.X, inputChanged.Position.Y)
+						local delta = currentPos - dragStart
+						parent.Position = UDim2.new(
+							startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 					end
-					if releaseConnection then
-						releaseConnection:Disconnect()
-						releaseConnection = nil
+				end)
+				releaseConnection = UserInputService.InputEnded:Connect(function(inputEnded)
+					if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 or inputEnded.UserInputType == Enum.UserInputType.Touch then
+						isDragging = false
+						if dragConnection then
+							dragConnection:Disconnect()
+							dragConnection = nil
+						end
+						if releaseConnection then
+							releaseConnection:Disconnect()
+							releaseConnection = nil
+						end
 					end
-				end
-			end)
+				end)
+			end
 		end
+		dragArea.InputBegan:Connect(startDrag)
 	end
-	dragArea.InputBegan:Connect(startDrag)
+
 	local function computeHeights()
 		local baseHeight = list.AbsoluteContentSize.Y + math.clamp(15, 10, 20)
 		local extra = 0
@@ -595,10 +853,12 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		end
 		return contentHeight, containerHeight, needsScrolling, totalContentHeight
 	end
+
 	local function applyHeights(immediate)
 		local contentH, containerH, needsScrolling, totalContentHeight = computeHeights()
 		contentFrame.ScrollingEnabled = needsScrolling
-		contentFrame.ScrollBarImageTransparency = needsScrolling and 0.3 or 1
+		contentFrame.ScrollBarImageTransparency = needsScrolling and scrollBarVisibleTransparency or
+			scrollBarHiddenTransparency
 
 		local newCanvasSize = UDim2.new(0, 0, 0, totalContentHeight)
 		if contentFrame.CanvasSize ~= newCanvasSize then
@@ -615,12 +875,12 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 
 		contentFrame.Size = UDim2.new(1, -paddingX * 2, 0, contentH)
 		local finalWidth = math.max(minWidth, math.min(maxWidth, width))
-		local info = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+		local info = TweenInfo.new(animationDuration, animationStyle, animationDirection)
 		if immediate then
-			container.Size = UDim2.new(1, 0, 0, containerH)
+			containerFrame.Size = UDim2.new(1, 0, 0, containerH)
 			parent.Size = UDim2.new(0, finalWidth, 0, containerH)
 		else
-			TweenService:Create(container, info, {
+			TweenService:Create(containerFrame, info, {
 				Size = UDim2.new(1, 0, 0, containerH)
 			}):Play()
 			TweenService:Create(parent, info, {
@@ -628,6 +888,7 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 			}):Play()
 		end
 	end
+
 	local function hookOptionsMenu(m)
 		if not (m and m:IsA("Frame") and m.Name == "OptionsMenu") then
 			return
@@ -643,9 +904,11 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 			end
 		end)
 	end
+
 	for _, d in ipairs(contentFrame:GetDescendants()) do
 		hookOptionsMenu(d)
 	end
+
 	contentFrame.ChildAdded:Connect(function()
 		applyHeights(true)
 	end)
@@ -665,116 +928,145 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 			applyHeights(false)
 		end
 	end)
+
 	local function toggleContainer()
 		if isAnimating then
 			return
 		end
 		isAnimating = true
 		isExpanded = not isExpanded
-		TweenService:Create(arrow, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-			Rotation = isExpanded and 0 or -90
+		TweenService:Create(arrowImageLabel, TweenInfo.new(arrowAnimationDuration, animationStyle, animationDirection), {
+			Rotation = isExpanded and arrowRotationExpanded or arrowRotationCollapsed
 		}):Play()
 		applyHeights(false)
-		task.delay(0.5, function()
+		task.delay(animationDuration, function()
 			isAnimating = false
 		end)
 	end
+
 	toggleBtn.Activated:Connect(toggleContainer)
 	applyHeights(true)
 	return contentFrame
 end
 
-local function createSection(parent, title, layoutOrder, defaultExpanded, isWide, infoText)
-	defaultExpanded = defaultExpanded ~= false
+local function createSection(parent, title, layoutOrder, defaultExpanded, infoText, uiProps)
+	local props = deepMerge(DefaultUIProps.Section, uiProps or {})
+
+	defaultExpanded = defaultExpanded ~= nil and defaultExpanded or props.behavior.defaultExpanded
+
+	local container = props.container
+	local header = props.header
+	local titleProps = props.title
+	local arrow = props.arrow
+	local info = props.info
+	local content = props.content
+	local grid = props.grid
+	local animation = props.animation
+	local behavior = props.behavior
+
 	local section = createElement("Frame", {
 		Name = title .. "Section",
 		Size = UDim2.new(1, 0, 0, 35),
-		BackgroundTransparency = 1,
-		ClipsDescendants = true,
+		BackgroundColor3 = container.backgroundColor,
+		BackgroundTransparency = container.backgroundTransparency,
+		ClipsDescendants = container.clipDescendants,
 		LayoutOrder = layoutOrder or 0,
+		ZIndex = container.zIndex,
 		Parent = parent
 	})
+
 	local headerFrame = createElement("Frame", {
-		Size = UDim2.new(1, 0, 0, 30),
-		BackgroundTransparency = 1,
-		ZIndex = 10,
+		Size = UDim2.new(1, 0, 0, header.height),
+		BackgroundColor3 = header.backgroundColor,
+		BackgroundTransparency = header.backgroundTransparency,
+		ZIndex = header.zIndex,
 		Parent = section
 	})
+
 	local headerButton = createElement("TextButton", {
 		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundTransparency = 1,
 		Text = "",
-		ZIndex = 11,
+		ZIndex = header.buttonZIndex,
 		Parent = headerFrame
 	})
+
 	local titleLabel = createElement("TextLabel", {
-		Size = UDim2.new(1, -30, 0, 25),
-		Position = UDim2.new(0, 0, 0, 0),
+		Size = UDim2.new(1, titleProps.sizeOffsetX, 0, titleProps.height),
+		Position = UDim2.new(0, titleProps.offsetX, 0, titleProps.offsetY),
 		BackgroundTransparency = 1,
 		Text = title,
-		Font = Enum.Font.SourceSansBold,
-		TextSize = 20,
-		TextColor3 = Color3.fromRGB(255, 255, 255),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 12,
+		Font = titleProps.font,
+		TextSize = titleProps.size,
+		TextColor3 = titleProps.color,
+		TextTransparency = titleProps.transparency,
+		TextXAlignment = titleProps.alignment,
+		TextYAlignment = titleProps.yAlignment,
+		ZIndex = titleProps.zIndex,
 		Parent = headerFrame
 	})
-	local arrow = createElement("ImageLabel", {
-		Size = UDim2.new(0, 20, 0, 20),
-		Position = UDim2.new(1, -35, 0, 2.5),
+
+	local arrowImage = createElement("ImageLabel", {
+		Size = UDim2.new(0, arrow.size, 0, arrow.size),
+		Position = UDim2.new(1, arrow.positionOffsetX, 0, arrow.positionOffsetY),
 		BackgroundTransparency = 1,
-		Image = "rbxassetid://3926305904",
-		ImageRectOffset = Vector2.new(564, 284),
-		ImageRectSize = Vector2.new(36, 36),
-		Rotation = defaultExpanded and 0 or -90,
-		ZIndex = 12,
+		Image = arrow.image,
+		ImageRectOffset = arrow.imageRectOffset,
+		ImageRectSize = arrow.imageRectSize,
+		ImageColor3 = arrow.color,
+		ImageTransparency = arrow.transparency,
+		Rotation = defaultExpanded and arrow.rotationExpanded or arrow.rotationCollapsed,
+		ZIndex = arrow.zIndex,
 		Parent = headerFrame
 	})
 
 	if infoText then
-		local infoColor = Color3.fromRGB(30, 144, 255)
-		local size = math.clamp(10 * ScaleY, 7, 15)
+		local infoSize = info.size or math.clamp(10 * ScaleY, 7, 15)
 		local infoIcon = createElement("TextLabel", {
-			Size = UDim2.new(0, size, 0, size),
-			Position = UDim2.new(0, titleLabel.TextBounds.X + 10, 0, 9),
+			Size = UDim2.new(0, infoSize, 0, infoSize),
+			Position = UDim2.new(0, titleLabel.TextBounds.X + info.offsetX, 0, info.offsetY),
 			BackgroundTransparency = 1,
-			Text = "?",
-			Font = Enum.Font.SourceSansBold,
-			TextSize = 13,
-			TextColor3 = infoColor,
+			Text = info.text,
+			Font = info.font,
+			TextSize = info.fontSize,
+			TextColor3 = info.color,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextYAlignment = Enum.TextYAlignment.Center,
-			ZIndex = 13,
+			ZIndex = info.zIndex,
 			Parent = headerFrame
 		})
 
 		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(1, 0)
+		corner.CornerRadius = UDim.new(info.cornerRadius, 0)
 		corner.Parent = infoIcon
 
 		local stroke = Instance.new("UIStroke")
-		stroke.Thickness = 1
-		stroke.Color = infoColor
+		stroke.Thickness = info.strokeThickness
+		stroke.Color = info.color
 		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		stroke.Parent = infoIcon
 
-		truncateWithTooltip(infoIcon, infoText, nil, "?")
+		truncateWithTooltip(infoIcon, infoText, nil, info.text)
 	end
 
 	createElement("Frame", {
-		Size = UDim2.new(1, -10, 0, 2),
-		Position = UDim2.new(0, 0, 0, 25),
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		Size = UDim2.new(1, -header.separatorOffsetX, 0, header.separatorHeight),
+		Position = UDim2.new(0, 0, 0, header.separatorPositionY),
+		BackgroundColor3 = header.separatorColor,
+		BackgroundTransparency = header.separatorTransparency,
 		BorderSizePixel = 0,
-		ZIndex = 10,
+		ZIndex = header.zIndex,
 		Parent = headerFrame
 	})
+
 	local sectionContent = createElement("Frame", {
 		Name = title .. "Content",
-		Size = UDim2.new(1, 0, 0, defaultExpanded and 100 or 0),
-		Position = UDim2.new(0, 0, 0, 35),
-		BackgroundTransparency = 1,
-		ClipsDescendants = not defaultExpanded,
+		Size = UDim2.new(1, 0, 0, defaultExpanded and content.initialHeight or 0),
+		Position = UDim2.new(0, 0, 0, content.positionY),
+		BackgroundColor3 = content.backgroundColor,
+		BackgroundTransparency = content.backgroundTransparency,
+		ClipsDescendants = not defaultExpanded or behavior.clipWhenCollapsed,
+		ZIndex = content.zIndex,
 		Parent = section
 	})
 
@@ -784,10 +1076,10 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 	local currentColumn = 1
 
 	local function validateGridPosition(columns, rows)
-		if not columns or columns < 0.5 or columns > 2 then
+		if not columns or columns < grid.minColumns or columns > grid.maxColumns then
 			return false
 		end
-		if not rows or rows < 0.5 or rows > 3 then
+		if not rows or rows < grid.minRows or rows > grid.maxRows then
 			return false
 		end
 		return true
@@ -795,7 +1087,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 
 	local function findNextAvailablePosition(reqColumns, reqRows)
 		while true do
-			if currentColumn + reqColumns - 1 > 2 then
+			if currentColumn + reqColumns - 1 > grid.maxColumns then
 				currentColumn = 1
 				currentRow = currentRow + 1
 			end
@@ -831,32 +1123,38 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 			end
 		end
 	end
-	local cellWidth = parent.AbsoluteSize.X * 0.45
-	local cellHeight = math.clamp(viewportSize.Y * 0.042, 31, 55)
-	local paddingX = math.clamp(12 * ScaleX, 8, 14)
-	local paddingY = math.clamp(12 * ScaleY, 8, 15)
+
+	local cellWidth = grid.cellWidth or (parent.AbsoluteSize.X * 0.45)
+	local cellHeight = grid.cellHeight or math.clamp(viewportSize.Y * 0.042, 31, 55)
+	local paddingX = grid.paddingX or math.clamp(12 * ScaleX, 8, 14)
+	local paddingY = grid.paddingY or math.clamp(12 * ScaleY, 8, 15)
+
 	local function positionComponent(component, gridRow, gridCol, columns, rows)
 		local width = (cellWidth * columns) + (paddingX * (columns - 1))
 		local height = (cellHeight * rows) + (paddingY * (rows - 1))
 
 		local xPos = (gridCol - 1) * (cellWidth + paddingX)
-		local yPos = (gridRow - 1) * (cellHeight + paddingY) + 5
+		local yPos = (gridRow - 1) * (cellHeight + paddingY) + grid.topOffset
 
 		component.Size = UDim2.new(0, width, 0, height)
 		component.Position = UDim2.new(0, xPos, 0, yPos)
 	end
 
 	local function updateGridLayout()
-		if not isWide then
-			for _, componentData in pairs(gridComponents) do
-				positionComponent(componentData.component, componentData.row, componentData.col, componentData.columns,
-					componentData.rows)
-			end
+		for _, componentData in pairs(gridComponents) do
+			positionComponent(componentData.component, componentData.row, componentData.col, componentData.columns,
+				componentData.rows)
 		end
 	end
+
+	local paddingLeft = content.paddingLeft or (8 * ScaleX)
+	local paddingRight = content.paddingRight or (8 * ScaleX)
+
 	createElement("UIPadding", {
-		PaddingLeft = UDim.new(0, 8 * ScaleX),
-		PaddingRight = UDim.new(0, 8 * ScaleX),
+		PaddingLeft = UDim.new(0, paddingLeft),
+		PaddingRight = UDim.new(0, paddingRight),
+		PaddingTop = UDim.new(0, content.paddingTop),
+		PaddingBottom = UDim.new(0, content.paddingBottom),
 		Parent = sectionContent
 	})
 
@@ -874,8 +1172,11 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 	end
 
 	local function autoScrollToSection(expanding)
+		if not behavior.autoScroll then
+			return
+		end
 		task.spawn(function()
-			task.wait(0.3)
+			task.wait(animation.scrollDelay)
 			local scrollingFrame = findScrollingFrame(section)
 			if not scrollingFrame then
 				return
@@ -893,16 +1194,16 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 				targetCanvasPosition = math.max(0, sectionBottom - scrollingFrame.AbsoluteSize.Y)
 			else
 				if sectionTop < viewportTop then
-					targetCanvasPosition = sectionTop - 10
+					targetCanvasPosition = sectionTop - animation.scrollOffset
 				end
 			end
 
 			local maxCanvasPosition = math.max(0, scrollingFrame.CanvasSize.Y.Offset - scrollingFrame.AbsoluteSize.Y)
 			targetCanvasPosition = math.min(targetCanvasPosition, maxCanvasPosition)
 
-			createTween(scrollingFrame, 0.4, {
+			createTween(scrollingFrame, animation.duration, {
 				CanvasPosition = Vector2.new(scrollingFrame.CanvasPosition.X, targetCanvasPosition)
-			}, Enum.EasingStyle.Sine, Enum.EasingDirection.Out):Play()
+			}, animation.style, animation.direction):Play()
 		end)
 	end
 
@@ -934,19 +1235,19 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 		local targetContentHeight = isExpanded and calculateContentHeight() or 0
 		local targetSectionHeight = 35 + targetContentHeight + 10 * ScaleY
 		if animate then
-			sectionContent.ClipsDescendants = not isExpanded
-			createTween(sectionContent, 0.4, {
+			sectionContent.ClipsDescendants = not isExpanded or behavior.clipWhenCollapsed
+			createTween(sectionContent, animation.duration, {
 				Size = UDim2.new(1, 0, 0, targetContentHeight)
-			}, Enum.EasingStyle.Sine, Enum.EasingDirection.Out):Play()
-			createTween(section, 0.4, {
+			}, animation.style, animation.direction):Play()
+			createTween(section, animation.duration, {
 				Size = UDim2.new(1, 0, 0, targetSectionHeight)
-			}, Enum.EasingStyle.Sine, Enum.EasingDirection.Out):Play()
+			}, animation.style, animation.direction):Play()
 
 			autoScrollToSection(isExpanded)
 		else
 			sectionContent.Size = UDim2.new(1, 0, 0, targetContentHeight)
 			section.Size = UDim2.new(1, 0, 0, targetSectionHeight)
-			sectionContent.ClipsDescendants = not isExpanded
+			sectionContent.ClipsDescendants = not isExpanded or behavior.clipWhenCollapsed
 		end
 	end
 
@@ -965,6 +1266,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 			end
 		end)
 	end
+
 	for _, desc in ipairs(sectionContent:GetDescendants()) do
 		hookDropdownMenu(desc)
 	end
@@ -980,24 +1282,24 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 		end
 		isAnimating = true
 		isExpanded = not isExpanded
-		createTween(arrow, 0.4, {
-			Rotation = isExpanded and 0 or -90
-		}, Enum.EasingStyle.Back, Enum.EasingDirection.Out):Play()
+		createTween(arrowImage, animation.duration, {
+			Rotation = isExpanded and arrow.rotationExpanded or arrow.rotationCollapsed
+		}, animation.arrowStyle, animation.arrowDirection):Play()
 		updateSectionSize(true)
-		task.delay(0.4, function()
+		task.delay(animation.duration, function()
 			isAnimating = false
 		end)
 	end
 
 	headerButton.Activated:Connect(toggleSection)
 	headerButton.MouseEnter:Connect(function()
-		createTween(arrow, 0.2, {
-			ImageColor3 = Color3.fromRGB(0, 200, 255)
+		createTween(arrowImage, animation.hoverDuration, {
+			ImageColor3 = arrow.colorHover
 		}):Play()
 	end)
 	headerButton.MouseLeave:Connect(function()
-		createTween(arrow, 0.2, {
-			ImageColor3 = Color3.fromRGB(255, 255, 255)
+		createTween(arrowImage, animation.hoverDuration, {
+			ImageColor3 = arrow.color
 		}):Play()
 	end)
 
@@ -1007,7 +1309,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 			return
 		end
 		updateDebounce = true
-		task.wait(0.1)
+		task.wait(animation.debounceTime)
 		if isExpanded then
 			updateSectionSize(true)
 		end
@@ -1022,7 +1324,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 		local columns = 1
 		local rows = 1
 
-		if gridPosition and # gridPosition >= 1 then
+		if gridPosition and #gridPosition >= 1 then
 			columns = gridPosition[1] or 1
 			rows = gridPosition[2] or 1
 		end
@@ -1034,30 +1336,33 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 
 		component.Parent = sectionContent
 
-		if isWide then
-			component.LayoutOrder = # gridComponents + 1
-		else
-			local gridRow, gridCol = findNextAvailablePosition(columns, rows)
-			occupyGridSpace(gridRow, gridCol, columns, rows)
+		local gridRow, gridCol = findNextAvailablePosition(columns, rows)
+		occupyGridSpace(gridRow, gridCol, columns, rows)
 
-			local componentData = {
-				component = component,
-				row = gridRow,
-				col = gridCol,
-				columns = columns,
-				rows = rows
-			}
+		local componentData = {
+			component = component,
+			row = gridRow,
+			col = gridCol,
+			columns = columns,
+			rows = rows
+		}
 
-			table.insert(gridComponents, componentData)
-			positionComponent(component, gridRow, gridCol, columns, rows)
+		table.insert(gridComponents, componentData)
 
-			if gridCol + columns - 1 >= 2 then
-				currentColumn = 1
-				currentRow = gridRow + rows
-			else
-				currentColumn = gridCol + columns
-				currentRow = gridRow
+		positionComponent(component, gridRow, gridCol, columns, rows)
+
+		component:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+			if isExpanded then
+				updateSectionSize(true)
 			end
+		end)
+
+		if gridCol + columns - 1 >= grid.maxColumns then
+			currentColumn = 1
+			currentRow = gridRow + rows
+		else
+			currentColumn = gridCol + columns
+			currentRow = gridRow
 		end
 
 		updateSectionSize(true)
@@ -1065,9 +1370,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, isWide
 	end
 
 	sectionContent.ChildAdded:Connect(function(child)
-		if not isWide then
-			updateGridLayout()
-		end
+		updateGridLayout()
 		debouncedUpdate()
 	end)
 	sectionContent.ChildRemoved:Connect(debouncedUpdate)
@@ -1082,15 +1385,15 @@ end
 
 -- ================ COMPONENT FUNCTIONS ================ --
 
-local function createDropdown(name, title, options, defaultOption, callback, parentFrame, isWide, gridPosition)
-	isWide = true
-
+local function createDropdown(name, title, options, defaultOption, callback, parentFrame, isMulti, gridPosition)
+	isMulti = isMulti or false
+	local selectedOptions = {}
 	local currentOptions = {}
 	local optionValues = {}
 
 	local dropdown = createElement("Frame", {
 		Name = name,
-		Size = isWide and UDim2.new(1, 0, 0, 40) or UDim2.new(0, 180, 0, 40),
+		Size = UDim2.new(0, 180, 0, 40),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 0.85,
 		BorderSizePixel = 0,
@@ -1149,7 +1452,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	})
 
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = 1,
 		Color = Color3.fromRGB(220, 220, 220),
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = toggleBtn
@@ -1183,14 +1486,9 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	})
 
 	createElement("UIStroke", {
-		Thickness = 2,
-		Color = Color3.fromRGB(220, 220, 220),
-		Transparency = 0.3,
-		Parent = optionsMenu
-	})
-
-	createElement("UICorner", {
-		CornerRadius = UDim.new(0, 6),
+		Thickness = 0.8,
+		Color = Color3.fromRGB(180, 180, 180),
+		Transparency = 0,
 		Parent = optionsMenu
 	})
 
@@ -1269,6 +1567,9 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		closeTween.Completed:Connect(function()
 			if not isOpen then
 				menuContainer.Visible = false
+				if isMulti and callback then
+					callback(selectedOptions)
+				end
 			end
 		end)
 		if outsideConn then
@@ -1330,25 +1631,60 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 			})
 
 			optBtn.MouseEnter:Connect(function()
-				createTween(optBtn, 0.15, {
-					BackgroundTransparency = 0.7,
-					BackgroundColor3 = Color3.fromRGB(80, 120, 255)
-				}):Play()
+				if not selectedOptions[opt] then
+					createTween(optBtn, 0.15,
+						{ BackgroundTransparency = 0.7, BackgroundColor3 = Color3.fromRGB(80, 120, 255) }):Play()
+				end
 			end)
 
 			optBtn.MouseLeave:Connect(function()
-				createTween(optBtn, 0.15, {
-					BackgroundTransparency = 1
-				}):Play()
+				if not selectedOptions[opt] then
+					createTween(optBtn, 0.15,
+						{ BackgroundTransparency = 1, BackgroundColor3 = Color3.fromRGB(60, 60, 60) })
+						:Play()
+				end
 			end)
 
+
 			optBtn.MouseButton1Down:Connect(function()
-				truncateWithTooltip(selectedLabel, "Selected: " .. opt)
-				if callback then
-					local actualValue = optionValues[opt] or opt
-					callback(actualValue, opt)
+				if isMulti then
+					if selectedOptions[opt] then
+						selectedOptions[opt] = nil
+						createTween(optBtn, 0.15,
+							{ BackgroundColor3 = Color3.fromRGB(60, 60, 60), BackgroundTransparency = 1 }):Play()
+					else
+						selectedOptions[opt] = optionValues[opt] or opt
+						createTween(optBtn, 0.15,
+							{ BackgroundColor3 = Color3.fromRGB(80, 120, 255), BackgroundTransparency = 0 }):Play()
+					end
+					local display = table.concat((function()
+						local t = {}
+						for k, _ in pairs(selectedOptions) do table.insert(t, k) end
+						return t
+					end)(), ", ")
+					selectedLabel.Text = display ~= "" and "Selected: " .. display or "Selected: None"
+				else
+					for _, otherChild in ipairs(optionsMenu:GetChildren()) do
+						if otherChild:IsA("Frame") then
+							local btn = otherChild:FindFirstChildWhichIsA("TextButton")
+							if btn then
+								btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+								btn.BackgroundTransparency = 1
+							end
+						end
+					end
+					selectedOptions = { [opt] = optionValues[opt] or opt }
+					selectedLabel.Text = "Selected: " .. opt
+					createTween(optBtn, 0.15,
+						{ BackgroundColor3 = Color3.fromRGB(80, 120, 255), BackgroundTransparency = 0 }):Play()
+					closeDropdown()
 				end
-				closeDropdown()
+
+				truncateWithTooltip(selectedLabel, selectedLabel.Text)
+
+				if callback and not isMulti then
+					callback(optionValues[opt] or opt, opt)
+				end
 			end)
 		end
 
@@ -1379,12 +1715,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 
 		outsideConn = UserInputService.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				local mouse = UserInputService:GetMouseLocation()
-				local dropPos, dropSize = dropdown.AbsolutePosition, dropdown.AbsoluteSize
-				local menuPos, menuSize = optionsMenu.AbsolutePosition, optionsMenu.AbsoluteSize
-				local notInDropdown = not (mouse.X >= dropPos.X and mouse.X <= dropPos.X + dropSize.X and mouse.Y >= dropPos.Y and mouse.Y <= dropPos.Y + dropSize.Y)
-				local notInMenu = not (mouse.X >= menuPos.X and mouse.X <= menuPos.X + menuSize.X and mouse.Y >= menuPos.Y and mouse.Y <= menuSize.Y)
-				if notInDropdown and notInMenu then
+				if not isMulti then
 					closeDropdown()
 				end
 			end
@@ -1395,30 +1726,54 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	createOptionButtons()
 
 	if defaultOption then
-		local defaultText = defaultOption
-		local found = false
-		for _, opt in ipairs(currentOptions) do
-			if opt == defaultOption then
-				found = true
-				break
+		if isMulti and type(defaultOption) == "table" then
+			for _, opt in ipairs(defaultOption) do
+				if optionValues[opt] or table.find(currentOptions, opt) then
+					selectedOptions[opt] = optionValues[opt] or opt
+				end
 			end
-		end
-		if found then
-			selectedLabel.Text = "Selected: " .. defaultOption
-			truncateWithTooltip(selectedLabel, "Selected: " .. defaultOption)
+			local display = table.concat((function()
+				local t = {}
+				for k, _ in pairs(selectedOptions) do table.insert(t, k) end
+				return t
+			end)(), ", ")
+			selectedLabel.Text = display ~= "" and "Selected: " .. display or "Selected: None"
+			truncateWithTooltip(selectedLabel, selectedLabel.Text)
 		else
-			selectedLabel.Text = "Default: " .. defaultOption
-			truncateWithTooltip(selectedLabel, "Default: " .. defaultOption)
+			local found = false
+			for _, opt in ipairs(currentOptions) do
+				if opt == defaultOption then
+					found = true
+					break
+				end
+			end
+			if found then
+				selectedLabel.Text = "Selected: " .. defaultOption
+				truncateWithTooltip(selectedLabel, "Selected: " .. defaultOption)
+			else
+				selectedLabel.Text = "Default: " .. defaultOption
+				truncateWithTooltip(selectedLabel, "Default: " .. defaultOption)
+			end
 		end
 	end
 
+
+	local toggleDebounce = false
 	toggleBtn.MouseButton1Click:Connect(function()
+		if toggleDebounce then return end
+		toggleDebounce = true
+
 		if isOpen then
 			closeDropdown()
 		else
 			openDropdown()
 		end
+
+		task.delay(0.1, function()
+			toggleDebounce = false
+		end)
 	end)
+
 
 	toggleBtn.MouseEnter:Connect(function()
 		if not isOpen then
@@ -1481,13 +1836,18 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		end,
 
 		GetSelected = function()
-			local text = selectedLabel.Text
-			if text:match("^Selected: (.+)") then
-				local selectedText = text:match("^Selected: (.+)")
-				return optionValues[selectedText] or selectedText, selectedText
+			if isMulti then
+				return selectedOptions
+			else
+				local text = selectedLabel.Text
+				if text:match("^Selected: (.+)") then
+					local selectedText = text:match("^Selected: (.+)")
+					return optionValues[selectedText] or selectedText, selectedText
+				end
+				return nil, nil
 			end
-			return nil, nil
 		end
+
 	}
 
 	setmetatable(dropdownWrapper, {
@@ -1506,10 +1866,11 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		dropdownWrapper.Frame.Parent = parentFrame.Frame
 		return dropdownWrapper
 	else
-		dropdownWrapper.Frame.Parent = parentFrame or contentFrame
+		dropdownWrapper.Frame.Parent = parentFrame
 		return dropdownWrapper
 	end
 end
+
 
 local function createButton(name, text, callback, parentSection, gridPosition)
 	local btn = createElement("TextButton", {
@@ -1523,7 +1884,7 @@ local function createButton(name, text, callback, parentSection, gridPosition)
 		ZIndex = 10
 	})
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = 1,
 		Color = Color3.fromRGB(220, 220, 220),
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = btn
@@ -1558,63 +1919,129 @@ local function createButton(name, text, callback, parentSection, gridPosition)
 	end
 end
 
-local function createTextBox(name, placeholder, defaultText, callback, parentFrame, gridPosition)
-	local textBox = createElement("TextBox", {
+local function createTextBox(name, mainText, defaultSubText, callback, parentFrame, gridPosition)
+	local infoFrame = createElement("TextButton", {
 		Name = name,
 		Size = UDim2.new(0, 180, 0, 40),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 0.85,
-		TextColor3 = Color3.fromRGB(255, 255, 255),
-		TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
-		Font = Enum.Font.SourceSans,
-		TextSize = 16,
-		PlaceholderText = placeholder or "Enter text...",
-		PlaceholderColor3 = Color3.fromRGB(200, 200, 200),
-		Text = defaultText or "",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		ClearTextOnFocus = false,
 		ZIndex = 10,
-		TextWrapped = false,
-		TextScaled = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
 		ClipsDescendants = true,
+		AutoButtonColor = false,
+		Text = "",
 	})
+
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = 1,
 		Color = Color3.fromRGB(220, 220, 220),
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		Parent = textBox
+		Parent = infoFrame
 	})
+
 	createElement("UICorner", {
 		CornerRadius = UDim.new(0, 8),
-		Parent = textBox
+		Parent = infoFrame
 	})
+
 	createElement("UIPadding", {
 		PaddingLeft = UDim.new(0, 10),
 		PaddingRight = UDim.new(0, 10),
-		Parent = textBox
+		PaddingTop = UDim.new(0, 5),
+		PaddingBottom = UDim.new(0, 5),
+		Parent = infoFrame
 	})
+
+	local mainLabel = createElement("TextLabel", {
+		Name = "MainText",
+		Size = UDim2.new(1, 0, 0, 20),
+		Position = UDim2.new(0, 0, 0, -3),
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(255, 255, 255),
+		TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
+		Font = Enum.Font.SourceSansBold,
+		TextSize = 18,
+		Text = mainText or "Label",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		ZIndex = 11,
+		Parent = infoFrame
+	})
+
+	local subLabel = createElement("TextLabel", {
+		Name = "SubText",
+		Size = UDim2.new(1, 0, 0, 20),
+		Position = UDim2.new(0, 0, 0, 15),
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(200, 200, 200),
+		TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
+		Font = Enum.Font.SourceSans,
+		TextSize = 14,
+		Text = defaultSubText and ("Input: " .. defaultSubText) or "Input: ",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		ZIndex = 11,
+		Parent = infoFrame
+	})
+
+	local textBox = createElement("TextBox", {
+		Name = name .. "_Input",
+		Size = UDim2.new(1, 0, 0, 36),
+		Position = UDim2.new(0, 0, 0, 0),
+		BackgroundTransparency = 1,
+		Text = "",
+		Font = Enum.Font.SourceSans,
+		TextSize = 16,
+		TextColor3 = Color3.fromRGB(255, 255, 255),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTransparency = 1,
+		TextStrokeTransparency = 1,
+		ClearTextOnFocus = false,
+		ZIndex = 12,
+		Parent = infoFrame
+	})
+
 	textBox.Focused:Connect(function()
-		createTween(textBox, 0.2, {
-			BackgroundTransparency = 0.6
-		}):Play()
+		subLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	end)
+
+	textBox:GetPropertyChangedSignal("Text"):Connect(function()
+		subLabel.Text = "Input: " .. textBox.Text
+	end)
+
 	textBox.FocusLost:Connect(function()
-		createTween(textBox, 0.2, {
-			BackgroundTransparency = 0.85
-		}):Play()
+		subLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 		if callback then
 			callback(textBox.Text)
 		end
 	end)
+
+	infoFrame.MouseButton1Click:Connect(function()
+		textBox:CaptureFocus()
+	end)
+
+	local wrapper = {
+		Frame = infoFrame,
+		MainLabel = mainLabel,
+		SubLabel = subLabel,
+		TextBox = textBox,
+		SetText = function(newText)
+			textBox.Text = newText
+			subLabel.Text = "Input: " .. newText
+		end,
+		GetText = function()
+			return textBox.Text
+		end
+	}
+
 	if parentFrame and parentFrame.AddComponent then
-		return parentFrame.AddComponent(textBox, gridPosition)
+		parentFrame.AddComponent(wrapper.Frame, gridPosition)
+		return wrapper
 	elseif parentFrame and parentFrame.Frame then
-		textBox.Parent = parentFrame.Frame
-		return textBox
+		wrapper.Frame.Parent = parentFrame.Frame
+		return wrapper
 	else
-		textBox.Parent = parentFrame or contentFrame
-		return textBox
+		wrapper.Frame.Parent = parentFrame
+		return wrapper
 	end
 end
 
@@ -1629,7 +2056,7 @@ local function createInfo(name, mainText, subText, callback, parentFrame, gridPo
 	})
 
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = 1,
 		Color = Color3.fromRGB(220, 220, 220),
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = infoFrame
@@ -1743,7 +2170,7 @@ local function createInfo(name, mainText, subText, callback, parentFrame, gridPo
 		wrapper.Frame.Parent = parentFrame.Frame
 		return wrapper
 	else
-		wrapper.Frame.Parent = parentFrame or contentFrame
+		wrapper.Frame.Parent = parentFrame
 		return wrapper
 	end
 end
@@ -1920,7 +2347,158 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 		wrapper.Frame.Parent = parentFrame.Frame
 		return wrapper
 	else
-		wrapper.Frame.Parent = parentFrame or contentFrame
+		wrapper.Frame.Parent = parentFrame
+		return wrapper
+	end
+end
+
+local function createInfo3(name, mainText, subText, callback, parentFrame, gridPosition)
+	local infoFrame = createElement("Frame", {
+		Name = name,
+		Size = UDim2.new(0.35, 0, 0.12, 0),
+		BackgroundTransparency = 0.85,
+		ZIndex = 10,
+	})
+
+	createElement("UIStroke", {
+		Thickness = 1,
+		Color = Color3.fromRGB(140, 140, 140),
+		Transparency = 0.4,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = infoFrame
+	})
+
+	createElement("UICorner", {
+		CornerRadius = UDim.new(0, 4),
+		Parent = infoFrame
+	})
+
+	createElement("UIPadding", {
+		PaddingTop = UDim.new(0.01, 0),
+		PaddingBottom = UDim.new(0.03, 0),
+		PaddingLeft = UDim.new(0.02, 0),
+		PaddingRight = UDim.new(0.02, 0),
+		Parent = infoFrame
+	})
+
+	local layout = createElement("UIListLayout", {
+		Parent = infoFrame,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 2)
+	})
+
+	local mainLabel = createElement("TextButton", {
+		Name = "MainText",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(235, 235, 235),
+		Font = Enum.Font.SourceSansBold,
+		TextWrapped = true,
+		TextSize = 18,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Text = mainText or "Information",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		ZIndex = 11,
+		Parent = infoFrame,
+		LayoutOrder = 1
+	})
+
+	createElement("UIPadding", {
+		PaddingTop = UDim.new(0, 4),
+		PaddingBottom = UDim.new(0, 4),
+		Parent = mainLabel
+	})
+
+	local subLabel = createElement("TextLabel", {
+		Name = "SubText",
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(220, 220, 220),
+		Font = Enum.Font.Gotham,
+		TextWrapped = true,
+		TextSize = 13,
+		Text = subText or "",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		ZIndex = 11,
+		Parent = infoFrame,
+		LayoutOrder = 2
+	})
+
+	local wrapper = {
+		Frame = infoFrame,
+		MainLabel = mainLabel,
+		SubLabel = subLabel,
+	}
+
+	local function formatSubText(txt)
+		if not txt or txt == "" then return "" end
+		local lines = string.split(txt, "\n")
+		for i, line in ipairs(lines) do
+			line = (i == 1 and line or "• " .. line)
+			line = line:gsub("%*%*(.-)%*%*", "<b>%1</b>")
+			line = line:gsub("%*(.-)%*", "<i>%1</i>")
+			line = line:gsub("%_(.-)%_", "<u>%1</u>")
+			lines[i] = line
+		end
+		return table.concat(lines, "\n")
+	end
+
+	function wrapper.SetText(newMainText, newSubText)
+		local oldMainText = mainLabel.Text
+		local oldSubText = subLabel.Text
+		if newMainText ~= nil then mainLabel.Text = newMainText end
+		if newSubText ~= nil then subLabel.Text = formatSubText(newSubText) end
+		if callback and (oldMainText ~= mainLabel.Text or oldSubText ~= subLabel.Text) then
+			callback(mainLabel.Text, subLabel.Text)
+		end
+	end
+
+	function wrapper.SetMainText(newText)
+		local oldText = mainLabel.Text
+		mainLabel.Text = newText or "Information"
+		if callback and oldText ~= mainLabel.Text then
+			callback(mainLabel.Text, subLabel.Text)
+		end
+	end
+
+	function wrapper.SetSubText(newText)
+		local oldText = subLabel.Text
+		subLabel.Text = formatSubText(newText)
+		if callback and oldText ~= subLabel.Text then
+			callback(mainLabel.Text, subLabel.Text)
+		end
+	end
+
+	function wrapper.GetText()
+		return mainLabel.Text, subLabel.Text
+	end
+
+	function wrapper.GetMainText()
+		return mainLabel.Text
+	end
+
+	function wrapper.GetSubText()
+		return subLabel.Text
+	end
+
+	local expanded = true
+
+	mainLabel.Activated:Connect(function()
+		-- Height change logic goes here
+	end)
+
+
+	if parentFrame and parentFrame.AddComponent then
+		parentFrame.AddComponent(wrapper.Frame, gridPosition)
+		return wrapper
+	elseif parentFrame and parentFrame.Frame then
+		wrapper.Frame.Parent = parentFrame.Frame
+		return wrapper
+	else
+		wrapper.Frame.Parent = parentFrame
 		return wrapper
 	end
 end
@@ -1935,7 +2513,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		ZIndex = 10,
 	})
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = 1,
 		Color = Color3.fromRGB(220, 220, 220),
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = toggle
@@ -1955,7 +2533,6 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		Size = UDim2.new(1, -70, 1, 0),
 		Position = UDim2.new(0, 10, 0, 0),
 		BackgroundTransparency = 1,
-		Text = text,
 		Font = Enum.Font.SourceSansBold,
 		TextSize = 16,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -1963,6 +2540,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		ZIndex = 12,
 		Parent = btn
 	})
+	truncateWithTooltip(label, text)
 	local switchTrack = createElement("Frame", {
 		Size = UDim2.new(0, 50, 0, 24),
 		Position = UDim2.new(1, -60, 0.5, -12),
@@ -1977,7 +2555,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 		Parent = switchTrack
 	})
 	createElement("UIStroke", {
-		Thickness = 1.5,
+		Thickness = 1,
 		Color = Color3.fromRGB(255, 255, 255),
 		Parent = switchTrack
 	})
@@ -2033,7 +2611,7 @@ local function createToggleButton(name, text, defaultState, callback, parentFram
 			return isToggled
 		end
 	else
-		toggle.Parent = parentFrame or contentFrame
+		toggle.Parent = parentFrame
 		return toggle, function()
 			return isToggled
 		end
@@ -2053,7 +2631,7 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 	})
 
 	createElement("UIStroke", {
-		Thickness = 2,
+		Thickness = 1,
 		Color = Color3.fromRGB(220, 220, 220),
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = infoFrame
@@ -2209,30 +2787,12 @@ local function createKeyBindButton(name, mainText, defaultSubText, callback, par
 		wrapper.Frame.Parent = parentFrame.Frame
 		return wrapper
 	else
-		wrapper.Frame.Parent = parentFrame or contentFrame
+		wrapper.Frame.Parent = parentFrame
 		return wrapper
 	end
 end
 
-local function createGhost(parentSection, gridPosition)
-	local ghost = createElement("Frame", {
-		Name = "Ghost",
-		BackgroundTransparency = 1,
-		ZIndex = 1
-	})
-
-	if parentSection and parentSection.AddComponent then
-		return parentSection.AddComponent(ghost, gridPosition)
-	elseif parentSection and parentSection.Frame then
-		ghost.Parent = parentSection.Frame
-		return ghost
-	else
-		ghost.Parent = parentSection
-		return ghost
-	end
-end
-
-local function createGhostText(parentSection, options)
+local function createGhostText(parentSection, options, gridPosition)
 	options = options or {}
 	local ghostText = createElement("TextLabel", {
 		Name = options.Name or "GhostText",
@@ -2247,7 +2807,7 @@ local function createGhostText(parentSection, options)
 		ZIndex = options.ZIndex or 8
 	})
 
-	local gridPos = options.GridPosition or { 2, 0.8 }
+	local gridPos = gridPosition or { 2, 0.6 }
 
 	if parentSection and parentSection.AddComponent then
 		return parentSection.AddComponent(ghostText, gridPos)
@@ -2260,14 +2820,13 @@ local function createGhostText(parentSection, options)
 	end
 end
 
-
 -- ================ USER INTERFACE ===================
 
 local SizeConfig = {
 	Width = 0.31,
 	Height = 0.80,
-	GuiMaxHeight = 600,
-	GuiMaxWidth = 380,
+	GuiMaxHeight = 610,
+	GuiMaxWidth = 400,
 	GuiMinWidth = 300,
 	GuiMinHeight = 300
 }
@@ -2279,21 +2838,20 @@ local maxWidth = SizeConfig.GuiMaxWidth
 local minHeight = SizeConfig.GuiMinHeight
 local minWidth = SizeConfig.GuiMinWidth
 
-local childrenContainer = createCollapsibleContainer("Prospecting", mainContainer, Width, Height, minWidth, minHeight,
-	maxWidth, maxHeight)
+local childrenContainer = createCollapsibleContainer("Prospecting", mainContainer, Width, Height,
+	minWidth, minHeight, maxWidth, maxHeight, { container = { backgroundTransparency = 0.20 } })
 
-local autoFarmSection = createSection(childrenContainer, "Auto Farm", 1, true, false,
-	"Tween is HIGHLY recommended, walk will be fixed in future updates!")
-local sellSection = createSection(childrenContainer, "Sell Inventory", 2, true)
-local teleportSection = createSection(childrenContainer, "Teleport", 3, true, false,
+local autoFarmSection = createSection(childrenContainer, "Auto Farm", nil, true, "Tween is HIGHLY recommended, walk will be fixed in future updates!")
+local sellSection = createSection(childrenContainer, "Sell Inventory", nil, true)
+local teleportSection = createSection(childrenContainer, "Teleport", nil, true,
 	"Requires waypoints to be unlocked before using them, use unlock all waypoints to do so.")
-local reforgeSection = createSection(childrenContainer, "Reforge", 4, false, false,
+local reforgeSection = createSection(childrenContainer, "Reforge", nil, false,
 	"Unequip the equipment you wanna reforge and DO NOT hold anything in your hand.")
-local enchantSection = createSection(childrenContainer, "Enchanting", 5, false, false,
+local enchantSection = createSection(childrenContainer, "Enchanting", nil, false,
 	"DO NOT hold anything in your hand.")
-local shopSection = createSection(childrenContainer, "Shop", 6, false, false, "Bulk buying will be added in next update.")
-local manualSection = createSection(childrenContainer, "Manual Actions", 7, false, false, "Legit mode WIP!")
-local utilitySection = createSection(childrenContainer, "Utility", 8, true)
+local shopSection = createSection(childrenContainer, "Shop", nil, false, "Bulk buying will be added in next update.")
+local manualSection = createSection(childrenContainer, "Manual Actions", nil, false, "Legit mode WIP!")
+local utilitySection = createSection(childrenContainer, "Utility", nil, true)
 
 -- =============== INITIALIZATION ===============
 -- actual brainfuck starts here
