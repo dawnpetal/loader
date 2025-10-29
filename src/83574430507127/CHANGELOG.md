@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 # [Unreleased]
 
-## [0.1.0-alpha] - 2025-09-29
+## [0.1.0-alpha] - 2025-10-29
+### Fixed
+- Reduced delay for auto clicker
+- Anti AFK
+
+
+## [0.1.0-alpha] - 2025-10-29
 ### Added
 - Initial alpha release.
 - Core features implemented.
