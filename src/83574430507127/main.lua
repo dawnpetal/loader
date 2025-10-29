@@ -152,25 +152,25 @@ if not a1B2c3D4E5() then                  -- 太阳落ちるとき, 月が輝き
 end      -- パンが空から降ってきて, 鳥들이 춤추며 노래한다
 
 local Expected = {
-	LoopFramework = true
+    LoopFramework = true
 }
 
 local Framework = _G.Framework
 
 if not Framework or not Framework.Libs then
-	error("Framework not initialized")
+    error("Framework not initialized")
 end
 
 for name in pairs(Expected) do
-	if not (Framework or Framework.Libs or Framework.Libs[name]) then
-		warn("Missing prerequisite: " .. name)
-	end
+    if not (Framework or Framework.Libs or Framework.Libs[name]) then
+        warn("Missing prerequisite: " .. name)
+    end
 end
 
 local LoopFramework = Framework.Libs.LoopFramework:start(0.01)
 
 if a1B2c3D4E5() then
-	_G.Framework = nil
+    _G.Framework = nil
 end
 
 print("All prerequisites validated, starting game...")
@@ -939,7 +939,6 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
     applyHeights(true)
     return contentFrame
 end
-
 
 local function createSection(parent, title, layoutOrder, defaultExpanded, infoText, uiProps)
     local props = deepMerge(DefaultUIProps.Section, uiProps or {})
@@ -2036,7 +2035,6 @@ local function createTextBox(name, mainText, defaultSubText, callback, parentFra
     end
 end
 
-
 local function createInfo(name, mainText, subText, callback, parentFrame, gridPosition)
     local infoFrame = createElement("Frame", {
         Name = name,
@@ -2834,7 +2832,6 @@ local childrenContainer = createCollapsibleContainer("Just Flip Bro", mainContai
     minWidth, minHeight, maxWidth, maxHeight, { container = { backgroundTransparency = 0.10 } })
 
 local AutoFarm = createSection(childrenContainer, "Auto Farm")
--- local AutoBuy = createSection(childrenContainer, "Auto Buy")
 local utilitySection = createSection(childrenContainer, "Utility")
 
 
@@ -2844,12 +2841,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local sendRoll = ReplicatedStorage:WaitForChild("sendRoll")
-local ShopItems = ReplicatedStorage:WaitForChild("ShopItems")
+local VirtualUser = cloneref and cloneref(game:GetService("VirtualUser")) or game:GetService("VirtualUser")
 
 local Player = Players.LocalPlayer
 local LocalPlayer = Player
 local PlaceId = game.PlaceId
 local JobId = game.JobId
+local KeepAlive = true
 
 local SelectedSide = "Random"
 local AutoFlipping = false
@@ -2873,43 +2871,43 @@ end, AutoFarm)
 
 local dontClickUntil = 0
 
-LoopFramework:registerTask("AutoFlipCoin", 0.440, function()
-	if not AutoFlipping then return end
-	
-	local now = os.clock()
-	
-	if now < dontClickUntil then
-		return
-	end
-	
-	local shouldIPauseForASec = math.random()
-	if shouldIPauseForASec < 0.008 then
-		local tinyPause = math.random(50, 150) / 1000
-		dontClickUntil = now + tinyPause
-		return
-	end
-	
-	if shouldIPauseForASec < 0.0001 then
-		local longerPause = math.random(300, 800) / 1000
-		dontClickUntil = now + longerPause
-		return
-	end
-	
-	local whichSide = SelectedSide
-	if whichSide == "Random" then
-		whichSide = (math.random(1, 2) == 1) and "Heads" or "Tails"
-	end
-	
-	sendRoll:InvokeServer(whichSide)
-	
-	local extraDelay = math.random(-20, 50) / 1000
-	if math.random() < 0.15 then
-		extraDelay = extraDelay + math.random(10, 80) / 1000
-	end
-	
-	if extraDelay > 0 then
-		task.wait(extraDelay)
-	end
+LoopFramework:registerTask("AutoFlipCoin", 0.500, function()
+    if not AutoFlipping then return end
+
+    local now = os.clock()
+
+    if now < dontClickUntil then
+        return
+    end
+
+    local shouldIPauseForASec = math.random()
+    if shouldIPauseForASec < 0.008 then
+        local tinyPause = math.random(50, 150) / 1000
+        dontClickUntil = now + tinyPause
+        return
+    end
+
+    if shouldIPauseForASec < 0.0001 then
+        local longerPause = math.random(300, 800) / 1000
+        dontClickUntil = now + longerPause
+        return
+    end
+
+    local whichSide = SelectedSide
+    if whichSide == "Random" then
+        whichSide = (math.random(1, 2) == 1) and "Heads" or "Tails"
+    end
+
+    sendRoll:InvokeServer(whichSide)
+
+    local extraDelay = math.random(-20, 50) / 1000
+    if math.random() < 0.15 then
+        extraDelay = extraDelay + math.random(10, 80) / 1000
+    end
+
+    if extraDelay > 0 then
+        task.wait(extraDelay)
+    end
 end)
 createToggleButton("AutoFlipToggle", "Auto Flip", false, function(state)
     AutoFlipping = state
@@ -2934,39 +2932,16 @@ end, AutoBuy, {2, 1})
 ]]
 
 -- ========= UTILITY SECTION ==========
+LoopFramework:registerTask("KeepAlive", 300, function()
+    if not KeepAlive then return end
+    getgenv().AntiAFKConnection = LocalPlayer.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+end)
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local GC = getconnections or get_signal_cons
-
-    if state then
-        -- Try the cleanest method first: disconnect idle detection
-        if GC then
-            for _, v in pairs(GC(Player.Idled)) do
-                if v.Disable then
-                    v.Disable(v)
-                elseif v.Disconnect then
-                    v.Disconnect(v)
-                end
-            end
-            print("Anti-AFK Enabled (disconnected idle events)")
-        else
-            -- Fallback: simulate input but it's risky, might have to change this later
-            local VirtualUser = cloneref and cloneref(game:GetService("VirtualUser")) or game:GetService("VirtualUser")
-            getgenv().AntiAFKConnection = LocalPlayer.Idled:Connect(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new())
-            end)
-            print("Anti-AFK Enabled (VirtualUser fallback)")
-        end
-    else
-        -- Disable Anti-AFK
-        if getgenv().AntiAFKConnection then
-            getgenv().AntiAFKConnection:Disconnect()
-            getgenv().AntiAFKConnection = nil
-        end
-        print("Anti-AFK Disabled")
-    end
+    KeepAlive = state
+    LoopFramework:setTaskEnabled("KeepAlive", KeepAlive)
 end, utilitySection)
 
 if UserInputService.TouchEnabled then
