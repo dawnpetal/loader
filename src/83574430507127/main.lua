@@ -2849,6 +2849,7 @@ local PlaceId = game.PlaceId
 local JobId = game.JobId
 local KeepAlive = true
 local SelectedSide = "Random"
+local TriggerFlipButton
 
 -- ========= AUTO FARM SECTION ==========
 
@@ -2859,9 +2860,10 @@ end, AutoFarm)
 local AutoFlipping = true
 local dontClickUntil = 0
 task.spawn(function()
-    if _G.TriggerFlipButton then return end
+    if TriggerFlipButton then return end
 
-    local p = game:GetService("Players").LocalPlayer
+    local Players = game:GetService("Players")
+    local p = Players.LocalPlayer
     local g = p:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
 
     local function findBtn()
@@ -2874,35 +2876,33 @@ task.spawn(function()
     end
 
     local b = findBtn()
-    if not b then return end
-
-    local ok, cons = pcall(function()
-        return getconnections and getconnections(b.MouseButton1Click)
-    end)
-
-    if ok and type(cons) == "table" then
-        for _, c in ipairs(cons) do
-            local okf, f = pcall(function() return c.Function end)
-            if okf and type(f) == "function" then
-                _G.TriggerFlipButton = f
-                return
+    if b then
+        local ok, cons = pcall(function() return getconnections and getconnections(b.MouseButton1Click) end)
+        if ok and type(cons) == "table" then
+            for _, c in ipairs(cons) do
+                local okf, f = pcall(function() return c.Function end)
+                if okf and type(f) == "function" then
+                    TriggerFlipButton = f
+                    return
+                end
             end
         end
     end
 
-    _G.TriggerFlipButton = function()
+    TriggerFlipButton = function()
         pcall(function()
             local btn = findBtn()
             if not btn then return end
-            VirtualUser:CaptureController()
+            local vu = game:GetService("VirtualUser")
+            vu:CaptureController()
             local pos = btn.AbsolutePosition + (btn.AbsoluteSize / 2)
-            VirtualUser:Button1Down(pos)
-            task.wait(0.03)
-            VirtualUser:Button1Up(pos)
+            vu:Button1Down(Vector2.new(pos.X, pos.Y))
+            task.wait((0.03 + math.random() * 0.04) + (math.random() * ((0.08 + math.random() * 0.03) - (0.04 + math.random() * 0.02))))
+            vu:Button1Up(Vector2.new(pos.X, pos.Y))
         end)
     end
 end)
-LoopFramework:registerTask("AutoFlipCoin", 0.400, function()
+LoopFramework:registerTask("AutoFlipCoin", 0.500, function()
     if not AutoFlipping then return end
 
     local now = os.clock()
@@ -2923,17 +2923,17 @@ LoopFramework:registerTask("AutoFlipCoin", 0.400, function()
     end
 
     local triggered = false
-    if _G.TriggerFlipButton then
-        local ok = pcall(_G.TriggerFlipButton)
+    if TriggerFlipButton then
+        local ok = pcall(TriggerFlipButton)
         if ok then triggered = true end
     end
     if not triggered and sendRoll then
         pcall(function() sendRoll:InvokeServer(whichSide) end)
     end
 
-    local d = math.random(-20, 50) / 1000
-    if math.random() < 0.15 then d = d + math.random(10, 80) / 1000 end
-    if d > 0 then task.wait(d) end
+    local extraDelay = math.random(-20, 50) / 1000
+    if math.random() < 0.15 then extraDelay = extraDelay + math.random(10, 80) / 1000 end
+    if extraDelay > 0 then task.wait(extraDelay) end
 end)
 
 createToggleButton("AutoFlipToggle", "Auto Flip", false, function(state)
