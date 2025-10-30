@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Replaced Remote calls with Button Callback / VirtualUser (as fallback).
 
-# [Unreleased]
-
 ## [0.1.2-alpha] - 2025-10-29
 ### Added
 - Auto Flipping is now ONN by default
