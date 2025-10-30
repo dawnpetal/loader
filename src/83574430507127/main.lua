@@ -2865,35 +2865,33 @@ task.spawn(function()
     local Players = game:GetService("Players")
     local p = Players.LocalPlayer
     local g = p:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+    local vu = game:GetService("VirtualUser")
 
-    local function findBtn()
-        if SelectedSide == "Random" then
-            local sides = { "HeadsButton", "TailsButton" }
-            return g:FindFirstChild(sides[math.random(1, 2)])
-        else
-            return g:FindFirstChild(SelectedSide .. "Button")
-        end
-    end
-
-    local b = findBtn()
-    if b then
-        local ok, cons = pcall(function() return getconnections and getconnections(b.MouseButton1Click) end)
+    local function fetchFunc(btn)
+        if not btn then return nil end
+        local ok, cons = pcall(function() return getconnections and getconnections(btn.MouseButton1Click) end)
         if ok and type(cons) == "table" then
             for _, c in ipairs(cons) do
                 local okf, f = pcall(function() return c.Function end)
                 if okf and type(f) == "function" then
-                    TriggerFlipButton = f
-                    return
+                    return f
                 end
             end
         end
+        return nil
     end
 
-    TriggerFlipButton = function()
+    local headsBtn = g:FindFirstChild("HeadsButton")
+    local tailsBtn = g:FindFirstChild("TailsButton")
+
+    TriggerFlipButton = {
+        HeadsFunction = fetchFunc(headsBtn),
+        TailsFunction = fetchFunc(tailsBtn)
+    }
+
+    local function clickBtn(btn)
         pcall(function()
-            local btn = findBtn()
             if not btn then return end
-            local vu = game:GetService("VirtualUser")
             vu:CaptureController()
             local pos = btn.AbsolutePosition + (btn.AbsoluteSize / 2)
             vu:Button1Down(Vector2.new(pos.X, pos.Y))
@@ -2901,10 +2899,16 @@ task.spawn(function()
             vu:Button1Up(Vector2.new(pos.X, pos.Y))
         end)
     end
+
+    if not TriggerFlipButton.HeadsFunction then
+        TriggerFlipButton.HeadsFunction = function() clickBtn(headsBtn) end
+    end
+    if not TriggerFlipButton.TailsFunction then
+        TriggerFlipButton.TailsFunction = function() clickBtn(tailsBtn) end
+    end
 end)
 LoopFramework:registerTask("AutoFlipCoin", 0.500, function()
     if not AutoFlipping then return end
-
     local now = os.clock()
     if now < dontClickUntil then return end
 
@@ -2924,8 +2928,11 @@ LoopFramework:registerTask("AutoFlipCoin", 0.500, function()
 
     local triggered = false
     if TriggerFlipButton then
-        local ok = pcall(TriggerFlipButton)
-        if ok then triggered = true end
+        local func = (whichSide == "Heads" and TriggerFlipButton.HeadsFunction) or TriggerFlipButton.TailsFunction
+        if func then
+            local ok = pcall(func)
+            if ok then triggered = true end
+        end
     end
     if not triggered and sendRoll then
         pcall(function() sendRoll:InvokeServer(whichSide) end)
