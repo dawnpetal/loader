@@ -2848,48 +2848,72 @@ local LocalPlayer = Player
 local PlaceId = game.PlaceId
 local JobId = game.JobId
 local KeepAlive = true
-
 local SelectedSide = "Random"
-local AutoFlipping = true
 
 -- ========= AUTO FARM SECTION ==========
-
-createGhostText(AutoFarm, {
-    Text =
-    "The cash amount stays the same, but the coin is still flipping. Flip once manually to see your current balance.",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.SourceSansBold,
-    TextSize = 20,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Bottom,
-}, { 2, 1.4 })
 
 createDropdown("FlipSideDropdown", "Choose Side", { "Heads", "Tails", "Random" }, "Random", function(input)
     SelectedSide = input
 end, AutoFarm)
 
+local AutoFlipping = true
 local dontClickUntil = 0
+task.spawn(function()
+    if _G.TriggerFlipButton then return end
 
-LoopFramework:registerTask("AutoFlipCoin", 0.700, function()
+    local p = game:GetService("Players").LocalPlayer
+    local g = p:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+
+    local function findBtn()
+        if SelectedSide == "Random" then
+            local sides = { "HeadsButton", "TailsButton" }
+            return g:FindFirstChild(sides[math.random(1, 2)])
+        else
+            return g:FindFirstChild(SelectedSide .. "Button")
+        end
+    end
+
+    local b = findBtn()
+    if not b then return end
+
+    local ok, cons = pcall(function()
+        return getconnections and getconnections(b.MouseButton1Click)
+    end)
+
+    if ok and type(cons) == "table" then
+        for _, c in ipairs(cons) do
+            local okf, f = pcall(function() return c.Function end)
+            if okf and type(f) == "function" then
+                _G.TriggerFlipButton = f
+                return
+            end
+        end
+    end
+
+    _G.TriggerFlipButton = function()
+        pcall(function()
+            local btn = findBtn()
+            if not btn then return end
+            VirtualUser:CaptureController()
+            local pos = btn.AbsolutePosition + (btn.AbsoluteSize / 2)
+            VirtualUser:Button1Down(pos)
+            task.wait(0.03)
+            VirtualUser:Button1Up(pos)
+        end)
+    end
+end)
+LoopFramework:registerTask("AutoFlipCoin", 0.400, function()
     if not AutoFlipping then return end
 
     local now = os.clock()
+    if now < dontClickUntil then return end
 
-    if now < dontClickUntil then
+    local r = math.random()
+    if r < 0.008 then
+        dontClickUntil = now + math.random(50, 150) / 1000
         return
-    end
-
-    local shouldIPauseForASec = math.random()
-    if shouldIPauseForASec < 0.008 then
-        local tinyPause = math.random(50, 150) / 1000
-        dontClickUntil = now + tinyPause
-        return
-    end
-
-    if shouldIPauseForASec < 0.0001 then
-        local longerPause = math.random(300, 800) / 1000
-        dontClickUntil = now + longerPause
+    elseif r < 0.0001 then
+        dontClickUntil = now + math.random(300, 800) / 1000
         return
     end
 
@@ -2898,38 +2922,35 @@ LoopFramework:registerTask("AutoFlipCoin", 0.700, function()
         whichSide = (math.random(1, 2) == 1) and "Heads" or "Tails"
     end
 
-    sendRoll:InvokeServer(whichSide)
-
-    local extraDelay = math.random(-20, 50) / 1000
-    if math.random() < 0.15 then
-        extraDelay = extraDelay + math.random(10, 80) / 1000
+    local triggered = false
+    if _G.TriggerFlipButton then
+        local ok = pcall(_G.TriggerFlipButton)
+        if ok then triggered = true end
+    end
+    if not triggered and sendRoll then
+        pcall(function() sendRoll:InvokeServer(whichSide) end)
     end
 
-    if extraDelay > 0 then
-        task.wait(extraDelay)
-    end
+    local d = math.random(-20, 50) / 1000
+    if math.random() < 0.15 then d = d + math.random(10, 80) / 1000 end
+    if d > 0 then task.wait(d) end
 end)
-createToggleButton("AutoFlipToggle", "Auto Flip", true, function(state)
+
+createToggleButton("AutoFlipToggle", "Auto Flip", false, function(state)
     AutoFlipping = state
     LoopFramework:setTaskEnabled("AutoFlipCoin", AutoFlipping)
 end, AutoFarm)
 
---[[
--- ========= AUTOBUY SECTION ==========
-
-LoopFramework:registerTask("AutoBuyBestTable", 1, function()
-    if not AutoBuyingTable then return end
-    local myTableName = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.LocalScript.MyTable.Value.Name
-    local myTable = workspace.Tables:FindFirstChild(myTableName)
-    local myTableCost = myTable.Table.Info.Cost.Value
-    local getCurrentPoints = myTable.Display.SurfaceGui.Points.Text
-
-end)
-createToggleButton("AutoBuyBestTable", "Auto Buy Best Table", false, function(state)
-    AutoBuyingTable = state
-    LoopFramework:setTaskEnabled("AutoBuyBestTable", AutoBuyingTable)
-end, AutoBuy, {2, 1})
-]]
+createGhostText(AutoFarm, {
+    Text =
+    "Yeah that's about it...",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.SourceSansBold,
+    TextSize = 20,
+    TextWrapped = true,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    TextYAlignment = Enum.TextYAlignment.Center,
+}, { 2, 0.75 })
 
 -- ========= UTILITY SECTION ==========
 LoopFramework:registerTask("KeepAlive", 300, function()
