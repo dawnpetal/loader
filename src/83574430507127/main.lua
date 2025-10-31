@@ -2960,6 +2960,7 @@ createGhostText(AutoFarm, {
 }, { 2, 0.75 })
 
 -- ========= UTILITY SECTION ==========
+--[[
 LoopFramework:registerTask("KeepAlive", 300, function()
     if not KeepAlive then return end
     VirtualUser:CaptureController()
@@ -2969,6 +2970,7 @@ createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
     KeepAlive = state
     LoopFramework:setTaskEnabled("KeepAlive", KeepAlive)
 end, utilitySection)
+]]
 
 if UserInputService.TouchEnabled then
     local toggleButton = Instance.new("ImageButton")
@@ -3025,3 +3027,5 @@ createButton("ServerHopButton", "Server Hop", function()
 
     createNotification("Couldn't fetch servers to hop", 5)
 end, utilitySection)
+
+createNotification("Hey there! Anti-AFK is currently broken, and I'm either too busy or too retarded to fix it right now.")
