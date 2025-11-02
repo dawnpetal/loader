@@ -160,7 +160,7 @@ if not Framework or not Framework.Libs then
 end
 
 for name in pairs(Expected) do
-	if not Framework or Framework.Libs or Framework.Libs[name] then
+	if not (Framework or Framework.Libs or Framework.Libs[name]) then
 		warn("Missing prerequisite: " .. name)
 	end
 end
@@ -4234,7 +4234,8 @@ local function getInventoryCount()
 	local backpack = player:WaitForChild("BackpackTwo")
 	local count = 0
 	for _, item in ipairs(backpack:GetChildren()) do
-		if item:GetAttribute("ItemType") == "Valuable" then
+		local itemType = item:GetAttribute("ItemType")
+		if itemType == "Valuable" or itemType == "Equipment" then
 			count += 1
 		end
 	end
@@ -4299,10 +4300,19 @@ local function buildPurchasableTable()
 					else
 						table.insert(purchasable.Others, formattedEntry)
 					end
+				else
+					for attrName, attrValue in pairs(shopItem:GetAttributes()) do
+						if typeof(attrValue) == "number" and attrName ~= "Price" and attrName ~= "ShardPrice" then
+							local entry = string.format("%s - %d %s", item.Name, attrValue, attrName)
+							table.insert(purchasable.Others, entry)
+							break
+						end
+					end
 				end
 			end
 		end
 	end
+
 	return purchasable
 end
 
@@ -4499,9 +4509,12 @@ local function handlePurchase(itemType, selectedOption)
 		createNotification("Please select a " .. itemType .. " first!", 5)
 		return
 	end
-	local name, price = selectedOption:match("^(.+) %- ([ƒ%$].+)$")
+
+	local name, value, currency = selectedOption:match("^(.-) %- (%d+)%s+(%S+)$")
 	local remoteEvent = game:GetService("ReplicatedStorage").Remotes.Shop.BuyItem
-	if name and price then
+
+	if name and value and currency then
+		local price = value .. " " .. currency
 		ConfirmationPrompt.show({
 			item = name,
 			price = price,
@@ -5429,12 +5442,12 @@ createButton("BuyTotemDropdownButton", "Buy Totem", function()
 end, shopSection)
 
 createDropdown("BuyOthersDropdown", "Select Others", buildPurchasableTable().Others, nil, function(opt)
-	selectedOptions.totem = opt
-end, shopSection)
+	selectedOptions.other = opt
+end, shopSection, nil, {1.35, 1})
 
-createButton("BuyOthersDropdownButton", "Buy Others [IF ANY]", function()
+createButton("BuyOthersDropdownButton", "Buy Others", function()
 	handlePurchase("others", selectedOptions.other)
-end, shopSection)
+end, shopSection, { 0.65, 1})
 
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
 	local Players = game:GetService("Players")
