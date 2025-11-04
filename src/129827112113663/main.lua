@@ -952,7 +952,11 @@ end
 local function createSection(parent, title, layoutOrder, defaultExpanded, infoText, uiProps)
 	local props = deepMerge(DefaultUIProps.Section, uiProps or {})
 
-	defaultExpanded = defaultExpanded ~= nil and defaultExpanded or props.behavior.defaultExpanded
+	if defaultExpanded ~= nil then
+		props.behavior.defaultExpanded = defaultExpanded
+	else
+		defaultExpanded = props.behavior.defaultExpanded
+	end
 
 	local container = props.container
 	local header = props.header
@@ -2841,10 +2845,12 @@ local minWidth = SizeConfig.GuiMinWidth
 local childrenContainer = createCollapsibleContainer("Prospecting", mainContainer, Width, Height,
 	minWidth, minHeight, maxWidth, maxHeight, { container = { backgroundTransparency = 0.20 } })
 
-local autoFarmSection = createSection(childrenContainer, "Auto Farm", nil, true, "Tween is HIGHLY recommended, walk will be fixed in future updates!")
+local autoFarmSection = createSection(childrenContainer, "Auto Farm", nil, true,
+	"Tween is HIGHLY recommended, walk will be fixed in future updates!")
 local sellSection = createSection(childrenContainer, "Sell Inventory", nil, true)
 local teleportSection = createSection(childrenContainer, "Teleport", nil, true,
 	"Requires waypoints to be unlocked before using them, use unlock all waypoints to do so.")
+-- local merchantSection = createSection(childrenContainer, "Merchant", nil, true)
 local reforgeSection = createSection(childrenContainer, "Reforge", nil, false,
 	"Unequip the equipment you wanna reforge and DO NOT hold anything in your hand.")
 local enchantSection = createSection(childrenContainer, "Enchanting", nil, false,
@@ -4603,7 +4609,9 @@ end, sellSection)
 
 createButton("StartSellButton", "Sell all your valuables", function()
 	if TaskManager:getMainTask() then
-		return createNotification("Please wait for current task to complete", 5)
+		return createNotification(
+			"Please wait for current task to complete, if something (AutoFarm) is running, turn it off and try this again.",
+			5)
 	end
 	if not TaskManager:requestTask("ManualSell", 3) then
 		return createNotification("Could not start sell task", 5)
@@ -4792,15 +4800,14 @@ createToggleButton("AutoFarmToggle", "Auto Farm", false, function(state)
 					local reached = moveToLocation(targetCFrame, locationName)
 
 					local duration = os.clock() - startTime
-					warn(string.format("[AutoFarm] moveToLocation -> %s took %.2f seconds", locationName, duration))
+					-- warn(string.format("[AutoFarm] moveToLocation -> %s took %.2f seconds", locationName, duration))
 
 					if reached then
 						local actionStart = os.clock()
 						task.wait(0.100)
 						if doAction(actionType, expectedRegion) then
 							local actionDuration = os.clock() - actionStart
-							warn(string.format("[AutoFarm] doAction -> %s took %.2f seconds", actionType, actionDuration))
-
+							-- warn(string.format("[AutoFarm] doAction -> %s took %.2f seconds", actionType, actionDuration))
 							TaskManager:setCurrentTask("AutoFarm")
 							return true
 						end
@@ -4859,9 +4866,10 @@ createToggleButton("AutoFarmToggle", "Auto Farm", false, function(state)
 							return
 						end
 
+						checkAndDoSell()
+
 						if PanStatus.isFull then
 							if performTask("MovingToWater", "WashPan", AutoFarmState.waterCFrame, "Wash", "Water", "water") then
-								checkAndDoSell()
 							else
 								AutoFarmState.active = false
 							end
@@ -5258,7 +5266,6 @@ local function performAutoEnchant(findItemFunc, remote, itemName, targetEnchant,
 		while autoEnchantingVar[1] do
 			local item = findItemFunc()
 			if item then
-				print(item)
 
 				local enchant = enchantItem(remote, item, "auto", itemName)
 
@@ -5443,11 +5450,11 @@ end, shopSection)
 
 createDropdown("BuyOthersDropdown", "Select Others", buildPurchasableTable().Others, nil, function(opt)
 	selectedOptions.other = opt
-end, shopSection, nil, {1.35, 1})
+end, shopSection, nil, { 1.35, 1 })
 
 createButton("BuyOthersDropdownButton", "Buy Others", function()
 	handlePurchase("others", selectedOptions.other)
-end, shopSection, { 0.65, 1})
+end, shopSection, { 0.65, 1 })
 
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
 	local Players = game:GetService("Players")
