@@ -205,8 +205,8 @@ local sharedTooltip
 local viewportSize = workspace.CurrentCamera.ViewportSize
 local DESIGN_HEIGHT = 981
 local DESIGN_WIDTH = 1664
-local ScaleX = viewportSize.X / DESIGN_WIDTH
-local ScaleY = viewportSize.Y / DESIGN_HEIGHT
+local ScaleX = math.clamp(viewportSize.X / DESIGN_WIDTH, 0.9, 1.2)
+local ScaleY = math.clamp(viewportSize.Y / DESIGN_HEIGHT, 0.7, 1.2)
 local DefaultUIProps = {
 	CollapsibleContainer = {
 		container = {
@@ -375,7 +375,7 @@ local DefaultUIProps = {
 -- ======================== HELPER FUNCTIONS ========================
 
 local function getTextSize(size)
-	local factor = 0.5
+	local factor = 0.68
 	local adjustedScale = 1 + (ScaleY - 1) * factor
 	return math.floor(size * adjustedScale)
 end
@@ -624,10 +624,222 @@ local mainContainer = createElement("Frame", {
 	Parent = SimpleScriptsGui
 })
 
-local function createCollapsibleContainer(title, parent, width, height, minWidth, minHeight, maxWidth, maxHeight, uiProps)
+local function createTabBar(parent, headerHeight, paddingX, zIndex)
+	local tabBar = createElement("Frame", {
+		Name = "TabBar",
+		Size = UDim2.new(1, -paddingX * 2, 0, headerHeight * 0.85),
+		Position = UDim2.new(0, paddingX, 0, headerHeight),
+		BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ZIndex = zIndex + 1,
+		Parent = parent
+	})
+
+	createElement("UICorner", {
+		CornerRadius = UDim.new(0, 6),
+		Parent = tabBar
+	})
+
+	local leftFade = createElement("Frame", {
+		Name = "LeftFade",
+		Size = UDim2.new(0, 30, 1, 0),
+		BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+		BackgroundTransparency = 0.3,
+		BorderSizePixel = 0,
+		ZIndex = zIndex + 3,
+		Parent = tabBar
+	})
+
+	createElement("UIGradient", {
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }),
+		Parent = leftFade
+	})
+
+	createElement("UICorner", { CornerRadius = UDim.new(0, 6), Parent = leftFade })
+
+	local rightFade = createElement("Frame", {
+		Name = "RightFade",
+		Size = UDim2.new(0, 30, 1, 0),
+		Position = UDim2.new(1, -30, 0, 0),
+		BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+		BackgroundTransparency = 0.3,
+		BorderSizePixel = 0,
+		ZIndex = zIndex + 3,
+		Parent = tabBar
+	})
+
+	createElement("UIGradient", {
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) }),
+		Parent = rightFade
+	})
+
+	createElement("UICorner", { CornerRadius = UDim.new(0, 6), Parent = rightFade })
+
+	local tabScroll = createElement("ScrollingFrame", {
+		Name = "TabScroll",
+		Size = UDim2.new(1, -10, 1, -6),
+		Position = UDim2.new(0, 5, 0, 3),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 0,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		ZIndex = zIndex + 2,
+		Parent = tabBar
+	})
+
+	local layout = createElement("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Padding = UDim.new(0, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = tabScroll
+	})
+
+	createElement("UIPadding", {
+		PaddingLeft = UDim.new(0, 5),
+		PaddingRight = UDim.new(0, 5),
+		Parent = tabScroll
+	})
+
+	local tabs = {}
+	local activeTabButton = nil
+
+	local function updateFades()
+		local size = layout.AbsoluteContentSize.X + 20
+		tabScroll.CanvasSize = UDim2.new(0, size, 0, 0)
+		local maxScroll = math.max(0, size - tabScroll.AbsoluteSize.X)
+		leftFade.Visible = tabScroll.CanvasPosition.X > 2
+		rightFade.Visible = tabScroll.CanvasPosition.X < maxScroll - 2
+	end
+
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateFades)
+	tabScroll:GetPropertyChangedSignal("CanvasPosition"):Connect(updateFades)
+
+	leftFade.Visible = false
+	rightFade.Visible = false
+
+	local function setActiveTab(btn)
+		if activeTabButton == btn then return end
+
+		if activeTabButton then
+			local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			TweenService:Create(activeTabButton, tweenInfo, {
+				BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+				BackgroundTransparency = 0.4
+			}):Play()
+			TweenService:Create(activeTabButton.TextLabel, tweenInfo, {
+				TextColor3 = Color3.fromRGB(160, 160, 160),
+				TextSize = 13
+			}):Play()
+		end
+
+		activeTabButton = btn
+		local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+		TweenService:Create(btn, tweenInfo, {
+			BackgroundColor3 = Color3.fromRGB(55, 55, 55),
+			BackgroundTransparency = 0
+		}):Play()
+		TweenService:Create(btn.TextLabel, tweenInfo, {
+			TextColor3 = Color3.fromRGB(255, 255, 255),
+			TextSize = 14
+		}):Play()
+	end
+
+	local function createTab(name, layoutOrder, onActivate)
+		local btn = createElement("TextButton", {
+			Name = name .. "Tab",
+			Size = UDim2.new(0, 100, 1, 0),
+			Position = UDim2.new(0, 0, 0, 4),
+			BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+			BackgroundTransparency = 0.4,
+			BorderSizePixel = 0,
+			Text = "",
+			LayoutOrder = layoutOrder or #tabs + 1,
+			ZIndex = zIndex + 4,
+			AutoButtonColor = false,
+			Parent = tabScroll
+		})
+
+		createElement("UICorner", {
+			CornerRadius = UDim.new(0, 5),
+			Parent = btn
+		})
+
+		createElement("UIStroke", {
+			Color = Color3.fromRGB(60, 60, 60),
+			Transparency = 0.5,
+			Thickness = 1,
+			Parent = btn
+		})
+
+		local lbl = createElement("TextLabel", {
+			Size = UDim2.new(1, -8, 1, 0),
+			Position = UDim2.new(0, 4, 0, 0),
+			BackgroundTransparency = 1,
+			Text = name,
+			TextColor3 = Color3.fromRGB(160, 160, 160),
+			TextSize = 13,
+			Font = Enum.Font.GothamBold,
+			TextScaled = false,
+			TextWrapped = false,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			ZIndex = zIndex + 5,
+			Parent = btn
+		})
+
+		btn.MouseEnter:Connect(function()
+			if btn ~= activeTabButton then
+				local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				TweenService:Create(btn, tweenInfo, {
+					BackgroundTransparency = 0.2
+				}):Play()
+			end
+		end)
+
+		btn.MouseLeave:Connect(function()
+			if btn ~= activeTabButton then
+				local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				TweenService:Create(btn, tweenInfo, {
+					BackgroundTransparency = 0.4
+				}):Play()
+			end
+		end)
+
+		btn.MouseButton1Down:Connect(function()
+			local tweenInfo = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			TweenService:Create(lbl, tweenInfo, {
+				Position = UDim2.new(0, 4, 0, 2)
+			}):Play()
+		end)
+
+		btn.MouseButton1Up:Connect(function()
+			local tweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			TweenService:Create(lbl, tweenInfo, {
+				Position = UDim2.new(0, 4, 0, 0)
+			}):Play()
+		end)
+
+		btn.Activated:Connect(function()
+			setActiveTab(btn)
+			if onActivate then
+				onActivate(name)
+			end
+		end)
+
+		tabs[#tabs + 1] = btn
+		updateFades()
+		return btn
+	end
+
+	return tabScroll, tabBar, createTab, setActiveTab
+end
+
+local function createTabbedContainer(title, parent, width, height, minWidth, minHeight, maxWidth, maxHeight, uiProps)
 	width = width or viewportSize.X * 0.25
 	height = height or viewportSize.Y * 0.70
-	minWidth = minWidth or math.clamp(300 * ScaleX, 250, 400)
+	minWidth = minWidth or math.clamp(300 * ScaleX, 280, 400)
 	minHeight = minHeight or math.clamp(500 * ScaleY, 400, 650)
 	maxWidth = maxWidth or math.clamp(425 * ScaleX, 350, 550)
 	maxHeight = maxHeight or math.clamp(800 * ScaleY, 650, 1000)
@@ -643,10 +855,11 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 	local animation = props.animation
 
 	local headerHeight = header.height or math.clamp(40 * ScaleY, 32, 50)
+	local tabBarHeight = headerHeight * 0.85
 	local paddingX = container.paddingX or math.clamp(10 * ScaleX, 8, 15)
 	local paddingY = container.paddingY or math.clamp(15 * ScaleY, 10, 20)
 	local strokeThickness = container.strokeThickness or
-		math.clamp(container.borderThickness * math.min(ScaleX, ScaleY), 1, 3)
+	math.clamp(container.borderThickness * math.min(ScaleX, ScaleY), 1, 3)
 	local cornerRadius = container.cornerRadius or math.clamp(8 * math.min(ScaleX, ScaleY), 6, 12)
 	local scrollBarThickness = scroll.barThickness or math.clamp(3 * math.min(ScaleX, ScaleY), 2, 5)
 	local arrowSize = arrow.size or math.clamp(20 * math.min(ScaleX, ScaleY), 16, 26)
@@ -677,7 +890,6 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 	local scrollBarVisibleTransparency = scroll.barVisibleTransparency
 	local scrollBarHiddenTransparency = scroll.barHiddenTransparency
 
-	local listPadding = content.listPadding or math.clamp(5 * ScaleY, 3, 8)
 	local contentPaddingTop = content.paddingTop or math.clamp(5 * ScaleY, 3, 8)
 	local contentPaddingBottom = content.paddingBottom or paddingY
 
@@ -695,8 +907,8 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 
 	local isFirstExpansion = true
 	local containerFrame = createElement("Frame", {
-		Name = "CollapsibleContainer",
-		Size = UDim2.new(1, 0, 0, headerHeight),
+		Name = "TabbedContainer",
+		Size = UDim2.new(1, 0, 0, headerHeight + tabBarHeight + 8),
 		BackgroundColor3 = bgColor,
 		BackgroundTransparency = bgTransparency,
 		BorderSizePixel = 0,
@@ -704,16 +916,19 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		ZIndex = zIndexContainer,
 		Parent = parent
 	})
+
 	createElement("UIStroke", {
 		Thickness = strokeThickness,
 		Color = borderColor,
 		Transparency = container.strokeTransparency,
 		Parent = containerFrame
 	})
+
 	createElement("UICorner", {
 		CornerRadius = UDim.new(0, cornerRadius),
 		Parent = containerFrame
 	})
+
 	local dragArea = createElement("Frame", {
 		Size = UDim2.new(1, -headerHeight * toggleButtonSize, 0, headerHeight),
 		BackgroundColor3 = headerBgColor,
@@ -722,6 +937,7 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		ZIndex = zIndexHeader,
 		Parent = containerFrame
 	})
+
 	local toggleBtn = createElement("TextButton", {
 		Size = UDim2.new(0, headerHeight * toggleButtonSize, 0, headerHeight),
 		Position = UDim2.new(1, -headerHeight * toggleButtonSize, 0, 0),
@@ -730,6 +946,7 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		ZIndex = zIndexHeader,
 		Parent = containerFrame
 	})
+
 	local label = createElement("TextLabel", {
 		Size = UDim2.new(1, -paddingX, 1, 0),
 		Position = UDim2.new(0, paddingX, 0, 0),
@@ -744,6 +961,7 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		ZIndex = zIndexHeader,
 		Parent = dragArea
 	})
+
 	local arrowImageLabel = createElement("ImageLabel", {
 		Size = UDim2.new(0, arrowSize, 0, arrowSize),
 		Position = UDim2.new(0.5, -arrowSize * 0.5, 0.5, -arrowSize * 0.5),
@@ -757,9 +975,13 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		ZIndex = zIndexHeader,
 		Parent = toggleBtn
 	})
+
+	local tabScroll, tabBar, createTab, setActiveTab = createTabBar(containerFrame, headerHeight, paddingX,
+		zIndexContainer)
+
 	local contentFrame = createElement("ScrollingFrame", {
 		Size = UDim2.new(1, -paddingX * 2, 0, 0),
-		Position = UDim2.new(0, paddingX, 0, headerHeight),
+		Position = UDim2.new(0, paddingX, 0, headerHeight + tabBarHeight + 8),
 		BackgroundColor3 = contentBgColor,
 		BackgroundTransparency = contentBgTransparency,
 		BorderSizePixel = 0,
@@ -774,6 +996,7 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		ZIndex = zIndexContent,
 		Parent = containerFrame
 	})
+
 	createElement("UIPadding", {
 		PaddingTop = UDim.new(0, contentPaddingTop),
 		PaddingBottom = UDim.new(0, contentPaddingBottom),
@@ -781,13 +1004,11 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		PaddingRight = UDim.new(0, content.paddingRight),
 		Parent = contentFrame
 	})
-	local list = createElement("UIListLayout", {
-		Padding = UDim.new(0, listPadding),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		HorizontalAlignment = content.horizontalAlignment,
-		VerticalAlignment = content.verticalAlignment,
-		Parent = contentFrame
-	})
+
+	local pages = {}
+	local tabButtons = {}
+	local activeTab = nil
+
 	local isExpanded = false
 	local isAnimating = false
 	local isDragging = false
@@ -829,36 +1050,64 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		dragArea.InputBegan:Connect(startDrag)
 	end
 
-	local function computeHeights()
-		local baseHeight = list.AbsoluteContentSize.Y + math.clamp(15, 10, 20)
-		local extra = 0
-		for _, d in ipairs(contentFrame:GetDescendants()) do
+	local function getPageHeight(page)
+		if not page then
+			return 0
+		end
+
+		local totalHeight = 0
+		for _, child in ipairs(page:GetChildren()) do
+			if child:IsA("GuiObject") and child.Visible then
+				totalHeight = totalHeight + child.AbsoluteSize.Y
+			end
+		end
+
+		local layout = page:FindFirstChildOfClass("UIListLayout")
+		if layout then
+			totalHeight = layout.AbsoluteContentSize.Y
+		end
+
+		local extra = 10
+		for _, d in ipairs(page:GetDescendants()) do
 			if d:IsA("Frame") and d.Name == "OptionsMenu" and d.Visible then
 				local menuBottom = d.AbsolutePosition.Y + d.AbsoluteSize.Y
-				local baseBottom = contentFrame.AbsolutePosition.Y + baseHeight
-				local overflow = math.max(0, menuBottom - baseBottom)
+				local pageBottom = page.AbsolutePosition.Y + totalHeight
+				local overflow = math.max(0, menuBottom - pageBottom)
 				if overflow > extra then
 					extra = overflow
 				end
 			end
 		end
-		local totalContentHeight = baseHeight
-		local maxDisplayHeight = math.min(maxHeight - headerHeight - paddingY, height - headerHeight - paddingY)
-		local needsScrolling = totalContentHeight > maxDisplayHeight
-		local displayHeight = needsScrolling and maxDisplayHeight or totalContentHeight
+
+		return totalHeight + extra
+	end
+
+	local function computeHeights()
+		local baseHeight = 0
+
+		if activeTab and pages[activeTab] then
+			baseHeight = getPageHeight(pages[activeTab])
+		end
+
+		local maxDisplayHeight = math.min(maxHeight - headerHeight - tabBarHeight - 8 - paddingY,
+			height - headerHeight - tabBarHeight - 8 - paddingY)
+		local needsScrolling = baseHeight > maxDisplayHeight
+		local displayHeight = needsScrolling and maxDisplayHeight or baseHeight
 		local contentHeight = isExpanded and displayHeight or 0
-		local containerHeight = headerHeight + contentHeight + math.clamp(5 * ScaleY, 3, 8)
+		local containerHeight = headerHeight + tabBarHeight + 8 + contentHeight + math.clamp(5 * ScaleY, 3, 8)
+
 		if not isExpanded then
 			containerHeight = headerHeight
 		end
-		return contentHeight, containerHeight, needsScrolling, totalContentHeight
+
+		return contentHeight, containerHeight, needsScrolling, baseHeight
 	end
 
 	local function applyHeights(immediate)
 		local contentH, containerH, needsScrolling, totalContentHeight = computeHeights()
 		contentFrame.ScrollingEnabled = needsScrolling
 		contentFrame.ScrollBarImageTransparency = needsScrolling and scrollBarVisibleTransparency or
-			scrollBarHiddenTransparency
+		scrollBarHiddenTransparency
 
 		local newCanvasSize = UDim2.new(0, 0, 0, totalContentHeight)
 		if contentFrame.CanvasSize ~= newCanvasSize then
@@ -873,7 +1122,8 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 			end
 		end
 
-		contentFrame.Size = UDim2.new(1, -paddingX * 2, 0, contentH)
+		contentFrame.Size = UDim2.new(1, -paddingX * 2, 0, contentH + 10)
+
 		local finalWidth = math.max(minWidth, math.min(maxWidth, width))
 		local info = TweenInfo.new(animationDuration, animationStyle, animationDirection)
 		if immediate then
@@ -886,6 +1136,27 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 			TweenService:Create(parent, info, {
 				Size = UDim2.new(0, finalWidth, 0, containerH)
 			}):Play()
+		end
+	end
+
+	local function switchToTab(tabName)
+		if activeTab == tabName or not pages[tabName] then
+			return
+		end
+
+		for name, page in pairs(pages) do
+			page.Visible = false
+		end
+
+		pages[tabName].Visible = true
+		activeTab = tabName
+
+		if tabButtons[tabName] then
+			setActiveTab(tabButtons[tabName])
+		end
+
+		if isExpanded then
+			applyHeights(false)
 		end
 	end
 
@@ -909,23 +1180,12 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 		hookOptionsMenu(d)
 	end
 
-	contentFrame.ChildAdded:Connect(function()
-		applyHeights(true)
-	end)
-	contentFrame.ChildRemoved:Connect(function()
-		applyHeights(true)
-	end)
 	contentFrame.DescendantAdded:Connect(function(d)
 		if d.Name == "OptionsMenu" then
 			hookOptionsMenu(d)
 		end
 		if isExpanded then
 			applyHeights(true)
-		end
-	end)
-	list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		if isExpanded then
-			applyHeights(false)
 		end
 	end)
 
@@ -946,7 +1206,62 @@ local function createCollapsibleContainer(title, parent, width, height, minWidth
 
 	toggleBtn.Activated:Connect(toggleContainer)
 	applyHeights(true)
-	return contentFrame
+
+	return {
+		CreatePage = function(pageName, layoutOrder)
+			local page = createElement("Frame", {
+				Name = pageName .. "Page",
+				Size = UDim2.new(1, 0, 0, 0),
+				BackgroundTransparency = 1,
+				Visible = false,
+				ZIndex = zIndexContent,
+				Parent = contentFrame
+			})
+
+			local layout = createElement("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				Padding = UDim.new(0, 8),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Parent = page
+			})
+
+			layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				page.Size = UDim2.new(1, 0, 0, layout.AbsoluteContentSize.Y)
+				if isExpanded and page.Visible then
+					applyHeights(false)
+				end
+			end)
+
+			page.DescendantAdded:Connect(function(d)
+				if isExpanded and page.Visible then
+					task.wait(0.05)
+					applyHeights(false)
+				end
+			end)
+
+			page.DescendantRemoving:Connect(function(d)
+				if isExpanded and page.Visible then
+					task.wait(0.05)
+					applyHeights(false)
+				end
+			end)
+
+			pages[pageName] = page
+
+			local tabButton = createTab(pageName, layoutOrder, switchToTab)
+			tabButtons[pageName] = tabButton
+
+			if not activeTab then
+				switchToTab(pageName)
+			end
+
+			return page
+		end,
+		SwitchTab = switchToTab,
+		GetActiveTab = function()
+			return activeTab
+		end
+	}
 end
 
 local function createSection(parent, title, layoutOrder, defaultExpanded, infoText, uiProps)
@@ -1379,7 +1694,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, infoTe
 	end)
 	sectionContent.ChildRemoved:Connect(debouncedUpdate)
 
-	updateSectionSize(false)
+	task.defer(updateSectionSize, false)
 
 	return {
 		Frame = sectionContent,
@@ -1875,7 +2190,6 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	end
 end
 
-
 local function createButton(name, text, callback, parentSection, gridPosition)
 	local btn = createElement("TextButton", {
 		Name = name,
@@ -2356,157 +2670,6 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 	end
 end
 
-local function createInfo3(name, mainText, subText, callback, parentFrame, gridPosition)
-	local infoFrame = createElement("Frame", {
-		Name = name,
-		Size = UDim2.new(0.35, 0, 0.12, 0),
-		BackgroundTransparency = 0.85,
-		ZIndex = 10,
-	})
-
-	createElement("UIStroke", {
-		Thickness = 1,
-		Color = Color3.fromRGB(140, 140, 140),
-		Transparency = 0.4,
-		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		Parent = infoFrame
-	})
-
-	createElement("UICorner", {
-		CornerRadius = UDim.new(0, 4),
-		Parent = infoFrame
-	})
-
-	createElement("UIPadding", {
-		PaddingTop = UDim.new(0.01, 0),
-		PaddingBottom = UDim.new(0.03, 0),
-		PaddingLeft = UDim.new(0.02, 0),
-		PaddingRight = UDim.new(0.02, 0),
-		Parent = infoFrame
-	})
-
-	local layout = createElement("UIListLayout", {
-		Parent = infoFrame,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 2)
-	})
-
-	local mainLabel = createElement("TextButton", {
-		Name = "MainText",
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 1,
-		TextColor3 = Color3.fromRGB(235, 235, 235),
-		Font = Enum.Font.SourceSansBold,
-		TextWrapped = true,
-		TextSize = 18,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		Text = mainText or "Information",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		ZIndex = 11,
-		Parent = infoFrame,
-		LayoutOrder = 1
-	})
-
-	createElement("UIPadding", {
-		PaddingTop = UDim.new(0, 4),
-		PaddingBottom = UDim.new(0, 4),
-		Parent = mainLabel
-	})
-
-	local subLabel = createElement("TextLabel", {
-		Name = "SubText",
-		Size = UDim2.new(1, 0, 1, 0),
-		BackgroundTransparency = 1,
-		TextColor3 = Color3.fromRGB(220, 220, 220),
-		Font = Enum.Font.Gotham,
-		TextWrapped = true,
-		TextSize = 13,
-		Text = subText or "",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		ZIndex = 11,
-		Parent = infoFrame,
-		LayoutOrder = 2
-	})
-
-	local wrapper = {
-		Frame = infoFrame,
-		MainLabel = mainLabel,
-		SubLabel = subLabel,
-	}
-
-	local function formatSubText(txt)
-		if not txt or txt == "" then return "" end
-		local lines = string.split(txt, "\n")
-		for i, line in ipairs(lines) do
-			line = (i == 1 and line or "• " .. line)
-			line = line:gsub("%*%*(.-)%*%*", "<b>%1</b>")
-			line = line:gsub("%*(.-)%*", "<i>%1</i>")
-			line = line:gsub("%_(.-)%_", "<u>%1</u>")
-			lines[i] = line
-		end
-		return table.concat(lines, "\n")
-	end
-
-	function wrapper.SetText(newMainText, newSubText)
-		local oldMainText = mainLabel.Text
-		local oldSubText = subLabel.Text
-		if newMainText ~= nil then mainLabel.Text = newMainText end
-		if newSubText ~= nil then subLabel.Text = formatSubText(newSubText) end
-		if callback and (oldMainText ~= mainLabel.Text or oldSubText ~= subLabel.Text) then
-			callback(mainLabel.Text, subLabel.Text)
-		end
-	end
-
-	function wrapper.SetMainText(newText)
-		local oldText = mainLabel.Text
-		mainLabel.Text = newText or "Information"
-		if callback and oldText ~= mainLabel.Text then
-			callback(mainLabel.Text, subLabel.Text)
-		end
-	end
-
-	function wrapper.SetSubText(newText)
-		local oldText = subLabel.Text
-		subLabel.Text = formatSubText(newText)
-		if callback and oldText ~= subLabel.Text then
-			callback(mainLabel.Text, subLabel.Text)
-		end
-	end
-
-	function wrapper.GetText()
-		return mainLabel.Text, subLabel.Text
-	end
-
-	function wrapper.GetMainText()
-		return mainLabel.Text
-	end
-
-	function wrapper.GetSubText()
-		return subLabel.Text
-	end
-
-	local expanded = true
-
-	mainLabel.Activated:Connect(function()
-		-- Height change logic goes here
-	end)
-
-
-	if parentFrame and parentFrame.AddComponent then
-		parentFrame.AddComponent(wrapper.Frame, gridPosition)
-		return wrapper
-	elseif parentFrame and parentFrame.Frame then
-		wrapper.Frame.Parent = parentFrame.Frame
-		return wrapper
-	else
-		wrapper.Frame.Parent = parentFrame
-		return wrapper
-	end
-end
-
 local function createToggleButton(name, text, defaultState, callback, parentFrame, gridPosition)
 	local toggle = createElement("Frame", {
 		Name = name,
@@ -2834,7 +2997,6 @@ local SizeConfig = {
 	GuiMinWidth = 300,
 	GuiMinHeight = 300
 }
-
 local Width = viewportSize.X * SizeConfig.Width
 local Height = viewportSize.Y * SizeConfig.Height
 local maxHeight = SizeConfig.GuiMaxHeight
@@ -2842,22 +3004,24 @@ local maxWidth = SizeConfig.GuiMaxWidth
 local minHeight = SizeConfig.GuiMinHeight
 local minWidth = SizeConfig.GuiMinWidth
 
-local childrenContainer = createCollapsibleContainer("Prospecting", mainContainer, Width, Height,
+local mainUI = createTabbedContainer("Prospecting", mainContainer, Width, Height,
 	minWidth, minHeight, maxWidth, maxHeight, { container = { backgroundTransparency = 0.20 } })
 
-local autoFarmSection = createSection(childrenContainer, "Auto Farm", nil, true,
+local MainFarmingPage = mainUI.CreatePage("Main", 1)
+local ItemsPage = mainUI.CreatePage("Items", 2)
+local MiscellaneousPage = mainUI.CreatePage("Miscellaneous", 3)
+
+local autoFarmSection = createSection(MainFarmingPage, "Auto Farm", nil, true,
 	"Tween is HIGHLY recommended, walk will be fixed in future updates!")
-local sellSection = createSection(childrenContainer, "Sell Inventory", nil, true)
-local teleportSection = createSection(childrenContainer, "Teleport", nil, true,
+local sellSection = createSection(MainFarmingPage, "Sell Inventory", nil, true)
+local teleportSection = createSection(MainFarmingPage, "Teleport", nil, true,
 	"Requires waypoints to be unlocked before using them, use unlock all waypoints to do so.")
--- local merchantSection = createSection(childrenContainer, "Merchant", nil, true)
-local reforgeSection = createSection(childrenContainer, "Reforge", nil, false,
+local reforgeSection = createSection(ItemsPage, "Reforge", nil, true,
 	"Unequip the equipment you wanna reforge and DO NOT hold anything in your hand.")
-local enchantSection = createSection(childrenContainer, "Enchanting", nil, false,
-	"DO NOT hold anything in your hand.")
-local shopSection = createSection(childrenContainer, "Shop", nil, false, "Bulk buying will be added in next update.")
-local manualSection = createSection(childrenContainer, "Manual Actions", nil, false, "Legit mode WIP!")
-local utilitySection = createSection(childrenContainer, "Utility", nil, true)
+local enchantSection = createSection(ItemsPage, "Enchanting", nil, true, "DO NOT hold anything in your hand.")
+local shopSection = createSection(ItemsPage, "Shop", nil, true, "Bulk buying will be added in next update.")
+local manualSection = createSection(MiscellaneousPage, "Manual Actions", nil, true, "Legit mode WIP!")
+local utilitySection = createSection(MiscellaneousPage, "Utility", nil, true)
 
 -- =============== INITIALIZATION ===============
 -- actual brainfuck starts here
@@ -2871,27 +3035,38 @@ local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
--- Player
 local Player = Players.LocalPlayer
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer = Player
 local Characters = workspace:WaitForChild("Characters")
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local LocalCharacter = Characters:WaitForChild(LocalPlayer.name)
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local Humanoid = Character:WaitForChild("Humanoid")
+
+local Character
+local LocalCharacter
+local HumanoidRootPart
+local Humanoid
+local Animator
+local WashAnimation
+
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local BackpackTwo = Player:WaitForChild("BackpackTwo")
+
+local PanningAnimations = game.ReplicatedStorage.Assets.Animations.Panning
+
+local function BindCharacter(char)
+	Character = char
+	LocalCharacter = Characters:WaitForChild(LocalPlayer.Name)
+	Humanoid = char:WaitForChild("Humanoid")
+	HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
+	Animator = Humanoid:WaitForChild("Animator")
+	WashAnimation = Animator:LoadAnimation(PanningAnimations.Wash)
+end
+
+BindCharacter(LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait())
+LocalPlayer.CharacterAdded:Connect(BindCharacter)
 
 -- Others
 local NPCs = Workspace:WaitForChild("NPCs")
 local PlaceId = game.PlaceId
 local JobId = game.JobId
-
--- Animations
-local Animator = Humanoid:WaitForChild("Animator")
-local PanningAnimations = game.ReplicatedStorage.Assets.Animations.Panning
-local WashAnimation = Animator:LoadAnimation(PanningAnimations.Wash)
-local ShakeAnimation = Animator:LoadAnimation(PanningAnimations.Shake)
 
 -- UI
 local ToolUI = PlayerGui:WaitForChild("ToolUI")
@@ -4293,7 +4468,7 @@ local function buildPurchasableTable()
 
 				if price then
 					local formattedEntry = item.Name .. " - " .. formatPrice(price, isShardPrice)
-					if stats:GetAttribute("ShakeSpeed") then
+					if stats:GetAttribute("ShakeSpeed") and not stats:GetAttribute("Duration") then
 						table.insert(purchasable.Pans, formattedEntry)
 					elseif stats:GetAttribute("DigSpeed") then
 						table.insert(purchasable.Shovels, formattedEntry)
@@ -4516,34 +4691,44 @@ local function handlePurchase(itemType, selectedOption)
 		return
 	end
 
-	local name, value, currency = selectedOption:match("^(.-) %- (%d+)%s+(%S+)$")
-	local remoteEvent = game:GetService("ReplicatedStorage").Remotes.Shop.BuyItem
+	local name, rest = selectedOption:match("^(.-)%s*[%-%–—]%s*(.+)$")
 
-	if name and value and currency then
-		local price = value .. " " .. currency
-		ConfirmationPrompt.show({
-			item = name,
-			price = price,
-			title = itemType:gsub("^%l", string.upper) .. " Purchase",
-			confirmText = "Buy Now",
-			cancelText = "Not Now",
-			onPurchase = function()
-				local model = findModelByName(name)
-				local shopItem = model and model:FindFirstChild("ShopItem")
-				if shopItem then
-					createNotification("Triggered purchase for " .. name .. " for " .. price .. "!", 5)
-					remoteEvent:InvokeServer(shopItem)
-				else
-					createNotification("Error: Could not find item or ShopItem in workspace!", 5)
-				end
-			end,
-			onCancel = function()
-				createNotification("Purchase cancelled", 5)
-			end
-		})
-	else
+	if not name or not rest then
 		createNotification("Error: Invalid item format!", 5)
+		return
 	end
+
+	local currency, value = rest:match("^([^0-9]+)([%d%.%a]+)$")
+
+	if not currency or not value then
+		createNotification("Error: Invalid item format!", 5)
+		return
+	end
+
+	local price = currency .. value
+
+	local remote = game.ReplicatedStorage.Remotes.Shop.BuyItem
+
+	ConfirmationPrompt.show({
+		item = name,
+		price = price,
+		title = itemType:gsub("^%l", string.upper) .. " Purchase",
+		confirmText = "Buy Now",
+		cancelText = "Not Now",
+		onPurchase = function()
+			local model = findModelByName(name)
+			local shopItem = model and model:FindFirstChild("ShopItem")
+			if shopItem then
+				createNotification("Triggered purchase for " .. name .. " for " .. price .. "!", 5)
+				remote:InvokeServer(shopItem)
+			else
+				createNotification("Error: Could not find item or ShopItem!", 5)
+			end
+		end,
+		onCancel = function()
+			createNotification("Purchase cancelled", 5)
+		end
+	})
 end
 
 local storedValues = {}
@@ -4638,15 +4823,6 @@ createToggleButton("AutoSellToggle", "Auto Sell", false, function(state)
 						SellSettings._scheduledSell = true
 					end
 				end
-				--[[
-if SellSettings.type == "Threshold" then
-	local currentItems = getInventoryCount()
-	local thresholdItems = SellSettings.threshold or 300
-	if currentItems >= thresholdItems then
-		sellInventory({}, "Teleport") -- Gotta schedule instead
-	end
-end
-]] --
 				task.wait(5)
 			end
 		end)
@@ -4675,21 +4851,21 @@ createDropdown("FarmingTravelDropdown", "Select Travel mode", {
 	createNotification("📌 Farming Travel mode: " .. opt, 10)
 end, autoFarmSection)
 
-createButton("SetSandCframeButton", "Set Sand CFrame", function()
+createButton("SetSandCframeButton", "Set Dig location", function()
 	if getRegion(HumanoidRootPart) == "Deposit" then
 		AutoFarmState.sandCFrame = HumanoidRootPart.CFrame
-		createNotification("✅ Sand CFrame set")
+		createNotification("✅ Sand location set")
 	else
-		createNotification("❌ Must be at deposit")
+		createNotification("❌ Must be at dig location")
 	end
 end, autoFarmSection)
 
-createButton("SetWaterCframeButton", "Set Water CFrame", function()
+createButton("SetWaterCframeButton", "Set Wash location", function()
 	if getRegion(HumanoidRootPart) == "Water" then
 		AutoFarmState.waterCFrame = HumanoidRootPart.CFrame
-		createNotification("✅ Water CFrame set")
+		createNotification("✅ Water location set")
 	else
-		createNotification("❌ Must be at water")
+		createNotification("❌ Must be at wash location")
 	end
 end, autoFarmSection)
 
@@ -4708,7 +4884,7 @@ createToggleButton("AutoFarmToggle", "Auto Farm", false, function(state)
 			return
 		end
 		if not (AutoFarmState.sandCFrame and AutoFarmState.waterCFrame) then
-			createNotification("❌ Set CFrames!")
+			createNotification("❌ Set locations!")
 			AutoFarmState.active = false
 			return
 		end
@@ -4919,101 +5095,17 @@ createButton("UnlockCharacterAutoFarmButton", "Unstuck Character", function()
 	unlockCharacter()
 end, autoFarmSection)
 
-createButton("CalibrateButton", "Calibrate Teleport", function(btn)
-	if btn.Text == "Testing..." then
+createButton("RemoveCrocodilesButton", "Remove Crocodiles", function()
+	local crocsFolder = workspace:FindFirstChild("Map")
+		and workspace.Map:FindFirstChild("Crocodiles")
+
+	if crocsFolder then
+		crocsFolder:Destroy()
+		createNotification("Crocodiles removed!")
 		return
 	end
-	btn.Text = "Testing..."
-	btn.TextColor3 = Color3.fromRGB(255, 255, 100)
-	task.spawn(function()
-		local player = game.Players.LocalPlayer
-		local character = player.Character or player.CharacterAdded:Wait()
-		local humanoid = character:WaitForChild("Humanoid")
-		local hrp = character:WaitForChild("HumanoidRootPart")
-
-		humanoid.PlatformStand = true
-		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-		hrp.AssemblyLinearVelocity = Vector3.zero
-		hrp.AssemblyAngularVelocity = Vector3.zero
-
-		local homeBase = hrp.Position
-		local rubberBands = 0
-		local slips = 0
-		local tests = 0
-
-		for cycle = 1, 40 do
-			local currentPos = hrp.Position
-
-			local angle = math.random() * math.pi * 2
-			local distance = math.random(120, 300)
-			local teleportTarget = currentPos + Vector3.new(
-				math.cos(angle) * distance, math.random(40, 150), math.sin(angle) * distance)
-
-			hrp.CFrame = CFrame.new(teleportTarget)
-			hrp.AssemblyLinearVelocity = Vector3.zero
-			hrp.AssemblyAngularVelocity = Vector3.zero
-
-			local teleportedTo = hrp.Position
-			tests = tests + 1
-
-			local gotRubberBanded = false
-			for frame = 1, 25 do
-				local nowPos = hrp.Position
-				local movedFromTeleport = (nowPos - teleportedTo).Magnitude
-				local backToStart = (nowPos - currentPos).Magnitude
-
-				if movedFromTeleport > 20 or (backToStart < 35 and movedFromTeleport > 50) then
-					gotRubberBanded = true
-					break
-				end
-				task.wait(0.002)
-			end
-
-			if gotRubberBanded then
-				rubberBands = rubberBands + 1
-			else
-				slips = slips + 1
-			end
-
-			task.wait(0.01)
-		end
-
-		humanoid.PlatformStand = false
-		humanoid:ChangeState(Enum.HumanoidStateType.Running)
-
-		local rbRate = rubberBands / tests
-
-		if rbRate >= 0.9 then
-			btn.Text = "PERFECT! (" .. rubberBands .. "/" .. tests .. ")"
-			btn.TextColor3 = Color3.fromRGB(100, 255, 100)
-		elseif rbRate >= 0.75 then
-			btn.Text = "GOOD! (" .. rubberBands .. "/" .. tests .. ")"
-			btn.TextColor3 = Color3.fromRGB(150, 255, 100)
-		elseif rbRate >= 0.5 then
-			btn.Text = "WEAK! (" .. rubberBands .. "/" .. tests .. ")"
-			btn.TextColor3 = Color3.fromRGB(255, 200, 100)
-		elseif rbRate >= 0.25 then
-			btn.Text = "POOR! (" .. rubberBands .. "/" .. tests .. ")"
-			btn.TextColor3 = Color3.fromRGB(255, 150, 100)
-		else
-			btn.Text = "NO SYNC! Compulsory re-run (" .. rubberBands .. "/" .. tests .. ")"
-			btn.TextColor3 = Color3.fromRGB(255, 100, 100)
-		end
-		createNotification(
-			"Calibration complete. (P.S. bad scores don't make you useless at all! teleport farming still works!)", 10)
-		task.wait(5)
-		btn.Text = "Calibrate Teleport"
-		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	end)
-end, autoFarmSection, {
-	2,
-	1
-})
-
-createInfo2("AutoFarmCalibrateWarning", "Calibrate", "Please run calibrate once before using teleport for auto farm.",
-	function()
-		-- empty
-	end, autoFarmSection, { 2, 1 })
+	createNotification("Crocodiles not found, already removed?")
+end, autoFarmSection, { 2, 1 })
 
 local teleportDropdown = createDropdown("TeleportDownload", "Select Waypoint", {}, nil, function(opt)
 	local waypoints = workspace.Map.Waypoints
@@ -5090,11 +5182,13 @@ end, teleportSection)
 local equipmentNames = {}
 local priceLabel = nil
 local equipment
+
 for _, child in ipairs(BackpackTwo:GetChildren()) do
 	if child:GetAttribute("ItemType") == "Equipment" then
 		table.insert(equipmentNames, child.Name)
 	end
 end
+
 local reforgeDropdown = createDropdown("ReforgeEquipmentsDropdown", "Select Equipment", equipmentNames, nil,
 	function(opt)
 		for _, child in ipairs(BackpackTwo:GetChildren()) do
@@ -5266,7 +5360,6 @@ local function performAutoEnchant(findItemFunc, remote, itemName, targetEnchant,
 		while autoEnchantingVar[1] do
 			local item = findItemFunc()
 			if item then
-
 				local enchant = enchantItem(remote, item, "auto", itemName)
 
 				if enchant then
