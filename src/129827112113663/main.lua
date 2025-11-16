@@ -859,7 +859,7 @@ local function createTabbedContainer(title, parent, width, height, minWidth, min
 	local paddingX = container.paddingX or math.clamp(10 * ScaleX, 8, 15)
 	local paddingY = container.paddingY or math.clamp(15 * ScaleY, 10, 20)
 	local strokeThickness = container.strokeThickness or
-	math.clamp(container.borderThickness * math.min(ScaleX, ScaleY), 1, 3)
+		math.clamp(container.borderThickness * math.min(ScaleX, ScaleY), 1, 3)
 	local cornerRadius = container.cornerRadius or math.clamp(8 * math.min(ScaleX, ScaleY), 6, 12)
 	local scrollBarThickness = scroll.barThickness or math.clamp(3 * math.min(ScaleX, ScaleY), 2, 5)
 	local arrowSize = arrow.size or math.clamp(20 * math.min(ScaleX, ScaleY), 16, 26)
@@ -1107,7 +1107,7 @@ local function createTabbedContainer(title, parent, width, height, minWidth, min
 		local contentH, containerH, needsScrolling, totalContentHeight = computeHeights()
 		contentFrame.ScrollingEnabled = needsScrolling
 		contentFrame.ScrollBarImageTransparency = needsScrolling and scrollBarVisibleTransparency or
-		scrollBarHiddenTransparency
+			scrollBarHiddenTransparency
 
 		local newCanvasSize = UDim2.new(0, 0, 0, totalContentHeight)
 		if contentFrame.CanvasSize ~= newCanvasSize then
@@ -3020,7 +3020,7 @@ local reforgeSection = createSection(ItemsPage, "Reforge", nil, true,
 	"Unequip the equipment you wanna reforge and DO NOT hold anything in your hand.")
 local enchantSection = createSection(ItemsPage, "Enchanting", nil, true, "DO NOT hold anything in your hand.")
 local shopSection = createSection(ItemsPage, "Shop", nil, true, "Bulk buying will be added in next update.")
-local manualSection = createSection(MiscellaneousPage, "Manual Actions", nil, true, "Legit mode WIP!")
+local ExcavationSection = createSection(MiscellaneousPage, "Excavations", nil, true)
 local utilitySection = createSection(MiscellaneousPage, "Utility", nil, true)
 
 -- =============== INITIALIZATION ===============
@@ -3050,6 +3050,11 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local BackpackTwo = Player:WaitForChild("BackpackTwo")
 
 local PanningAnimations = game.ReplicatedStorage.Assets.Animations.Panning
+local Excavations = require(game.ReplicatedStorage.GameInfo.Excavations)
+local StartRemote = game.ReplicatedStorage.Remotes.Excavation.StartExcavation
+local ClaimRemote = game.ReplicatedStorage.Remotes.Excavation.ClaimExcavation
+local UpdateRemote = game.ReplicatedStorage.Remotes.Excavation.UpdateExcavationData
+
 
 local function BindCharacter(char)
 	Character = char
@@ -3098,6 +3103,13 @@ local SellSettings = {
 	autoSell = false,
 	_lastSell = nil,
 	_scheduledSell = nil
+}
+
+local ExcavationState = {
+	selected = nil,
+	data = nil,
+	autoClaim = false,
+	waiting = false
 }
 
 -- ==================== HELPERS ====================
@@ -4048,10 +4060,6 @@ local function teleportToTarget(target, options)
 	return success
 end
 
-local function walkToTarget(target, config)
-	-- WIP
-end
-
 local function handlePanAction(mode, actionType, executeToCompletion, killSwitch)
 	executeToCompletion = executeToCompletion or false
 	local messages = {
@@ -4767,6 +4775,71 @@ local function unlockCharacter()
 		storedValues[player.UserId] = nil
 	end
 end
+
+local function refreshData()
+	if ExcavationState.waiting then return end
+	ExcavationState.waiting = true
+	local c
+	c = UpdateRemote.OnClientEvent:Connect(function(d)
+		ExcavationState.data = d
+		ExcavationState.waiting = false
+		c:Disconnect()
+	end)
+	UpdateRemote:FireServer()
+end
+
+local function getExcavationNames()
+	local t = {}
+	for n in pairs(Excavations.Sites) do
+		table.insert(t, n)
+	end
+	return t
+end
+
+local function blockExisting()
+	if not ExcavationState.data then refreshData() end
+	local d = ExcavationState.data
+	if not d then
+		createNotification("Unable to fetch excavation data.")
+		return
+	end
+
+	local ce = d.CurrentExcavation
+	if ce and ce ~= "" then
+		createNotification("There is an ongoing / unclaimed excavation: " .. ce)
+		return
+	end
+
+	createNotification(d.CanStart and "You have no ongoing excavation. You may start a new one." or
+	"No excavation active and you cannot start one.")
+end
+
+local function findFinishedName()
+	local m = workspace:FindFirstChild("Marker")
+	if not m then return end
+	local ui = m:FindFirstChild("UI")
+	if not ui then return end
+	local n = ui:FindFirstChild("ExcavationName")
+	if not n then return end
+	local t = n.Text
+	if t == "" then return end
+	return t
+end
+
+local function tryClaim()
+	local name = findFinishedName()
+	if not name then return end
+	local ok = ClaimRemote:InvokeServer(name)
+	if ok then
+		task.wait(3)
+		refreshData()
+		createNotification("Excavation claimed.")
+	else
+		createNotification("This excavation could not be claimed, go and manually claim.")
+	end
+end
+
+--==================== COMPONENTS =====================
 
 createDropdown("SellTypeDropdown", "Sell Type", {
 	"Threshold",
@@ -5549,6 +5622,62 @@ createButton("BuyOthersDropdownButton", "Buy Others", function()
 	handlePurchase("others", selectedOptions.other)
 end, shopSection, { 0.65, 1 })
 
+UpdateRemote.OnClientEvent:Connect(function(d)
+	ExcavationState.data = d
+	if ExcavationState.autoClaim then
+		tryClaim()
+	end
+end)
+
+createDropdown("ExcavationsDropdown", "Select Excavation", getExcavationNames(), nil, function(s)
+	ExcavationState.selected = s
+end, ExcavationSection, nil)
+
+createButton("StartExcavation", "Start Excavation", function()
+	if not ExcavationState.selected then
+		return createNotification("Please select an excavation site to start.")
+	end
+
+	if ExcavationState.data then
+		blockExisting()
+		return
+	end
+
+	refreshData()
+	task.wait(2)
+
+	if ExcavationState.data then
+		blockExisting()
+		return
+	end
+
+	if not ExcavationState.selected then
+		createNotification("No excavation selected")
+		return
+	end
+
+	local ok = StartRemote:InvokeServer(ExcavationState.selected)
+	if ok then
+		createNotification("Started excavation: " .. ExcavationState.selected)
+	else
+		createNotification("Failed to start excavation: " .. ExcavationState.selected)
+	end
+end, ExcavationSection)
+
+createToggleButton("AutoClaimExcavation", "Auto Claim", true, function(state)
+	ExcavationState.autoClaim = state
+	if state then
+		task.spawn(function()
+			while ExcavationState.autoClaim do
+				if not ExcavationState.data then refreshData() end
+				task.wait(2)
+				tryClaim()
+			end
+		end)
+	end
+end, ExcavationSection)
+
+
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
 	local Players = game:GetService("Players")
 	local LocalPlayer = Players.LocalPlayer
@@ -5640,73 +5769,3 @@ createButton("ServerHopButton", "Server Hop", function()
 
 	createNotification("Couldn't fetch servers to hop", 5)
 end, utilitySection)
-
-createButton("InstantCompleteFillButton", "[Instant] Fill Pan", function()
-	if TaskManager:getMainTask() then
-		return createNotification("Please wait for current task to complete", 5)
-	end
-	if TaskManager:requestTask("ManualAction", 3) then
-		task.spawn(function()
-			if TaskManager:waitForTurn("ManualAction", 5) and TaskManager:startTask("ManualAction") then
-				handlePanAction("Instant", "Dig", true)
-				TaskManager:finishTask("ManualAction")
-			end
-		end)
-	end
-end, manualSection)
-
-createButton("LegitCompleteFillButton", "[Legit] Fill Pan", function()
-	if TaskManager:getMainTask() then
-		return createNotification("Please wait for current task to complete", 5)
-	end
-	if TaskManager:requestTask("ManualAction", 3) then
-		task.spawn(function()
-			if TaskManager:waitForTurn("ManualAction", 5) and TaskManager:startTask("ManualAction") then
-				handlePanAction("Legit", "Dig", true)
-				TaskManager:finishTask("ManualAction")
-			end
-		end)
-	end
-end, manualSection)
-
-createButton("LegitCompleteEmptyButton", "[Legit] Empty Pan", function()
-	if TaskManager:getMainTask() then
-		return createNotification("Please wait for current task to complete", 5)
-	end
-	if TaskManager:requestTask("ManualAction", 3) then
-		task.spawn(function()
-			if TaskManager:waitForTurn("ManualAction", 5) and TaskManager:startTask("ManualAction") then
-				handlePanAction("Legit", "Wash", true)
-				TaskManager:finishTask("ManualAction")
-			end
-		end)
-	end
-end, manualSection)
-
-createButton("InstantSoloFillButton", "[Instant] Shovel deposit", function()
-	if TaskManager:getMainTask() then
-		return createNotification("Please wait for current task to complete", 5)
-	end
-	if TaskManager:requestTask("ManualAction", 3) then
-		task.spawn(function()
-			if TaskManager:waitForTurn("ManualAction", 5) and TaskManager:startTask("ManualAction") then
-				handlePanAction("Instant", "Dig")
-				TaskManager:finishTask("ManualAction")
-			end
-		end)
-	end
-end, manualSection)
-
-createButton("LegitSoloFillButton", "[Legit] Shovel deposit", function()
-	if TaskManager:getMainTask() then
-		return createNotification("Please wait for current task to complete", 5)
-	end
-	if TaskManager:requestTask("ManualAction", 3) then
-		task.spawn(function()
-			if TaskManager:waitForTurn("ManualAction", 5) and TaskManager:startTask("ManualAction") then
-				handlePanAction("Legit", "Dig")
-				TaskManager:finishTask("ManualAction")
-			end
-		end)
-	end
-end, manualSection)
