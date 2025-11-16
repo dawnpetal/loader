@@ -1,16 +1,17 @@
 {
   "name": "Prospecting!",
-  "version": "1.1.2-alpha",
+  "version": "1.2.0-alpha",
   "description": "Automates various tasks in the game Prospecting!",
   "author": "DawnPetal",
-  "last_updated": "2025-09-28",
+  "last_updated": "2025-11-16",
   "features": [
     "Auto Farm",
     "Auto Sell",
     "Instant Shop",
     "Teleport",
     "Crafting",
-    "Reforging"
+    "Reforging",
+    "Excavation"
   ],
   "prerequisites": {
     "TaskManager": "utils/TaskManager.lua",
