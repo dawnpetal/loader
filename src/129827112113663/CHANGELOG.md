@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 # [Unreleased]
 
-## [1.2.0-alpha] - 2026-11-16
+## [1.2.0-alpha] - 2025-11-16
 
 ### Added
 - Tab Bar for better Navigation
