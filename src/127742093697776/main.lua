@@ -4106,8 +4106,6 @@ createInfo3("WIPAutoFarm", "Work in progress!",
 function() end, AutoFarmSection, { 2, 1.3 })
 
 
---[[
-
 createButton("AutoEquipBestPlants", "Equip Best Plants", function()
 	if AutoequipRunning then
 		return createNotification("Auto Equip already running — please wait.")
@@ -4212,6 +4210,7 @@ createToggleButton("AutoDailyToggle", "Auto Daily", false, function()
 	if AutoequipRunning then return end
 end, AutoFarmSection)
 
+--[[
 createGhostText(AutoFarmSection, {
 	Text = "Advanced AutoFarm",
 	TextColor3 = Color3.fromRGB(255, 255, 255),
