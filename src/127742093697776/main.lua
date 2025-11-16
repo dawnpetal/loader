@@ -4206,11 +4206,11 @@ createToggleButton("AutoEquipSetBrainrot", "Equip Brainrots", false, function(st
 	LoopFramework:setTaskEnabled("AutoEquipBestBrainrot", state)
 end, AutoFarmSection, { 1.1, 1 })
 
+--[[
 createToggleButton("AutoDailyToggle", "Auto Daily", false, function()
 	if AutoequipRunning then return end
 end, AutoFarmSection)
 
---[[
 createGhostText(AutoFarmSection, {
 	Text = "Advanced AutoFarm",
 	TextColor3 = Color3.fromRGB(255, 255, 255),
