@@ -1,33 +1,31 @@
-# Some Script Hub (i don't have a name for it, yet)
-
+# SimpleScripts
 A simple script hub for Roblox with a built-in loader to access scripts quickly.
 
 ---
 
 ## Supported Games
 
-The hub currently supports the following Roblox games:
-
-| Game Name   | Place ID           | Link                                                                 | Description                     |
-|------------|------------------|----------------------------------------------------------------------|---------------------------------|
-| Prospecting | 129827112113663  | [Play Prospecting](https://www.roblox.com/games/129827112113663) | Auto Farm & A LOT more |
-| Dig to Earth's core | 81440632616906  | [Play Dig to Earth's core](https://www.roblox.com/games/81440632616906) | Auto Farm, Auto Treasure etc |
+| Game Name | Place ID | Link | Description |
+|-----------|----------|------|-------------|
+| Prospecting | 129827112113663 | [Play Prospecting](https://www.roblox.com/games/129827112113663) | Auto Farm & A LOT more |
+| Dig to Earth's Core | 81440632616906 | [Play Dig to Earth's Core](https://www.roblox.com/games/81440632616906) | Auto Farm, Auto Treasure etc |
+| Plants vs Brainrots | 127742093697776 | [Play Plants vs Brainrots](https://www.roblox.com/games/127742093697776) | In-game support available |
 
 ---
 
 ## Supported Game Info
-
-For detailed information about each supported game, including features, changelogs, and development roadmaps, check the individual files for each game script.
-
+Check the individual files for each game script for detailed information about features, changelogs, and development roadmaps.
 
 ---
 
 ## Installation
 
-loader URL:
+**Loader URL:**
+```
 https://raw.githubusercontent.com/dawnpetal/loader/main/src/loader.lua
+```
 
-Code:
+**Full Code:**
 ```lua
 local success, err = pcall(function()
     local url = "https://raw.githubusercontent.com/dawnpetal/loader/main/src/loader.lua"
@@ -39,30 +37,44 @@ local success, err = pcall(function()
 end)
 
 if not success then
-    warn("loader failed to execute: " .. tostring(err))
+    warn("Loader failed to execute: " .. tostring(err))
 end
 ```
 
-or 
-
+**Short Code:**
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/dawnpetal/loader/main/src/loader.lua"))()
 ```
 
-# Usage
+---
 
-Slap the code into your executor and just run it
+## Usage
+Copy the code into your executor and run it.
 
 ---
 
-# Supported Executors
+## Supported Executors
 
-| Executor   | Platform       | Status                        |
-|------------|----------------|-------------------------------|
-| Xeno  | Windows        | 🟡 Not sure, should work though                 |
-| Krnl       | Android        | 🔴 Doesn't Work (they have shitty decompiler)                    |
-| Delta   | Android            | 🟢 Working                    |
-| Hydrogen   | Mac            | 🟢 Working                    |
+### Windows
+| Executor | Status |
+|----------|--------|
+| Zenith | 🟢 Good |
+| Wave | 🟢 Good |
+| Velocity | 🟡 Decent |
+| Volcano | 🟡 Decent |
+| Xeno | 🔴 Not Supported |
+| Solara | 🔴 Not Supported |
 
+### macOS
+| Executor | Status |
+|----------|--------|
+| Hydrogen | 🟢 Works |
+| Ronix | 🟢 Works |
+
+### iOS/Android
+| Executor | Status |
+|----------|--------|
+| Delta | 🟢 Good |
+| KRNL | 🔴 Not Supported |
 
 ---
