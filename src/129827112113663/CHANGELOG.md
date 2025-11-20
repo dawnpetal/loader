@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 # [Unreleased]
 
+## [1.2.1-alpha] - 2025-11-20
+
+### Added
+- Added `Geode` Section
+- Moved Shop Section to a separate Tab
+
+### Improved/Fixes
+- Fixed all bugs with Excavation
+- Improved Dropdowns, TabBar.
+
 ## [1.2.0-alpha] - 2025-11-16
 
 ### Added

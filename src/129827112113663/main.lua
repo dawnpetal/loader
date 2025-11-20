@@ -206,7 +206,7 @@ local viewportSize = workspace.CurrentCamera.ViewportSize
 local DESIGN_HEIGHT = 981
 local DESIGN_WIDTH = 1664
 local ScaleX = math.clamp(viewportSize.X / DESIGN_WIDTH, 0.9, 1.2)
-local ScaleY = math.clamp(viewportSize.Y / DESIGN_HEIGHT, 0.7, 1.2)
+local ScaleY = math.clamp(viewportSize.Y / DESIGN_HEIGHT, 0.8, 1.2)
 local DefaultUIProps = {
 	CollapsibleContainer = {
 		container = {
@@ -629,211 +629,266 @@ local function createTabBar(parent, headerHeight, paddingX, zIndex)
 		Name = "TabBar",
 		Size = UDim2.new(1, -paddingX * 2, 0, headerHeight * 0.85),
 		Position = UDim2.new(0, paddingX, 0, headerHeight),
-		BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-		BackgroundTransparency = 1,
+		BackgroundColor3 = Color3.fromRGB(20, 20, 22),
 		BorderSizePixel = 0,
-		ZIndex = zIndex + 1,
+		ZIndex = zIndex,
 		Parent = parent
 	})
-
-	createElement("UICorner", {
-		CornerRadius = UDim.new(0, 6),
+	createElement("UICorner", { CornerRadius = UDim.new(0, 8), Parent = tabBar })
+	createElement("UIStroke", {
+		Color = Color3.fromRGB(45, 45, 50),
+		Thickness = 1,
+		Transparency = 0.5,
 		Parent = tabBar
 	})
 
-	local leftFade = createElement("Frame", {
-		Name = "LeftFade",
-		Size = UDim2.new(0, 30, 1, 0),
-		BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-		BackgroundTransparency = 0.3,
-		BorderSizePixel = 0,
-		ZIndex = zIndex + 3,
+	local containerWrapper = createElement("Frame", {
+		Name = "ContainerWrapper",
+		Size = UDim2.new(1, -40, 1, -12),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		BackgroundTransparency = 1,
+		ClipsDescendants = true,
+		ZIndex = zIndex + 1,
 		Parent = tabBar
 	})
 
-	createElement("UIGradient", {
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }),
-		Parent = leftFade
-	})
 
-	createElement("UICorner", { CornerRadius = UDim.new(0, 6), Parent = leftFade })
-
-	local rightFade = createElement("Frame", {
-		Name = "RightFade",
-		Size = UDim2.new(0, 30, 1, 0),
-		Position = UDim2.new(1, -30, 0, 0),
-		BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-		BackgroundTransparency = 0.3,
-		BorderSizePixel = 0,
-		ZIndex = zIndex + 3,
-		Parent = tabBar
-	})
-
-	createElement("UIGradient", {
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) }),
-		Parent = rightFade
-	})
-
-	createElement("UICorner", { CornerRadius = UDim.new(0, 6), Parent = rightFade })
-
-	local tabScroll = createElement("ScrollingFrame", {
-		Name = "TabScroll",
-		Size = UDim2.new(1, -10, 1, -6),
-		Position = UDim2.new(0, 5, 0, 3),
+	local container = createElement("ScrollingFrame", {
+		Name = "Container",
+		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 0,
+		CanvasSize = UDim2.new(0, 0, 1, 0),
 		ScrollingDirection = Enum.ScrollingDirection.X,
-		CanvasSize = UDim2.new(0, 0, 0, 0),
-		ZIndex = zIndex + 2,
-		Parent = tabBar
-	})
-
-	local layout = createElement("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		Padding = UDim.new(0, 6),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = tabScroll
-	})
-
-	createElement("UIPadding", {
-		PaddingLeft = UDim.new(0, 5),
-		PaddingRight = UDim.new(0, 5),
-		Parent = tabScroll
+		ZIndex = zIndex + 1,
+		Parent = containerWrapper
 	})
 
 	local tabs = {}
-	local activeTabButton = nil
+	local activeTab = nil
+	local tabOrder = {}
+	local tweenTime = 0.3
 
-	local function updateFades()
-		local size = layout.AbsoluteContentSize.X + 20
-		tabScroll.CanvasSize = UDim2.new(0, size, 0, 0)
-		local maxScroll = math.max(0, size - tabScroll.AbsoluteSize.X)
-		leftFade.Visible = tabScroll.CanvasPosition.X > 2
-		rightFade.Visible = tabScroll.CanvasPosition.X < maxScroll - 2
+	local leftGradient = createElement("Frame", {
+		Name = "LeftGradient",
+		Size = UDim2.new(0, 15, 1, 0),
+		Position = UDim2.new(0, 0, 0, 0),
+		BackgroundColor3 = Color3.fromRGB(20, 20, 22),
+		BorderSizePixel = 0,
+		ZIndex = zIndex + 10,
+		Parent = containerWrapper
+	})
+
+	createElement("UIGradient", {
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(0.3, 0.02),
+			NumberSequenceKeypoint.new(0.55, 0.15),
+			NumberSequenceKeypoint.new(0.8, 0.5),
+			NumberSequenceKeypoint.new(1, 1)
+		}),
+		Rotation = 0,
+		Parent = leftGradient
+	})
+
+	local rightGradient = createElement("Frame", {
+		Name = "RightGradient",
+		Size = UDim2.new(0, 15, 1, 0),
+		Position = UDim2.new(1, -15, 0, 0),
+		BackgroundColor3 = Color3.fromRGB(20, 20, 22),
+		BorderSizePixel = 0,
+		ZIndex = zIndex + 10,
+		Parent = containerWrapper
+	})
+
+	createElement("UIGradient", {
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.2, 0.6),
+			NumberSequenceKeypoint.new(0.45, 0.18),
+			NumberSequenceKeypoint.new(0.75, 0.05),
+			NumberSequenceKeypoint.new(1, 0)
+		}),
+		Rotation = 0,
+		Parent = rightGradient
+	})
+
+
+	local leftArrow = createElement("ImageButton", {
+		Name = "LeftArrow",
+		Size = UDim2.new(0, 20, 0, 20),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0, 5 + 10, 0.5, 0),
+		BackgroundTransparency = 1,
+		Image = "rbxassetid://10709768114",
+		ImageColor3 = Color3.fromRGB(140, 140, 150),
+		ZIndex = zIndex + 11,
+		Parent = tabBar
+	})
+
+	local rightArrow = createElement("ImageButton", {
+		Name = "RightArrow",
+		Size = UDim2.new(0, 20, 0, 20),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -5 - 10, 0.5, 0),
+		BackgroundTransparency = 1,
+		Image = "rbxassetid://10709768347",
+		ImageColor3 = Color3.fromRGB(140, 140, 150),
+		ZIndex = zIndex + 11,
+		Parent = tabBar
+	})
+
+	local function tweenToCenter(tabName)
+		local tabData = tabs[tabName]
+		if not tabData then return end
+		local button = tabData.button
+		local center = containerWrapper.AbsoluteSize.X / 2
+		local buttonCenter = button.AbsolutePosition.X - container.AbsolutePosition.X + (button.AbsoluteSize.X / 2)
+		local target = buttonCenter - center
+		local max = math.max(0, container.CanvasSize.X.Offset - containerWrapper.AbsoluteSize.X)
+		target = math.clamp(target, 0, max)
+		TweenService:Create(container, TweenInfo.new(tweenTime, Enum.EasingStyle.Quad), {
+			CanvasPosition = Vector2.new(target, 0)
+		}):Play()
 	end
 
-	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateFades)
-	tabScroll:GetPropertyChangedSignal("CanvasPosition"):Connect(updateFades)
-
-	leftFade.Visible = false
-	rightFade.Visible = false
-
-	local function setActiveTab(btn)
-		if activeTabButton == btn then return end
-
-		if activeTabButton then
-			local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			TweenService:Create(activeTabButton, tweenInfo, {
-				BackgroundColor3 = Color3.fromRGB(35, 35, 35),
-				BackgroundTransparency = 0.4
+	local function setActive(name)
+		local tab = tabs[name]
+		if not tab or activeTab == name then return end
+		if activeTab and tabs[activeTab] then
+			local b = tabs[activeTab].button
+			local s = b:FindFirstChild("UIStroke")
+			TweenService:Create(b, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
+				BackgroundColor3 = Color3.fromRGB(30, 30, 35),
+				TextColor3 = Color3.fromRGB(140, 140, 150)
 			}):Play()
-			TweenService:Create(activeTabButton.TextLabel, tweenInfo, {
-				TextColor3 = Color3.fromRGB(160, 160, 160),
-				TextSize = 13
+			if s then
+				TweenService:Create(s, TweenInfo.new(0.25), { Transparency = 0.7 }):Play()
+			end
+		end
+		activeTab = name
+		local stroke = tab.button:FindFirstChild("UIStroke")
+		TweenService:Create(tab.button, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
+			BackgroundColor3 = Color3.fromRGB(70, 130, 255),
+			TextColor3 = Color3.fromRGB(255, 255, 255)
+		}):Play()
+		if stroke then
+			TweenService:Create(stroke, TweenInfo.new(0.25), {
+				Color = Color3.fromRGB(100, 160, 255),
+				Transparency = 0.3
 			}):Play()
 		end
-
-		activeTabButton = btn
-		local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-		TweenService:Create(btn, tweenInfo, {
-			BackgroundColor3 = Color3.fromRGB(55, 55, 55),
-			BackgroundTransparency = 0
-		}):Play()
-		TweenService:Create(btn.TextLabel, tweenInfo, {
-			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 14
-		}):Play()
+		if tab.callback then tab.callback(name) end
+		tweenToCenter(name)
 	end
 
-	local function createTab(name, layoutOrder, onActivate)
+	leftArrow.MouseButton1Click:Connect(function()
+		if #tabOrder == 0 then return end
+		local i = table.find(tabOrder, activeTab)
+		if not i then return end
+		i -= 1
+		if i < 1 then i = #tabOrder end
+		setActive(tabOrder[i])
+	end)
+
+	rightArrow.MouseButton1Click:Connect(function()
+		if #tabOrder == 0 then return end
+		local i = table.find(tabOrder, activeTab)
+		if not i then return end
+		i += 1
+		if i > #tabOrder then i = 1 end
+		setActive(tabOrder[i])
+	end)
+
+	leftArrow.MouseEnter:Connect(function()
+		TweenService:Create(leftArrow, TweenInfo.new(0.2), {
+			ImageColor3 = Color3.fromRGB(255, 255, 255)
+		}):Play()
+	end)
+
+	leftArrow.MouseLeave:Connect(function()
+		TweenService:Create(leftArrow, TweenInfo.new(0.2), {
+			ImageColor3 = Color3.fromRGB(140, 140, 150)
+		}):Play()
+	end)
+
+	rightArrow.MouseEnter:Connect(function()
+		TweenService:Create(rightArrow, TweenInfo.new(0.2), {
+			ImageColor3 = Color3.fromRGB(255, 255, 255)
+		}):Play()
+	end)
+
+	rightArrow.MouseLeave:Connect(function()
+		TweenService:Create(rightArrow, TweenInfo.new(0.2), {
+			ImageColor3 = Color3.fromRGB(140, 140, 150)
+		}):Play()
+	end)
+
+	local layout = createElement("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 6),
+		Parent = container
+	})
+
+	local function createTab(name, order, onActivate)
 		local btn = createElement("TextButton", {
-			Name = name .. "Tab",
+			Name = name,
 			Size = UDim2.new(0, 100, 1, 0),
-			Position = UDim2.new(0, 0, 0, 4),
-			BackgroundColor3 = Color3.fromRGB(35, 35, 35),
-			BackgroundTransparency = 0.4,
+			BackgroundColor3 = Color3.fromRGB(30, 30, 35),
 			BorderSizePixel = 0,
-			Text = "",
-			LayoutOrder = layoutOrder or #tabs + 1,
-			ZIndex = zIndex + 4,
-			AutoButtonColor = false,
-			Parent = tabScroll
-		})
-
-		createElement("UICorner", {
-			CornerRadius = UDim.new(0, 5),
-			Parent = btn
-		})
-
-		createElement("UIStroke", {
-			Color = Color3.fromRGB(60, 60, 60),
-			Transparency = 0.5,
-			Thickness = 1,
-			Parent = btn
-		})
-
-		local lbl = createElement("TextLabel", {
-			Size = UDim2.new(1, -8, 1, 0),
-			Position = UDim2.new(0, 4, 0, 0),
-			BackgroundTransparency = 1,
 			Text = name,
-			TextColor3 = Color3.fromRGB(160, 160, 160),
-			TextSize = 13,
-			Font = Enum.Font.GothamBold,
-			TextScaled = false,
-			TextWrapped = false,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			ZIndex = zIndex + 5,
+			TextColor3 = Color3.fromRGB(140, 140, 150),
+			TextSize = 14,
+			Font = Enum.Font.GothamMedium,
+			AutoButtonColor = false,
+			ZIndex = zIndex + 2,
+			Parent = container
+		})
+		createElement("UICorner", { CornerRadius = UDim.new(0, 6), Parent = btn })
+		createElement("UIPadding", {
+			PaddingLeft = UDim.new(0, 12),
+			PaddingRight = UDim.new(0, 12),
 			Parent = btn
 		})
+
+		tabs[name] = { button = btn, callback = onActivate }
+		table.insert(tabOrder, name)
+
+		btn.MouseButton1Click:Connect(function()
+			setActive(name)
+		end)
 
 		btn.MouseEnter:Connect(function()
-			if btn ~= activeTabButton then
-				local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-				TweenService:Create(btn, tweenInfo, {
-					BackgroundTransparency = 0.2
+			if activeTab ~= name then
+				TweenService:Create(btn, TweenInfo.new(0.2), {
+					BackgroundColor3 = Color3.fromRGB(40, 40, 48)
 				}):Play()
 			end
 		end)
 
 		btn.MouseLeave:Connect(function()
-			if btn ~= activeTabButton then
-				local tweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-				TweenService:Create(btn, tweenInfo, {
-					BackgroundTransparency = 0.4
+			if activeTab ~= name then
+				TweenService:Create(btn, TweenInfo.new(0.2), {
+					BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 				}):Play()
 			end
 		end)
 
-		btn.MouseButton1Down:Connect(function()
-			local tweenInfo = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			TweenService:Create(lbl, tweenInfo, {
-				Position = UDim2.new(0, 4, 0, 2)
-			}):Play()
+		container.CanvasSize = UDim2.new(0, layout.AbsoluteContentSize.X, 1, 0)
+		layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			container.CanvasSize = UDim2.new(0, layout.AbsoluteContentSize.X, 1, 0)
 		end)
 
-		btn.MouseButton1Up:Connect(function()
-			local tweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			TweenService:Create(lbl, tweenInfo, {
-				Position = UDim2.new(0, 4, 0, 0)
-			}):Play()
-		end)
-
-		btn.Activated:Connect(function()
-			setActiveTab(btn)
-			if onActivate then
-				onActivate(name)
-			end
-		end)
-
-		tabs[#tabs + 1] = btn
-		updateFades()
-		return btn
+		if not activeTab then
+			setActive(name)
+			tweenToCenter(name)
+		end
 	end
 
-	return tabScroll, tabBar, createTab, setActiveTab
+	return container, tabBar, createTab, setActive
 end
 
 local function createTabbedContainer(title, parent, width, height, minWidth, minHeight, maxWidth, maxHeight, uiProps)
@@ -1105,7 +1160,7 @@ local function createTabbedContainer(title, parent, width, height, minWidth, min
 
 	local function applyHeights(immediate)
 		local contentH, containerH, needsScrolling, totalContentHeight = computeHeights()
-		contentFrame.ScrollingEnabled = needsScrolling
+		contentFrame.ScrollingEnabled = (#openDropdowns == 0) and needsScrolling
 		contentFrame.ScrollBarImageTransparency = needsScrolling and scrollBarVisibleTransparency or
 			scrollBarHiddenTransparency
 
@@ -1510,7 +1565,7 @@ local function createSection(parent, title, layoutOrder, defaultExpanded, infoTe
 			local targetCanvasPosition = viewportTop
 
 			if expanding then
-				targetCanvasPosition = math.max(0, sectionBottom - scrollingFrame.AbsoluteSize.Y)
+				targetCanvasPosition = math.max(0, sectionBottom - scrollingFrame.AbsoluteSize.Y + 20)
 			else
 				if sectionTop < viewportTop then
 					targetCanvasPosition = sectionTop - animation.scrollOffset
@@ -1709,6 +1764,11 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	local selectedOptions = {}
 	local currentOptions = {}
 	local optionValues = {}
+	local filteredOptions = {}
+	local searchQuery = ""
+	local maxMenuHeight = 200
+	local outsideConn
+	local isOpen = false
 
 	local dropdown = createElement("Frame", {
 		Name = name,
@@ -1812,28 +1872,133 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	})
 
 	local menuLayout = createElement("UIListLayout", {
-		Padding = UDim.new(0, 1),
+		Padding = UDim.new(0, 0),
 		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = optionsMenu
+	})
+
+	local searchContainer = createElement("Frame", {
+		Name = "SearchContainer",
+		Size = UDim2.new(1, 0, 0, 32),
+		BackgroundColor3 = Color3.fromRGB(28, 28, 28),
+		BorderSizePixel = 0,
+		ZIndex = 107,
+		LayoutOrder = 1,
+		Visible = false,
 		Parent = optionsMenu
 	})
 
 	createElement("UIPadding", {
 		PaddingTop = UDim.new(0, 4),
 		PaddingBottom = UDim.new(0, 4),
-		PaddingLeft = UDim.new(0, 2),
-		PaddingRight = UDim.new(0, 2),
+		PaddingLeft = UDim.new(0, 6),
+		PaddingRight = UDim.new(0, 6),
+		Parent = searchContainer
+	})
+
+	local searchBox = createElement("TextBox", {
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundColor3 = Color3.fromRGB(45, 45, 45),
+		BorderSizePixel = 0,
+		Font = Enum.Font.SourceSans,
+		PlaceholderText = "Search...",
+		PlaceholderColor3 = Color3.fromRGB(120, 120, 120),
+		Text = "",
+		TextSize = 14,
+		TextColor3 = Color3.fromRGB(255, 255, 255),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ClearTextOnFocus = false,
+		ZIndex = 108,
+		Parent = searchContainer
+	})
+
+	createElement("UICorner", {
+		CornerRadius = UDim.new(0, 4),
+		Parent = searchBox
+	})
+
+	createElement("UIPadding", {
+		PaddingLeft = UDim.new(0, 8),
+		PaddingRight = UDim.new(0, 8),
+		Parent = searchBox
+	})
+
+	searchBox.Focused:Connect(function()
+		if outsideConn then
+			outsideConn:Disconnect()
+			outsideConn = nil
+		end
+	end)
+
+	searchBox.FocusLost:Connect(function()
+		if isOpen then
+			outsideConn = UserInputService.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					local mousePos = UserInputService:GetMouseLocation()
+					local guiInset = game:GetService("GuiService"):GetGuiInset()
+					local adjustedPos = mousePos - guiInset
+
+					local searchHit = false
+					local objects = game:GetService("Players").LocalPlayer.PlayerGui:GetGuiObjectsAtPosition(
+						adjustedPos.X, adjustedPos.Y)
+					for _, obj in ipairs(objects) do
+						if obj:IsDescendantOf(searchContainer) then
+							searchHit = true
+							break
+						end
+					end
+
+					if not searchHit and not isMulti then
+						closeDropdown()
+					end
+				end
+			end)
+		end
+	end)
+
+	local scrollFrame = createElement("ScrollingFrame", {
+		Name = "ScrollFrame",
+		Size = UDim2.new(1, 0, 1, 0),
+		Position = UDim2.new(0, 0, 0, 0),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 4,
+		ScrollBarImageColor3 = Color3.fromRGB(120, 120, 120),
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		ScrollingEnabled = true,
+		Active = true,
+		ZIndex = 107,
+		LayoutOrder = 2,
 		Parent = optionsMenu
 	})
 
-	local isOpen = false
-	local outsideConn
+	scrollFrame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseWheel then
+			input:GetPropertyChangedSignal("Position"):Wait()
+		end
+	end)
+
+	local scrollLayout = createElement("UIListLayout", {
+		Padding = UDim.new(0, 1),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = scrollFrame
+	})
+
+	createElement("UIPadding", {
+		PaddingTop = UDim.new(0, 4),
+		PaddingBottom = UDim.new(0, 4),
+		PaddingLeft = UDim.new(0, 4),
+		PaddingRight = UDim.new(0, 4),
+		Parent = scrollFrame
+	})
+
 
 	local function parseOptions(opts)
 		local parsedOptions = {}
 		local parsedValues = {}
 
 		if type(opts) == "table" then
-			if # opts > 0 and opts[1] ~= nil then
+			if #opts > 0 and opts[1] ~= nil then
 				for i, opt in ipairs(opts) do
 					if type(opt) == "string" then
 						parsedOptions[i] = opt
@@ -1857,12 +2022,34 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		return parsedOptions, parsedValues
 	end
 
-	local function updateMenuHeight()
-		local totalHeight = menuLayout.AbsoluteContentSize.Y + 8
-		menuContainer.Size = UDim2.new(1, 0, 0, totalHeight)
-		if isOpen then
-			optionsMenu.Size = UDim2.new(1, 0, 0, totalHeight)
+	local function filterOptions()
+		filteredOptions = {}
+		local query = searchQuery:lower()
+
+		if query == "" then
+			for i, opt in ipairs(currentOptions) do
+				filteredOptions[i] = opt
+			end
+		else
+			for _, opt in ipairs(currentOptions) do
+				if opt:lower():find(query, 1, true) then
+					table.insert(filteredOptions, opt)
+				end
+			end
 		end
+	end
+
+	local function updateMenuHeight()
+		local contentHeight = scrollLayout.AbsoluteContentSize.Y + 8
+		local totalHeight = math.min(contentHeight + 32, maxMenuHeight)
+
+		searchContainer.Visible = true
+		scrollFrame.Size = UDim2.new(1, 0, 1, -32)
+		scrollFrame.Position = UDim2.new(0, 0, 0, 32)
+
+		menuContainer.Size = UDim2.new(1, 0, 0, totalHeight)
+		optionsMenu.Size = UDim2.new(1, 0, 0, totalHeight)
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
 	end
 
 	local function closeDropdown(instant)
@@ -1898,7 +2085,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	end
 
 	local function clearOptions()
-		for _, child in pairs(optionsMenu:GetChildren()) do
+		for _, child in pairs(scrollFrame:GetChildren()) do
 			if child:IsA("Frame") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
 				child:Destroy()
 			end
@@ -1908,33 +2095,31 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 	local function createOptionButtons()
 		clearOptions()
 
-		for i, opt in ipairs(currentOptions) do
+		for i, opt in ipairs(filteredOptions) do
 			local optContainer = createElement("Frame", {
 				Size = UDim2.new(1, 0, 0, 36),
 				BackgroundTransparency = 1,
-				ZIndex = 107,
+				ZIndex = 108,
 				LayoutOrder = i,
-				Parent = optionsMenu
-			})
-
-			createElement("UIPadding", {
-				PaddingLeft = UDim.new(0, 2),
-				PaddingRight = UDim.new(0, 2),
-				Parent = optContainer
+				Parent = scrollFrame
 			})
 
 			local optBtn = createElement("TextButton", {
 				Size = UDim2.new(1, 0, 1, 0),
 				BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-				BackgroundTransparency = 1,
+				BackgroundTransparency = selectedOptions[opt] and 0 or 1,
 				Font = Enum.Font.SourceSans,
 				Text = opt,
 				TextSize = 16,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextXAlignment = Enum.TextXAlignment.Left,
-				ZIndex = 108,
+				ZIndex = 109,
 				Parent = optContainer
 			})
+
+			if selectedOptions[opt] then
+				optBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+			end
 
 			truncateWithTooltip(optBtn, opt)
 
@@ -1944,46 +2129,54 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 			})
 
 			createElement("UIPadding", {
-				PaddingLeft = UDim.new(0, 4),
-				PaddingRight = UDim.new(0, 4),
+				PaddingLeft = UDim.new(0, 8),
+				PaddingRight = UDim.new(0, 8),
 				Parent = optBtn
 			})
 
 			optBtn.MouseEnter:Connect(function()
 				if not selectedOptions[opt] then
-					createTween(optBtn, 0.15,
-						{ BackgroundTransparency = 0.7, BackgroundColor3 = Color3.fromRGB(80, 120, 255) }):Play()
+					createTween(optBtn, 0.15, {
+						BackgroundTransparency = 0.7,
+						BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+					}):Play()
 				end
 			end)
 
 			optBtn.MouseLeave:Connect(function()
 				if not selectedOptions[opt] then
-					createTween(optBtn, 0.15,
-						{ BackgroundTransparency = 1, BackgroundColor3 = Color3.fromRGB(60, 60, 60) })
-						:Play()
+					createTween(optBtn, 0.15, {
+						BackgroundTransparency = 1,
+						BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+					}):Play()
 				end
 			end)
-
 
 			optBtn.MouseButton1Down:Connect(function()
 				if isMulti then
 					if selectedOptions[opt] then
 						selectedOptions[opt] = nil
-						createTween(optBtn, 0.15,
-							{ BackgroundColor3 = Color3.fromRGB(60, 60, 60), BackgroundTransparency = 1 }):Play()
+						createTween(optBtn, 0.15, {
+							BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+							BackgroundTransparency = 1
+						}):Play()
 					else
 						selectedOptions[opt] = optionValues[opt] or opt
-						createTween(optBtn, 0.15,
-							{ BackgroundColor3 = Color3.fromRGB(80, 120, 255), BackgroundTransparency = 0 }):Play()
+						createTween(optBtn, 0.15, {
+							BackgroundColor3 = Color3.fromRGB(80, 120, 255),
+							BackgroundTransparency = 0
+						}):Play()
 					end
 					local display = table.concat((function()
 						local t = {}
-						for k, _ in pairs(selectedOptions) do table.insert(t, k) end
+						for k, _ in pairs(selectedOptions) do
+							table.insert(t, k)
+						end
 						return t
 					end)(), ", ")
 					selectedLabel.Text = display ~= "" and "Selected: " .. display or "Selected: None"
 				else
-					for _, otherChild in ipairs(optionsMenu:GetChildren()) do
+					for _, otherChild in ipairs(scrollFrame:GetChildren()) do
 						if otherChild:IsA("Frame") then
 							local btn = otherChild:FindFirstChildWhichIsA("TextButton")
 							if btn then
@@ -1992,10 +2185,14 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 							end
 						end
 					end
-					selectedOptions = { [opt] = optionValues[opt] or opt }
+					selectedOptions = {
+						[opt] = optionValues[opt] or opt
+					}
 					selectedLabel.Text = "Selected: " .. opt
-					createTween(optBtn, 0.15,
-						{ BackgroundColor3 = Color3.fromRGB(80, 120, 255), BackgroundTransparency = 0 }):Play()
+					createTween(optBtn, 0.15, {
+						BackgroundColor3 = Color3.fromRGB(80, 120, 255),
+						BackgroundTransparency = 0
+					}):Play()
 					closeDropdown()
 				end
 
@@ -2007,7 +2204,9 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 			end)
 		end
 
-		updateMenuHeight()
+		if isOpen then
+			updateMenuHeight()
+		end
 	end
 
 	local function openDropdown()
@@ -2022,9 +2221,21 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		table.clear(openDropdowns)
 		table.insert(openDropdowns, closeDropdown)
 
+		searchBox.Text = ""
+		searchQuery = ""
+		filterOptions()
+		createOptionButtons()
+
 		menuContainer.Visible = true
+		createTween(optionsMenu, 0.3, {
+			Size = UDim2.new(1, 0, 0, totalHeight)
+		}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out):Play()
 		wait()
-		local totalHeight = menuLayout.AbsoluteContentSize.Y + 8
+
+		local contentHeight = scrollLayout.AbsoluteContentSize.Y + 8
+		local needsScroll = contentHeight > maxMenuHeight
+		local totalHeight = math.min(contentHeight + 32, maxMenuHeight)
+
 		createTween(arrow, 0.3, {
 			Rotation = 0
 		}, Enum.EasingStyle.Back):Play()
@@ -2034,14 +2245,35 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 
 		outsideConn = UserInputService.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				if not isMulti then
+				local mousePos = UserInputService:GetMouseLocation()
+				local guiInset = game:GetService("GuiService"):GetGuiInset()
+				local adjustedPos = mousePos - guiInset
+
+				local searchHit = false
+				local objects = game:GetService("Players").LocalPlayer.PlayerGui:GetGuiObjectsAtPosition(adjustedPos.X,
+					adjustedPos.Y)
+				for _, obj in ipairs(objects) do
+					if obj:IsDescendantOf(searchContainer) then
+						searchHit = true
+						break
+					end
+				end
+
+				if not searchHit and not isMulti then
 					closeDropdown()
 				end
 			end
 		end)
 	end
 
+	searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+		searchQuery = searchBox.Text
+		filterOptions()
+		createOptionButtons()
+	end)
+
 	currentOptions, optionValues = parseOptions(options)
+	filterOptions()
 	createOptionButtons()
 
 	if defaultOption then
@@ -2053,7 +2285,9 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 			end
 			local display = table.concat((function()
 				local t = {}
-				for k, _ in pairs(selectedOptions) do table.insert(t, k) end
+				for k, _ in pairs(selectedOptions) do
+					table.insert(t, k)
+				end
 				return t
 			end)(), ", ")
 			selectedLabel.Text = display ~= "" and "Selected: " .. display or "Selected: None"
@@ -2076,10 +2310,11 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 		end
 	end
 
-
 	local toggleDebounce = false
 	toggleBtn.MouseButton1Click:Connect(function()
-		if toggleDebounce then return end
+		if toggleDebounce then
+			return
+		end
 		toggleDebounce = true
 
 		if isOpen then
@@ -2092,7 +2327,6 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 			toggleDebounce = false
 		end)
 	end)
-
 
 	toggleBtn.MouseEnter:Connect(function()
 		if not isOpen then
@@ -2115,6 +2349,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 
 		AddChildren = function(newOptions)
 			currentOptions, optionValues = parseOptions(newOptions)
+			filterOptions()
 			createOptionButtons()
 		end,
 
@@ -2122,6 +2357,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 			value = value or displayText
 			table.insert(currentOptions, displayText)
 			optionValues[displayText] = value
+			filterOptions()
 			createOptionButtons()
 		end,
 
@@ -2133,12 +2369,14 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 					break
 				end
 			end
+			filterOptions()
 			createOptionButtons()
 		end,
 
 		ClearOptions = function()
 			currentOptions = {}
 			optionValues = {}
+			filterOptions()
 			createOptionButtons()
 			selectedLabel.Text = "Selected: None"
 			truncateWithTooltip(selectedLabel, "Selected: None")
@@ -2166,7 +2404,6 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 				return nil, nil
 			end
 		end
-
 	}
 
 	setmetatable(dropdownWrapper, {
@@ -2670,6 +2907,157 @@ local function createInfo2(name, mainText, subText, callback, parentFrame, gridP
 	end
 end
 
+local function createInfo3(name, mainText, subText, callback, parentFrame, gridPosition, transparency)
+	local infoFrame = createElement("Frame", {
+		Name = name,
+		Size = UDim2.new(0.35, 0, 0.12, 0),
+		BackgroundTransparency = transparency or 0.85,
+		ZIndex = 10,
+	})
+	createElement("UIStroke", {
+		Thickness = 1,
+		Color = Color3.fromRGB(140, 140, 140),
+		Transparency = 0.4,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = infoFrame
+	})
+	createElement("UICorner", {
+		CornerRadius = UDim.new(0, 4),
+		Parent = infoFrame
+	})
+	createElement("UIPadding", {
+		PaddingTop = UDim.new(0.01, 0),
+		PaddingBottom = UDim.new(0.03, 0),
+		PaddingLeft = UDim.new(0.02, 0),
+		PaddingRight = UDim.new(0.02, 0),
+		Parent = infoFrame
+	})
+	local layout = createElement("UIListLayout", {
+		Parent = infoFrame,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 2)
+	})
+	local mainLabel = createElement("TextButton", {
+		Name = "MainText",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(235, 235, 235),
+		Font = Enum.Font.SourceSansBold,
+		TextWrapped = true,
+		TextSize = 18,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Text = mainText or "Information",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		ZIndex = 11,
+		Parent = infoFrame,
+		LayoutOrder = 1
+	})
+	createElement("UIPadding", {
+		PaddingTop = UDim.new(0, 4),
+		PaddingBottom = UDim.new(0, 4),
+		Parent = mainLabel
+	})
+	local subLabel = createElement("TextLabel", {
+		Name = "SubText",
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(220, 220, 220),
+		Font = Enum.Font.Gotham,
+		TextWrapped = true,
+		TextSize = 13,
+		Text = subText or "",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		RichText = true,
+		ZIndex = 11,
+		Parent = infoFrame,
+		LayoutOrder = 2
+	})
+	local wrapper = {
+		Frame = infoFrame,
+		MainLabel = mainLabel,
+		SubLabel = subLabel,
+	}
+	local function formatSubText(txt)
+		if not txt or txt == "" then return "" end
+		local lines = {}
+		for line in txt:gmatch("[^\r\n]+") do
+			if line:match("%S") then
+				table.insert(lines, line)
+			end
+		end
+		for i, line in ipairs(lines) do
+			line = line:gsub("%*%*(.-)%*%*", "<b>%1</b>")
+			line = line:gsub("%*(.-)%*", "<i>%1</i>")
+			line = line:gsub("__(.-)__",
+				"<font color=\"rgb(220,220,220)\"><stroke color=\"rgb(220,220,220)\" joins=\"miter\" thickness=\"0.30\" transparency=\"0\">%1</stroke></font>")
+			if not line:match("^•") then
+				line = "• " .. line
+			end
+			lines[i] = line
+		end
+		return table.concat(lines, "\n<font size=\"5\"> </font>\n")
+	end
+	function wrapper.SetText(newMainText, newSubText)
+		local oldMainText = mainLabel.Text
+		local oldSubText = subLabel.Text
+		if newMainText ~= nil then mainLabel.Text = newMainText end
+		if newSubText ~= nil then subLabel.Text = formatSubText(newSubText) end
+		if callback and (oldMainText ~= mainLabel.Text or oldSubText ~= subLabel.Text) then
+			callback(mainLabel.Text, subLabel.Text)
+		end
+	end
+
+	function wrapper.SetMainText(newText)
+		local oldText = mainLabel.Text
+		mainLabel.Text = newText or "Information"
+		if callback and oldText ~= mainLabel.Text then
+			callback(mainLabel.Text, subLabel.Text)
+		end
+	end
+
+	function wrapper.SetSubText(newText)
+		local oldText = subLabel.Text
+		subLabel.Text = formatSubText(newText)
+		if callback and oldText ~= subLabel.Text then
+			callback(mainLabel.Text, subLabel.Text)
+		end
+	end
+
+	function wrapper.GetText()
+		return mainLabel.Text, subLabel.Text
+	end
+
+	function wrapper.GetMainText()
+		return mainLabel.Text
+	end
+
+	function wrapper.GetSubText()
+		return subLabel.Text
+	end
+
+	local expanded = true
+	mainLabel.Activated:Connect(function()
+	end)
+
+	if subText then
+		subLabel.Text = formatSubText(subText)
+	end
+
+	if parentFrame and parentFrame.AddComponent then
+		parentFrame.AddComponent(wrapper.Frame, gridPosition)
+		return wrapper
+	elseif parentFrame and parentFrame.Frame then
+		wrapper.Frame.Parent = parentFrame.Frame
+		return wrapper
+	else
+		wrapper.Frame.Parent = parentFrame
+		return wrapper
+	end
+end
+
 local function createToggleButton(name, text, defaultState, callback, parentFrame, gridPosition)
 	local toggle = createElement("Frame", {
 		Name = name,
@@ -2987,6 +3375,191 @@ local function createGhostText(parentSection, options, gridPosition)
 	end
 end
 
+local function convertMarkdownToRichText(markdown)
+	local text = markdown
+
+	text = text:gsub("### (.-)\n", '<font size="18"><b>%1</b></font>\n')
+	text = text:gsub("## (.-)\n", '<font size="20"><b>%1</b></font>\n')
+	text = text:gsub("# (.-)\n", '<font size="22"><b>%1</b></font>\n')
+
+	text = text:gsub("%*%*%*(.-)%*%*%*", "<b><i>%1</i></b>")
+	text = text:gsub("%*%*(.-)%*%*", "<b>%1</b>")
+	text = text:gsub("%*(.-)%*", "<i>%1</i>")
+	text = text:gsub("__(.-)__", "<b>%1</b>")
+	text = text:gsub("_(.-)_", "<i>%1</i>")
+
+	text = text:gsub("~~(.-)~~", "<s>%1</s>")
+
+	text = text:gsub("`([^`]+)`",
+		'<font face="RobotoMono"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">%1</stroke></font>')
+
+	text = text:gsub("```(.-)```", function(code)
+		return '<font face="RobotoMono" size="13"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">' ..
+			code .. '</stroke></font>'
+	end)
+
+	text = text:gsub("%[(.-)%]%((.-)%)", '<font color="rgb(100,150,255)"><u>%1</u></font>')
+
+	text = text:gsub("^%- (.-)\n", "• %1\n")
+	text = text:gsub("\n%- (.-)\n", "\n• %1\n")
+	text = text:gsub("\n%- (.-)", "\n• %1")
+
+	text = text:gsub("^%* (.-)\n", "• %1\n")
+	text = text:gsub("\n%* (.-)\n", "\n• %1\n")
+	text = text:gsub("\n%* (.-)", "\n• %1")
+
+	text = text:gsub("^%d+%. (.-)\n", "%1\n")
+	text = text:gsub("\n%d+%. (.-)\n", "\n%1\n")
+
+	text = text:gsub("%-%-%-+", "────────────────────────")
+	text = text:gsub("%*%*%*+", "────────────────────────")
+
+	return text
+end
+
+local function createPopup(overlayName, options)
+	local title = options.title or "Popup"
+	local text = options.text or ""
+	local width = options.width or UDim2.new(0, 450, 0, 350)
+	local onClose = options.onClose or function() end
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = overlayName or "PopupOverlay"
+	screenGui.ResetOnSpawn = false
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screenGui.IgnoreGuiInset = true
+	screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+	local blurFrame = Instance.new("TextButton")
+	blurFrame.Name = "BlurBackground"
+	blurFrame.Size = UDim2.new(1, 0, 1, 0)
+	blurFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	blurFrame.BackgroundTransparency = 0.4
+	blurFrame.BorderSizePixel = 0
+	blurFrame.Text = ""
+	blurFrame.AutoButtonColor = false
+	blurFrame.Modal = true
+	blurFrame.Parent = screenGui
+
+	local blurEffect = Instance.new("BlurEffect")
+	blurEffect.Size = 20
+	blurEffect.Parent = game:GetService("Lighting")
+
+	local popup = Instance.new("Frame")
+	popup.Name = "Popup"
+	popup.Size = width
+	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
+	popup.AnchorPoint = Vector2.new(0.5, 0.5)
+	popup.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	popup.BorderSizePixel = 0
+	popup.Parent = screenGui
+
+	local popupCorner = Instance.new("UICorner")
+	popupCorner.CornerRadius = UDim.new(0, 8)
+	popupCorner.Parent = popup
+
+	local topBar = Instance.new("Frame")
+	topBar.Name = "TopBar"
+	topBar.Size = UDim2.new(1, 0, 0, 45)
+	topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	topBar.BorderSizePixel = 0
+	topBar.Parent = popup
+
+	local topBarCorner = Instance.new("UICorner")
+	topBarCorner.CornerRadius = UDim.new(0, 8)
+	topBarCorner.Parent = topBar
+
+	local topBarBottom = Instance.new("Frame")
+	topBarBottom.Size = UDim2.new(1, 0, 0, 8)
+	topBarBottom.Position = UDim2.new(0, 0, 1, -8)
+	topBarBottom.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	topBarBottom.BorderSizePixel = 0
+	topBarBottom.Parent = topBar
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.Size = UDim2.new(1, -60, 1, 0)
+	titleLabel.Position = UDim2.new(0, 15, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	titleLabel.TextSize = 15
+	titleLabel.Font = Enum.Font.GothamMedium
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = topBar
+
+	local closeButton = Instance.new("TextButton")
+	closeButton.Name = "CloseButton"
+	closeButton.Size = UDim2.new(0, 30, 0, 30)
+	closeButton.Position = UDim2.new(1, -38, 0.5, 0)
+	closeButton.AnchorPoint = Vector2.new(0, 0.5)
+	closeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+	closeButton.Text = "X"
+	closeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+	closeButton.TextSize = 14
+	closeButton.Font = Enum.Font.GothamBold
+	closeButton.Parent = topBar
+
+	local closeButtonCorner = Instance.new("UICorner")
+	closeButtonCorner.CornerRadius = UDim.new(0, 6)
+	closeButtonCorner.Parent = closeButton
+
+	local container = Instance.new("ScrollingFrame")
+	container.Name = "Container"
+	container.Size = UDim2.new(1, -30, 1, -70)
+	container.Position = UDim2.new(0, 15, 0, 55)
+	container.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+	container.BorderSizePixel = 0
+	container.ScrollBarThickness = 4
+	container.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 90)
+	container.CanvasSize = UDim2.new(0, 0, 0, 0)
+	container.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	container.Parent = popup
+
+	local containerCorner = Instance.new("UICorner")
+	containerCorner.CornerRadius = UDim.new(0, 6)
+	containerCorner.Parent = container
+
+	local contentPadding = Instance.new("UIPadding")
+	contentPadding.PaddingTop = UDim.new(0, 12)
+	contentPadding.PaddingBottom = UDim.new(0, 12)
+	contentPadding.PaddingLeft = UDim.new(0, 12)
+	contentPadding.PaddingRight = UDim.new(0, 12)
+	contentPadding.Parent = container
+
+	local contentLabel = Instance.new("TextLabel")
+	contentLabel.Name = "Content"
+	contentLabel.Size = UDim2.new(1, -24, 0, 0)
+	contentLabel.BackgroundTransparency = 1
+	contentLabel.Text = convertMarkdownToRichText(text)
+	contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	contentLabel.TextSize = 14
+	contentLabel.Font = Enum.Font.Gotham
+	contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+	contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+	contentLabel.TextWrapped = true
+	contentLabel.RichText = true
+	contentLabel.AutomaticSize = Enum.AutomaticSize.Y
+	contentLabel.Parent = container
+
+	local function closePopup()
+		if blurEffect then
+			blurEffect:Destroy()
+		end
+		screenGui:Destroy()
+		onClose()
+	end
+
+	closeButton.MouseButton1Click:Connect(closePopup)
+
+	return {
+		gui = screenGui,
+		popup = popup,
+		container = container,
+		contentLabel = contentLabel,
+		close = closePopup
+	}
+end
 -- ================ USER INTERFACE ===================
 
 local SizeConfig = {
@@ -3004,24 +3577,30 @@ local maxWidth = SizeConfig.GuiMaxWidth
 local minHeight = SizeConfig.GuiMinHeight
 local minWidth = SizeConfig.GuiMinWidth
 
-local mainUI = createTabbedContainer("Prospecting", mainContainer, Width, Height,
-	minWidth, minHeight, maxWidth, maxHeight, { container = { backgroundTransparency = 0.20 } })
+local mainUI = createTabbedContainer("Prospecting", mainContainer, Width, Height, minWidth, minHeight, maxWidth,
+	maxHeight, { container = { backgroundTransparency = 0.20 } })
 
 local MainFarmingPage = mainUI.CreatePage("Main", 1)
 local ItemsPage = mainUI.CreatePage("Items", 2)
 local MiscellaneousPage = mainUI.CreatePage("Miscellaneous", 3)
+local ShopPage = mainUI.CreatePage("Shop", 4)
 
 local autoFarmSection = createSection(MainFarmingPage, "Auto Farm", nil, true,
 	"Tween is HIGHLY recommended, walk will be fixed in future updates!")
 local sellSection = createSection(MainFarmingPage, "Sell Inventory", nil, true)
 local teleportSection = createSection(MainFarmingPage, "Teleport", nil, true,
 	"Requires waypoints to be unlocked before using them, use unlock all waypoints to do so.")
+
 local reforgeSection = createSection(ItemsPage, "Reforge", nil, true,
 	"Unequip the equipment you wanna reforge and DO NOT hold anything in your hand.")
 local enchantSection = createSection(ItemsPage, "Enchanting", nil, true, "DO NOT hold anything in your hand.")
-local shopSection = createSection(ItemsPage, "Shop", nil, true, "Bulk buying will be added in next update.")
+--local favouriteSection = createSection(ItemsPage, "Favourite Items", nil, true)
+
 local ExcavationSection = createSection(MiscellaneousPage, "Excavations", nil, true)
+local GeodeSection = createSection(MiscellaneousPage, "Geodes", nil, true)
 local utilitySection = createSection(MiscellaneousPage, "Utility", nil, true)
+
+local shopSection = createSection(ShopPage, "Shop", nil, true, "Bulk buying will be added in next update.")
 
 -- =============== INITIALIZATION ===============
 -- actual brainfuck starts here
@@ -3045,6 +3624,11 @@ local HumanoidRootPart
 local Humanoid
 local Animator
 local WashAnimation
+local GEODE_AUTO_LOOP_DELAY = 0.1
+local currentGeodeIndex = 1
+local geodeAutoLoopEnabled = false
+local lastGeodeTeleportTime = 0
+local geodeTeleportConnection
 
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local BackpackTwo = Player:WaitForChild("BackpackTwo")
@@ -3310,6 +3894,50 @@ local function getClosestMerchant()
 	end
 
 	return closest, closestDist
+end
+
+local function encodeJSON(value, indentLevel)
+	indentLevel = indentLevel or 0
+	local indent = string.rep("    ", indentLevel)
+	local nextIndent = string.rep("    ", indentLevel + 1)
+
+	if typeof(value) == "table" then
+		local isArray = (#value > 0)
+		local buffer = {}
+
+		if isArray then
+			table.insert(buffer, "[")
+			for i, v in ipairs(value) do
+				table.insert(buffer, nextIndent .. encodeJSON(v, indentLevel + 1) .. (i < #value and "," or ""))
+			end
+			table.insert(buffer, indent .. "]")
+		else
+			table.insert(buffer, "{")
+			local keys = {}
+			for k in pairs(value) do table.insert(keys, k) end
+			table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+
+			for i, k in ipairs(keys) do
+				local v = value[k]
+				local keyStr = ("%q"):format(tostring(k))
+				local entry = nextIndent .. keyStr .. ": " .. encodeJSON(v, indentLevel + 1)
+				if i < #keys then entry = entry .. "," end
+				table.insert(buffer, entry)
+			end
+
+			table.insert(buffer, indent .. "}")
+		end
+
+		return table.concat(buffer, "\n")
+	elseif typeof(value) == "string" then
+		return ("%q"):format(value)
+	elseif typeof(value) == "boolean" or typeof(value) == "number" then
+		return tostring(value)
+	elseif value == nil then
+		return "null"
+	else
+		return ("%q"):format("<unsupported>")
+	end
 end
 
 local function tweenToTarget(target, config)
@@ -4779,65 +5407,180 @@ end
 local function refreshData()
 	if ExcavationState.waiting then return end
 	ExcavationState.waiting = true
-	local c
-	c = UpdateRemote.OnClientEvent:Connect(function(d)
+	local con
+	con = UpdateRemote.OnClientEvent:Connect(function(d)
 		ExcavationState.data = d
 		ExcavationState.waiting = false
-		c:Disconnect()
+		con:Disconnect()
 	end)
 	UpdateRemote:FireServer()
 end
 
-local function getExcavationNames()
-	local t = {}
-	for n in pairs(Excavations.Sites) do
-		table.insert(t, n)
-	end
-	return t
-end
-
-local function blockExisting()
+local function getCurrentExcavationStatus()
 	if not ExcavationState.data then refreshData() end
+	repeat task.wait() until ExcavationState.data
+
 	local d = ExcavationState.data
-	if not d then
-		createNotification("Unable to fetch excavation data.")
-		return
-	end
-
 	local ce = d.CurrentExcavation
-	if ce and ce ~= "" then
-		createNotification("There is an ongoing / unclaimed excavation: " .. ce)
-		return
+	local marker = workspace:FindFirstChild("Marker")
+
+	if marker then
+		local ui = marker:FindFirstChild("UI")
+		if ui then
+			local n = ui:FindFirstChild("ExcavationName")
+			if n and typeof(n.Text) == "string" and n.Text ~= "" then
+				return "Finished", n.Text
+			end
+		end
 	end
 
-	createNotification(d.CanStart and "You have no ongoing excavation. You may start a new one." or
-	"No excavation active and you cannot start one.")
+	if ce and ce ~= "" then
+		return "Active", ce
+	end
+
+	return "None", nil
 end
 
-local function findFinishedName()
-	local m = workspace:FindFirstChild("Marker")
-	if not m then return end
-	local ui = m:FindFirstChild("UI")
-	if not ui then return end
-	local n = ui:FindFirstChild("ExcavationName")
-	if not n then return end
-	local t = n.Text
-	if t == "" then return end
-	return t
+
+local function canStartExcavation()
+	local status = getCurrentExcavationStatus()
+	return status == "None"
 end
 
-local function tryClaim()
-	local name = findFinishedName()
-	if not name then return end
+local function claimExcavation()
+	local status, name = getCurrentExcavationStatus()
+	if status ~= "Finished" or not name then return false end
+
 	local ok = ClaimRemote:InvokeServer(name)
 	if ok then
-		task.wait(3)
+		task.wait(2)
 		refreshData()
-		createNotification("Excavation claimed.")
+		return true
+	end
+
+	return false
+end
+
+local function startExcavation()
+	if not ExcavationState.selected then
+		return false, "No excavation selected."
+	end
+
+	local d = ExcavationState.data
+	if not d then
+		refreshData()
+		repeat task.wait() until ExcavationState.data
+		d = ExcavationState.data
+	end
+
+	local unlocked = d.UnlockedExcavationSites
+	if not table.find(unlocked, ExcavationState.selected) then
+		return false, "You haven't unlocked this excavation."
+	end
+
+	if not canStartExcavation() then
+		if d.CurrentExcavation and d.CurrentExcavation ~= "" then
+			return false, "Cannot start — active excavation: " .. d.CurrentExcavation
+		else
+			return false, "Cannot start — check for unclaimed excavation."
+		end
+	end
+
+	local ok = StartRemote:InvokeServer(ExcavationState.selected)
+	if ok then
+		refreshData()
+		return true
+	end
+
+	return false, "Server rejected the request."
+end
+
+local function getExcavationNames()
+	local t = {}
+	for name in pairs(Excavations.Sites) do
+		table.insert(t, name)
+	end
+	return t
+end
+
+local function getGeodeModels()
+	local geodeFolder = workspace:FindFirstChild("Geode")
+	if not geodeFolder then
+		return {}
+	end
+	local geodeModels = {}
+	for _, child in pairs(geodeFolder:GetChildren()) do
+		if child:IsA("Model") then
+			table.insert(geodeModels, child)
+		end
+	end
+	return geodeModels
+end
+
+local function getGeodeTeleportPosition(geodeModel)
+	local cf, size = geodeModel:GetBoundingBox()
+	return cf.Position
+end
+
+local function teleportToGeodePosition(position)
+	local character = Player.Character
+	if not character then
+		return false
+	end
+	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+	if not humanoidRootPart then
+		return false
+	end
+	humanoidRootPart.CFrame = CFrame.new(position)
+	return true
+end
+
+local function teleportToNextGeode(geodeInfoLabel)
+	local geodeModels = getGeodeModels()
+	if #geodeModels == 0 then
+		if geodeInfoLabel then
+			geodeInfoLabel.SetSubText("No geodes found")
+		end
+		return false
+	end
+	
+	if currentGeodeIndex > #geodeModels then
+		currentGeodeIndex = 1
+	end
+	
+	local targetGeode = geodeModels[currentGeodeIndex]
+	local geodePosition = getGeodeTeleportPosition(targetGeode)
+	
+	if teleportToGeodePosition(geodePosition) then
+		if geodeInfoLabel then
+			geodeInfoLabel.SetSubText(string.format("Teleported to: %s (%d/%d)", targetGeode.Name, currentGeodeIndex, #geodeModels))
+		end
+		currentGeodeIndex = currentGeodeIndex + 1
+		return true
 	else
-		createNotification("This excavation could not be claimed, go and manually claim.")
+		if geodeInfoLabel then
+			geodeInfoLabel.SetSubText("Failed to teleport - Character not found")
+		end
+		return false
 	end
 end
+
+local function getModifierNames()
+	local t = {}
+	for k in pairs(require(game.ReplicatedStorage.GameInfo.Modifiers)) do
+		t[#t + 1] = k
+	end
+	return t
+end
+
+local function getOreNames()
+	local t = {}
+	for _, obj in ipairs(game.ReplicatedStorage.Items.Valuables:GetChildren()) do
+		t[#t + 1] = obj.Name
+	end
+	return t
+end
+
 
 --==================== COMPONENTS =====================
 
@@ -5622,45 +6365,16 @@ createButton("BuyOthersDropdownButton", "Buy Others", function()
 	handlePurchase("others", selectedOptions.other)
 end, shopSection, { 0.65, 1 })
 
-UpdateRemote.OnClientEvent:Connect(function(d)
-	ExcavationState.data = d
-	if ExcavationState.autoClaim then
-		tryClaim()
-	end
-end)
-
 createDropdown("ExcavationsDropdown", "Select Excavation", getExcavationNames(), nil, function(s)
 	ExcavationState.selected = s
-end, ExcavationSection, nil)
+end, ExcavationSection)
 
 createButton("StartExcavation", "Start Excavation", function()
-	if not ExcavationState.selected then
-		return createNotification("Please select an excavation site to start.")
-	end
-
-	if ExcavationState.data then
-		blockExisting()
-		return
-	end
-
-	refreshData()
-	task.wait(2)
-
-	if ExcavationState.data then
-		blockExisting()
-		return
-	end
-
-	if not ExcavationState.selected then
-		createNotification("No excavation selected")
-		return
-	end
-
-	local ok = StartRemote:InvokeServer(ExcavationState.selected)
+	local ok, msg = startExcavation()
 	if ok then
-		createNotification("Started excavation: " .. ExcavationState.selected)
+		createNotification("Started: " .. ExcavationState.selected)
 	else
-		createNotification("Failed to start excavation: " .. ExcavationState.selected)
+		createNotification(msg)
 	end
 end, ExcavationSection)
 
@@ -5669,14 +6383,174 @@ createToggleButton("AutoClaimExcavation", "Auto Claim", true, function(state)
 	if state then
 		task.spawn(function()
 			while ExcavationState.autoClaim do
-				if not ExcavationState.data then refreshData() end
-				task.wait(2)
-				tryClaim()
+				local status = getCurrentExcavationStatus()
+				if status == "Finished" then
+					claimExcavation()
+				end
+				task.wait(1)
 			end
 		end)
 	end
 end, ExcavationSection)
 
+createButton("ViewExcavationChances", "View Item Chances", function()
+	if not ExcavationState.selected then
+		createNotification("Select an Excavation Site!")
+		return
+	end
+
+	local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+	if playerGui:FindFirstChild("ExcavationPopup") then
+		return
+	end
+
+	local siteName = ExcavationState.selected
+	local siteData = Excavations.Sites[siteName]
+	if not siteData then
+		createNotification("Invalid Excavation Site!")
+		return
+	end
+
+	local function getItemChances(weights)
+		local chances = {}
+		local totalWeight = 0
+		for _, weight in pairs(weights) do
+			totalWeight = totalWeight + weight
+		end
+		for itemName, weight in pairs(weights) do
+			chances[itemName] = string.format("%.2f%%", (weight / totalWeight) * 100)
+		end
+		return chances
+	end
+
+	local itemChances = getItemChances(siteData.Weights)
+
+	local content = "# " .. siteData.Name .. "\n\n"
+	content = content .. "## Site Information\n\n"
+	content = content .. "**Geode Type** `" .. siteData.GeodeType .. "`\n\n"
+	content = content .. "**Items per Run** `" .. siteData.MinItems .. " - " .. siteData.MaxItems .. "`\n\n"
+	content = content .. "**Duration** `" .. (siteData.Duration / 3600) .. " hours`\n\n"
+	content = content .. "**Unlock Cost** `" .. siteData.UnlockCost .. "`\n\n"
+	content = content .. "**Start Cost** `" .. siteData.StartCost .. "`\n\n"
+	content = content .. "---\n\n"
+	content = content .. "## Drop Rates\n\n"
+	content = content .. "_Items you can obtain from this excavation site_\n\n"
+
+	local sortedChances = {}
+	for itemName, chance in pairs(itemChances) do
+		table.insert(sortedChances, { name = itemName, chance = chance })
+	end
+	table.sort(sortedChances, function(a, b)
+		return tonumber(a.chance:match("([%d%.]+)")) > tonumber(b.chance:match("([%d%.]+)"))
+	end)
+
+	for _, item in ipairs(sortedChances) do
+		content = content .. "- **" .. item.name .. "** - `" .. item.chance .. "`\n\n"
+	end
+
+	createPopup("ExcavationPopup", {
+		title = "Excavation Info",
+		text = content,
+		width = UDim2.new(0, 500, 0, 500)
+	})
+end, ExcavationSection)
+
+createButton("DebugLogExcavationData", "[DEBUG] Log Excavation Data", function()
+	if not ExcavationState.data then
+		refreshData()
+	end
+
+	task.defer(function()
+		print("=== Excavation Data Dump ===")
+		print(encodeJSON(ExcavationState.data))
+		print("=== END ===")
+	end)
+end, ExcavationSection, { 2, 1 })
+
+local geodeInfoLabel = createInfo("GeodeInfo", "Geode Teleporter", "Ready to teleport", nil, GeodeSection)
+
+local geodeModels = getGeodeModels()
+if #geodeModels > 0 then
+	geodeInfoLabel.SetSubText(string.format("Found %d geodes in workspace", #geodeModels))
+else
+	geodeInfoLabel.SetSubText("No geodes found in workspace")
+end
+
+createButton("TeleportGeodeButton", "Teleport to Next Geode", function()
+	teleportToNextGeode(geodeInfoLabel)
+end, GeodeSection)
+
+local geodeAutoLoopToggle = createToggleButton("GeodeAutoLoopToggle", "Auto Teleport", false, function(isEnabled)
+	geodeAutoLoopEnabled = isEnabled
+	
+	if geodeAutoLoopEnabled then
+		geodeInfoLabel.SetMainText("Auto Loop: ON")
+		lastGeodeTeleportTime = tick()
+		
+		geodeTeleportConnection = RunService.Heartbeat:Connect(function()
+			if geodeAutoLoopEnabled and tick() - lastGeodeTeleportTime >= GEODE_AUTO_LOOP_DELAY then
+				teleportToNextGeode(geodeInfoLabel)
+				lastGeodeTeleportTime = tick()
+			end
+		end)
+	else
+		geodeInfoLabel.SetMainText("Geode Teleporter")
+		
+		if geodeTeleportConnection then
+			geodeTeleportConnection:Disconnect()
+			geodeTeleportConnection = nil
+		end
+		
+		local currentGeodeModels = getGeodeModels()
+		if #currentGeodeModels > 0 then
+			geodeInfoLabel.SetSubText(string.format("Found %d geodes in workspace", #currentGeodeModels))
+		else
+			geodeInfoLabel.SetSubText("No geodes found in workspace")
+		end
+	end
+end, GeodeSection)
+
+--[[
+createDropdown("AutoFavModifierType", "Select Modifier", getModifierNames(), nil, function()
+	-- Triggered when a modifier is selected
+end, favouriteSection)
+
+createButton("AutoFavAllWithModifierButton", "Instant Favourite", function()
+	-- Instantly favourite all items matching the selected modifier
+end, favouriteSection)
+
+createDropdown("AutoFavOreType", "Select Ore", getOreNames(), nil, function()
+	-- Triggered when an ore type is selected
+end, favouriteSection)
+
+createButton("AutoFavAllWithOreButton", "Instant Favourite", function()
+	-- Instantly favourite all items matching the selected ore type
+end, favouriteSection)
+
+createButton("FavOresoWithModifier", "Instant Fav. Selected Ore with Selected Modifiers", function(state)
+	-- If enabled, only favourite items that match both the selected modifier and ore type
+end, favouriteSection, { 2, 1 })
+
+createToggleButton("AutoFavouriteItems", "Auto Favourite", false, function(state)
+	-- Automatically favourite items as they are obtained based on selected criteria
+end, favouriteSection)
+
+createInfo3(
+	"AutoFavouriteInfo",
+	"Auto Favourite System",
+	
+__Select Modifier:__ Choose a modifier to filter which items are affected by Auto Favourite or instant favouriting.
+__Instant Favourite (Modifier):__ Instantly favourite all items that match the selected modifier.
+__Select Ore:__ Choose an ore type to favourite.
+__Instant Favourite (Ore):__ Instantly favourite all items that match the selected ore type.
+__Fav. Selected Ores with Selected Modifier:__ Instantly favourite only the items that match BOTH the selected ore and selected modifier.
+__Auto Favourite:__ Automatically favourite items as they are obtained. If you select modifiers along with an ore, all collected items of that ore that contain ANY of the selected modifiers will be automatically favourited.
+    ,
+	nil,
+	favouriteSection,
+	{ 2, 5 },
+)
+]]
 
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
 	local Players = game:GetService("Players")
