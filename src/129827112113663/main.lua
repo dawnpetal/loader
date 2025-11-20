@@ -644,7 +644,7 @@ local function createTabBar(parent, headerHeight, paddingX, zIndex)
 
 	local containerWrapper = createElement("Frame", {
 		Name = "ContainerWrapper",
-		Size = UDim2.new(1, -40, 1, -12),
+		Size = UDim2.new(1, -50, 1, -12),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
 		BackgroundTransparency = 1,
@@ -652,7 +652,6 @@ local function createTabBar(parent, headerHeight, paddingX, zIndex)
 		ZIndex = zIndex + 1,
 		Parent = tabBar
 	})
-
 
 	local container = createElement("ScrollingFrame", {
 		Name = "Container",
@@ -739,6 +738,12 @@ local function createTabBar(parent, headerHeight, paddingX, zIndex)
 		ZIndex = zIndex + 11,
 		Parent = tabBar
 	})
+
+	local function updateFades()
+		local max = container.CanvasSize.X.Offset - containerWrapper.AbsoluteSize.X
+		leftGradient.Visible = container.CanvasPosition.X > 0
+		rightGradient.Visible = container.CanvasPosition.X < max
+	end
 
 	local function tweenToCenter(tabName)
 		local tabData = tabs[tabName]
@@ -833,10 +838,18 @@ local function createTabBar(parent, headerHeight, paddingX, zIndex)
 		Parent = container
 	})
 
+	container:GetPropertyChangedSignal("CanvasPosition"):Connect(updateFades)
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateFades)
+	containerWrapper:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateFades)
+
+	updateFades()
+
+
 	local function createTab(name, order, onActivate)
 		local btn = createElement("TextButton", {
 			Name = name,
-			Size = UDim2.new(0, 100, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.new(0, 0, 1, 0),
 			BackgroundColor3 = Color3.fromRGB(30, 30, 35),
 			BorderSizePixel = 0,
 			Text = name,
@@ -847,10 +860,12 @@ local function createTabBar(parent, headerHeight, paddingX, zIndex)
 			ZIndex = zIndex + 2,
 			Parent = container
 		})
+
 		createElement("UICorner", { CornerRadius = UDim.new(0, 6), Parent = btn })
+
 		createElement("UIPadding", {
-			PaddingLeft = UDim.new(0, 12),
-			PaddingRight = UDim.new(0, 12),
+			PaddingLeft = UDim.new(0, 10),
+			PaddingRight = UDim.new(0, 10),
 			Parent = btn
 		})
 
@@ -3594,7 +3609,7 @@ local teleportSection = createSection(MainFarmingPage, "Teleport", nil, true,
 local reforgeSection = createSection(ItemsPage, "Reforge", nil, true,
 	"Unequip the equipment you wanna reforge and DO NOT hold anything in your hand.")
 local enchantSection = createSection(ItemsPage, "Enchanting", nil, true, "DO NOT hold anything in your hand.")
---local favouriteSection = createSection(ItemsPage, "Favourite Items", nil, true)
+local favouriteSection = createSection(ItemsPage, "Favourite Items [BETA]", nil, true)
 
 local ExcavationSection = createSection(MiscellaneousPage, "Excavations", nil, true)
 local GeodeSection = createSection(MiscellaneousPage, "Geodes", nil, true)
@@ -5543,17 +5558,18 @@ local function teleportToNextGeode(geodeInfoLabel)
 		end
 		return false
 	end
-	
+
 	if currentGeodeIndex > #geodeModels then
 		currentGeodeIndex = 1
 	end
-	
+
 	local targetGeode = geodeModels[currentGeodeIndex]
 	local geodePosition = getGeodeTeleportPosition(targetGeode)
-	
+
 	if teleportToGeodePosition(geodePosition) then
 		if geodeInfoLabel then
-			geodeInfoLabel.SetSubText(string.format("Teleported to: %s (%d/%d)", targetGeode.Name, currentGeodeIndex, #geodeModels))
+			geodeInfoLabel.SetSubText(string.format("Teleported to: %s (%d/%d)", targetGeode.Name, currentGeodeIndex,
+				#geodeModels))
 		end
 		currentGeodeIndex = currentGeodeIndex + 1
 		return true
@@ -5646,6 +5662,8 @@ createToggleButton("AutoSellToggle", "Auto Sell", false, function(state)
 	createNotification(state and "✅ Auto Sell Enabled" or "❌ Auto Sell Disabled")
 end, sellSection)
 
+createInfo3("SellInfo", "Sell Int Guide", "Sell Int is the amount of items/ores in your backpack at which auto sell should happen/trigger.", nil, sellSection, {2, 1.5})
+
 createDropdown("FarmingModeDropdown", "Select Farming mode", {
 	"Legit",
 	"Instant"
@@ -5654,7 +5672,7 @@ createDropdown("FarmingModeDropdown", "Select Farming mode", {
 	createNotification("📌 Farming Mode: " .. opt, 10)
 	if opt == "Legit" then
 		createNotification(
-			"Hello there, this mode is currently NOT available, im trying to get it together but it's taking quite a lot of time to figure things out, thus Instant is the only usable mode as of now",
+			"Hello there, this mode is currently NOT available, because im lazy :]",
 			10)
 	end
 end, autoFarmSection)
@@ -6482,11 +6500,11 @@ end, GeodeSection)
 
 local geodeAutoLoopToggle = createToggleButton("GeodeAutoLoopToggle", "Auto Teleport", false, function(isEnabled)
 	geodeAutoLoopEnabled = isEnabled
-	
+
 	if geodeAutoLoopEnabled then
 		geodeInfoLabel.SetMainText("Auto Loop: ON")
 		lastGeodeTeleportTime = tick()
-		
+
 		geodeTeleportConnection = RunService.Heartbeat:Connect(function()
 			if geodeAutoLoopEnabled and tick() - lastGeodeTeleportTime >= GEODE_AUTO_LOOP_DELAY then
 				teleportToNextGeode(geodeInfoLabel)
@@ -6495,12 +6513,12 @@ local geodeAutoLoopToggle = createToggleButton("GeodeAutoLoopToggle", "Auto Tele
 		end)
 	else
 		geodeInfoLabel.SetMainText("Geode Teleporter")
-		
+
 		if geodeTeleportConnection then
 			geodeTeleportConnection:Disconnect()
 			geodeTeleportConnection = nil
 		end
-		
+
 		local currentGeodeModels = getGeodeModels()
 		if #currentGeodeModels > 0 then
 			geodeInfoLabel.SetSubText(string.format("Found %d geodes in workspace", #currentGeodeModels))
@@ -6510,47 +6528,114 @@ local geodeAutoLoopToggle = createToggleButton("GeodeAutoLoopToggle", "Auto Tele
 	end
 end, GeodeSection)
 
---[[
-createDropdown("AutoFavModifierType", "Select Modifier", getModifierNames(), nil, function()
-	-- Triggered when a modifier is selected
+local selectedModifier = nil
+local selectedOre = nil
+local autoFavEnabled = false
+
+local function isLocked(item)
+	local locked = item:GetAttribute("Locked")
+	return locked == true
+end
+
+local function toggleFavourite(item)
+	ReplicatedStorage.Remotes.Inventory.ToggleLock:FireServer(item)
+end
+
+local function favouriteItem(item)
+	if not isLocked(item) then
+		toggleFavourite(item)
+	end
+end
+
+local function matchesModifier(item, modifier)
+	return item:FindFirstChild("ItemData"):GetAttribute("Modifier") == modifier
+end
+
+local function matchesOre(item, oreName)
+	return item.Name == oreName
+end
+
+local function isValuable(item)
+	return item:GetAttribute("ItemType") == "Valuable"
+end
+
+createDropdown("AutoFavModifierType", "Select Modifier", getModifierNames(), nil, function(value)
+	selectedModifier = value
 end, favouriteSection)
 
 createButton("AutoFavAllWithModifierButton", "Instant Favourite", function()
-	-- Instantly favourite all items matching the selected modifier
+	if not selectedModifier then return end
+	for _, item in pairs(LocalPlayer.BackpackTwo:GetChildren()) do
+		if isValuable(item) and matchesModifier(item, selectedModifier) then
+			favouriteItem(item)
+		end
+	end
 end, favouriteSection)
 
-createDropdown("AutoFavOreType", "Select Ore", getOreNames(), nil, function()
-	-- Triggered when an ore type is selected
+createDropdown("AutoFavOreType", "Select Ore", getOreNames(), nil, function(value)
+	selectedOre = value
 end, favouriteSection)
 
 createButton("AutoFavAllWithOreButton", "Instant Favourite", function()
-	-- Instantly favourite all items matching the selected ore type
+	if not selectedOre then return end
+	for _, item in pairs(LocalPlayer.BackpackTwo:GetChildren()) do
+		if isValuable(item) and matchesOre(item, selectedOre) then
+			favouriteItem(item)
+		end
+	end
 end, favouriteSection)
 
-createButton("FavOresoWithModifier", "Instant Fav. Selected Ore with Selected Modifiers", function(state)
-	-- If enabled, only favourite items that match both the selected modifier and ore type
+createButton("FavOresoWithModifier", "Instant Fav. Selected Ore with Selected Modifiers", function()
+	if not selectedOre or not selectedModifier then return end
+	for _, item in pairs(LocalPlayer.BackpackTwo:GetChildren()) do
+		if isValuable(item) and matchesOre(item, selectedOre) and matchesModifier(item, selectedModifier) then
+			favouriteItem(item)
+		end
+	end
 end, favouriteSection, { 2, 1 })
 
 createToggleButton("AutoFavouriteItems", "Auto Favourite", false, function(state)
-	-- Automatically favourite items as they are obtained based on selected criteria
+	autoFavEnabled = state
 end, favouriteSection)
+
+LocalPlayer.BackpackTwo.ChildAdded:Connect(function(item)
+	if not autoFavEnabled then return end
+	if not isValuable(item) then return end
+	
+	if selectedOre and selectedModifier then
+		if matchesOre(item, selectedOre) and matchesModifier(item, selectedModifier) then
+			task.wait(0.1)
+			favouriteItem(item)
+		end
+	elseif selectedOre then
+		if matchesOre(item, selectedOre) then
+			task.wait(0.1)
+			favouriteItem(item)
+		end
+	elseif selectedModifier then
+		if matchesModifier(item, selectedModifier) then
+			task.wait(0.1)
+			favouriteItem(item)
+		end
+	end
+end)
 
 createInfo3(
 	"AutoFavouriteInfo",
 	"Auto Favourite System",
-	
+	[[
 __Select Modifier:__ Choose a modifier to filter which items are affected by Auto Favourite or instant favouriting.
 __Instant Favourite (Modifier):__ Instantly favourite all items that match the selected modifier.
 __Select Ore:__ Choose an ore type to favourite.
 __Instant Favourite (Ore):__ Instantly favourite all items that match the selected ore type.
 __Fav. Selected Ores with Selected Modifier:__ Instantly favourite only the items that match BOTH the selected ore and selected modifier.
 __Auto Favourite:__ Automatically favourite items as they are obtained. If you select modifiers along with an ore, all collected items of that ore that contain ANY of the selected modifiers will be automatically favourited.
-    ,
+    ]],
 	nil,
 	favouriteSection,
-	{ 2, 5 },
+	{ 2, 5 }
 )
-]]
+
 
 createToggleButton("AntiAFKButton", "Anti-AFK", true, function(state)
 	local Players = game:GetService("Players")

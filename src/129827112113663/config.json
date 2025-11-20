@@ -1,6 +1,6 @@
 {
   "name": "Prospecting!",
-  "version": "1.2.1-alpha",
+  "version": "1.2.2-alpha",
   "description": "Automates various tasks in the game Prospecting!",
   "author": "DawnPetal",
   "last_updated": "2025-11-20",
@@ -11,7 +11,9 @@
     "Teleport",
     "Crafting",
     "Reforging",
-    "Excavation"
+    "Excavation",
+    "Auto Geode",
+    "Auto Favourite"
   ],
   "prerequisites": {
     "TaskManager": "utils/TaskManager.lua",

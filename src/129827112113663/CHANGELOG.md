@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 # [Unreleased]
 
+## [1.2.2-alpha] - 2025-11-20
+
+### Added
+- Added `Favorite` Section
+
 ## [1.2.1-alpha] - 2025-11-20
 
 ### Added
