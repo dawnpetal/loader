@@ -2167,7 +2167,7 @@ local function createDropdown(name, title, options, defaultOption, callback, par
 				end
 			end)
 
-			optBtn.MouseButton1Down:Connect(function()
+			optBtn.MouseButton1Click:Connect(function()
 				if isMulti then
 					if selectedOptions[opt] then
 						selectedOptions[opt] = nil
