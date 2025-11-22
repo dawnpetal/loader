@@ -3392,50 +3392,39 @@ end
 
 local function convertMarkdownToRichText(markdown)
 	local text = markdown
-
 	text = text:gsub("### (.-)\n", '<font size="18"><b>%1</b></font>\n')
 	text = text:gsub("## (.-)\n", '<font size="20"><b>%1</b></font>\n')
 	text = text:gsub("# (.-)\n", '<font size="22"><b>%1</b></font>\n')
-
 	text = text:gsub("%*%*%*(.-)%*%*%*", "<b><i>%1</i></b>")
 	text = text:gsub("%*%*(.-)%*%*", "<b>%1</b>")
 	text = text:gsub("%*(.-)%*", "<i>%1</i>")
 	text = text:gsub("__(.-)__", "<b>%1</b>")
 	text = text:gsub("_(.-)_", "<i>%1</i>")
-
 	text = text:gsub("~~(.-)~~", "<s>%1</s>")
-
 	text = text:gsub("`([^`]+)`",
 		'<font face="RobotoMono"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">%1</stroke></font>')
-
 	text = text:gsub("```(.-)```", function(code)
 		return '<font face="RobotoMono" size="13"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">' ..
 			code .. '</stroke></font>'
 	end)
-
 	text = text:gsub("%[(.-)%]%((.-)%)", '<font color="rgb(100,150,255)"><u>%1</u></font>')
-
 	text = text:gsub("^%- (.-)\n", "• %1\n")
 	text = text:gsub("\n%- (.-)\n", "\n• %1\n")
 	text = text:gsub("\n%- (.-)", "\n• %1")
-
 	text = text:gsub("^%* (.-)\n", "• %1\n")
 	text = text:gsub("\n%* (.-)\n", "\n• %1\n")
 	text = text:gsub("\n%* (.-)", "\n• %1")
-
 	text = text:gsub("^%d+%. (.-)\n", "%1\n")
 	text = text:gsub("\n%d+%. (.-)\n", "\n%1\n")
-
 	text = text:gsub("%-%-%-+", "────────────────────────")
 	text = text:gsub("%*%*%*+", "────────────────────────")
-
 	return text
 end
 
 local function createPopup(overlayName, options)
 	local title = options.title or "Popup"
 	local text = options.text or ""
-	local width = options.width or UDim2.new(0, 450, 0, 350)
+	local width = options.width or UDim2.new(0.55, 0, 0.8, 0)
 	local onClose = options.onClose or function() end
 
 	local screenGui = Instance.new("ScreenGui")
@@ -3470,59 +3459,72 @@ local function createPopup(overlayName, options)
 	popup.Parent = screenGui
 
 	local popupCorner = Instance.new("UICorner")
-	popupCorner.CornerRadius = UDim.new(0, 8)
+	popupCorner.CornerRadius = UDim.new(0.02, 0)
 	popupCorner.Parent = popup
 
 	local topBar = Instance.new("Frame")
 	topBar.Name = "TopBar"
-	topBar.Size = UDim2.new(1, 0, 0, 45)
+	topBar.Size = UDim2.new(1, 0, 0.08, 0)
 	topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 	topBar.BorderSizePixel = 0
 	topBar.Parent = popup
 
 	local topBarCorner = Instance.new("UICorner")
-	topBarCorner.CornerRadius = UDim.new(0, 8)
+	topBarCorner.CornerRadius = UDim.new(0.02, 0)
 	topBarCorner.Parent = topBar
 
 	local topBarBottom = Instance.new("Frame")
-	topBarBottom.Size = UDim2.new(1, 0, 0, 8)
-	topBarBottom.Position = UDim2.new(0, 0, 1, -8)
+	topBarBottom.Size = UDim2.new(1, 0, 0.2, 0)
+	topBarBottom.Position = UDim2.new(0, 0, 1, 0)
+	topBarBottom.AnchorPoint = Vector2.new(0, 1)
 	topBarBottom.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 	topBarBottom.BorderSizePixel = 0
 	topBarBottom.Parent = topBar
 
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "Title"
-	titleLabel.Size = UDim2.new(1, -60, 1, 0)
-	titleLabel.Position = UDim2.new(0, 15, 0, 0)
+	titleLabel.Size = UDim2.new(0.85, 0, 1, 0)
+	titleLabel.Position = UDim2.new(0.03, 0, 0, 0)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Text = title
 	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	titleLabel.TextSize = 15
 	titleLabel.Font = Enum.Font.GothamMedium
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextScaled = true
 	titleLabel.Parent = topBar
+
+	local titleConstraint = Instance.new("UITextSizeConstraint")
+	titleConstraint.MaxTextSize = 15
+	titleConstraint.MinTextSize = 10
+	titleConstraint.Parent = titleLabel
 
 	local closeButton = Instance.new("TextButton")
 	closeButton.Name = "CloseButton"
-	closeButton.Size = UDim2.new(0, 30, 0, 30)
-	closeButton.Position = UDim2.new(1, -38, 0.5, 0)
-	closeButton.AnchorPoint = Vector2.new(0, 0.5)
+	closeButton.Size = UDim2.new(0.08, 0, 0.65, 0)
+	closeButton.Position = UDim2.new(0.95, 0, 0.5, 0)
+	closeButton.AnchorPoint = Vector2.new(0.5, 0.5)
 	closeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 	closeButton.Text = "X"
 	closeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
 	closeButton.TextSize = 14
 	closeButton.Font = Enum.Font.GothamBold
+	closeButton.TextScaled = true
 	closeButton.Parent = topBar
 
+	local closeButtonConstraint = Instance.new("UITextSizeConstraint")
+	closeButtonConstraint.MaxTextSize = 14
+	closeButtonConstraint.MinTextSize = 10
+	closeButtonConstraint.Parent = closeButton
+
 	local closeButtonCorner = Instance.new("UICorner")
-	closeButtonCorner.CornerRadius = UDim.new(0, 6)
+	closeButtonCorner.CornerRadius = UDim.new(0.15, 0)
 	closeButtonCorner.Parent = closeButton
 
 	local container = Instance.new("ScrollingFrame")
 	container.Name = "Container"
-	container.Size = UDim2.new(1, -30, 1, -70)
-	container.Position = UDim2.new(0, 15, 0, 55)
+	container.Size = UDim2.new(0.93, 0, 0.85, 0)
+	container.Position = UDim2.new(0.035, 0, 0.12, 0)
 	container.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 	container.BorderSizePixel = 0
 	container.ScrollBarThickness = 4
@@ -3532,19 +3534,19 @@ local function createPopup(overlayName, options)
 	container.Parent = popup
 
 	local containerCorner = Instance.new("UICorner")
-	containerCorner.CornerRadius = UDim.new(0, 6)
+	containerCorner.CornerRadius = UDim.new(0.03, 0)
 	containerCorner.Parent = container
 
 	local contentPadding = Instance.new("UIPadding")
-	contentPadding.PaddingTop = UDim.new(0, 12)
-	contentPadding.PaddingBottom = UDim.new(0, 12)
-	contentPadding.PaddingLeft = UDim.new(0, 12)
-	contentPadding.PaddingRight = UDim.new(0, 12)
+	contentPadding.PaddingTop = UDim.new(0.02, 0)
+	contentPadding.PaddingBottom = UDim.new(0.02, 0)
+	contentPadding.PaddingLeft = UDim.new(0.03, 0)
+	contentPadding.PaddingRight = UDim.new(0.03, 0)
 	contentPadding.Parent = container
 
 	local contentLabel = Instance.new("TextLabel")
 	contentLabel.Name = "Content"
-	contentLabel.Size = UDim2.new(1, -24, 0, 0)
+	contentLabel.Size = UDim2.new(1, 0, 0, 0)
 	contentLabel.BackgroundTransparency = 1
 	contentLabel.Text = convertMarkdownToRichText(text)
 	contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
