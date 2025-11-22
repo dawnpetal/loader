@@ -6470,8 +6470,7 @@ createButton("ViewExcavationChances", "View Item Chances", function()
 
 	createPopup("ExcavationPopup", {
 		title = "Excavation Info",
-		text = content,
-		width = UDim2.new(0, 500, 0, 500)
+		text = content
 	})
 end, ExcavationSection)
 
