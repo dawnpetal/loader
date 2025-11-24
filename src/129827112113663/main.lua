@@ -5945,7 +5945,7 @@ end, autoFarmSection, { 2, 1 })
 
 local teleportDropdown = createDropdown("TeleportDownload", "Select Waypoint", {}, nil, function(opt)
 	local waypoints = workspace.Map.Waypoints
-	local player = game:GetService("Players").LocalPlayer
+	local player = LocalPlayer
 	local attr = player:GetAttribute("CurrentArea")
 	local currentWaypoint = nil
 	for _, w in pairs(waypoints:GetChildren()) do
@@ -5975,7 +5975,7 @@ createButton("TeleportRefreshButton", "Refresh Waypoints", function()
 end, teleportSection)
 
 createButton("UnlockAllWaypointsButton", "Unlock all Waypoints", function()
-	local hrp = Player.Character:WaitForChild("HumanoidRootPart")
+	local hrp = HumanoidRootPart
 	local waypoints = workspace.Map.Waypoints:GetChildren()
 
 	local FastTravelDataRemote = ReplicatedStorage.Remotes.Misc.GetFastTravelData
