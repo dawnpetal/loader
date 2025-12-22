@@ -14,9 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added Runes Teleport
 - Added ESP for Totems and Players
 
-
-# [Unreleased]
-
 ## [1.2.2-alpha] - 2025-11-20
 
 ### Added
