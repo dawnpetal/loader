@@ -5735,52 +5735,74 @@ local function getOreNames()
     return t
 end
 
-local function createBillboard(target, name, color)
+local function createBillboard(target, name, color, player)
     local bb = Instance.new("BillboardGui")
     bb.Name = "ESPBillboard"
     bb.Adornee = target
     bb.AlwaysOnTop = true
-    bb.Size = UDim2.new(0, 0, 0, 0)
-    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+    bb.StudsOffset = Vector3.new(0, 2.6, 0)
+    bb.Size = UDim2.fromOffset(200, 24)
     bb.Parent = target
 
-    local label = Instance.new("TextLabel")
-    label.BackgroundTransparency = 1
-    label.TextColor3 = color or Color3.new(1, 1, 1)
-    label.Font = Enum.Font.GothamBold
-    label.TextStrokeTransparency = 0.2
-    label.TextScaled = false
-    label.TextSize = 16
-    label.TextXAlignment = Enum.TextXAlignment.Center
-    label.TextYAlignment = Enum.TextYAlignment.Center
-    label.Text = name
-    label.Size = UDim2.new(0, 0, 0, 0)
-    label.Parent = bb
+    local frame = Instance.new("Frame")
+    frame.BackgroundTransparency = 1
+    frame.Size = UDim2.fromScale(1, 1)
+    frame.Parent = bb
 
-    local function update()
-        if not target.Parent then
-            return
-        end
-        local dist = (Camera.CFrame.Position - target.Position).Magnitude
-        local display = string.format("%s [%.1f m]", name, dist)
-        label.Text = display
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 4)
+    padding.PaddingRight = UDim.new(0, 4)
+    padding.Parent = frame
 
-        local width = math.clamp(#display * 8, 60, 400)
-        label.Size = UDim2.new(0, width, 0, 24)
-        bb.Size = UDim2.new(0, width, 0, 24)
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Padding = UDim.new(0, 5)
+    layout.Parent = frame
+
+    if player then
+        local avatar = Instance.new("ImageLabel")
+        avatar.BackgroundTransparency = 1
+        avatar.Size = UDim2.fromOffset(16, 16)
+        avatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot,
+            Enum.ThumbnailSize.Size48x48)
+        avatar.Parent = frame
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = avatar
     end
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Font = Enum.Font.GothamSemibold
+    nameLabel.TextSize = 13
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextColor3 = color or Color3.new(1, 1, 1)
+    nameLabel.Text = name
+    nameLabel.AutomaticSize = Enum.AutomaticSize.X
+    nameLabel.Parent = frame
+
+    local distLabel = Instance.new("TextLabel")
+    distLabel.BackgroundTransparency = 1
+    distLabel.Font = Enum.Font.Gotham
+    distLabel.TextSize = 11
+    distLabel.TextXAlignment = Enum.TextXAlignment.Left
+    distLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
+    distLabel.AutomaticSize = Enum.AutomaticSize.X
+    distLabel.Parent = frame
 
     local conn
     conn = RunService.RenderStepped:Connect(function()
-        if bb.Parent then
-            update()
-        else
+        if not bb.Parent or not target.Parent then
             conn:Disconnect()
+            return
         end
+        local d = (Camera.CFrame.Position - target.Position).Magnitude
+        distLabel.Text = string.format("%dm", d + 0.5)
     end)
 
-    update()
-    return bb, label
+    return bb
 end
 
 -- ========================= TABS =========================
@@ -7142,7 +7164,7 @@ SimpleUI:createToggle(MiscellaneousPage, "Players ESP", false, function(enabled)
     if enabled then
         local function addPlayer(plr)
             if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
-                local bb = createBillboard(plr.Character.Head, plr.Name, Color3.fromRGB(255, 255, 255))
+                local bb = createBillboard(plr.Character.Head, plr.Name, Color3.fromRGB(255, 255, 255), plr)
                 ESP.Players[plr] = bb
             end
         end
@@ -7150,12 +7172,13 @@ SimpleUI:createToggle(MiscellaneousPage, "Players ESP", false, function(enabled)
         for _, plr in ipairs(Players:GetPlayers()) do
             addPlayer(plr)
         end
+
         ESP.Connections.PlayerAdded = Players.PlayerAdded:Connect(function(plr)
             plr.CharacterAdded:Connect(function(char)
                 task.wait(0.05)
                 local head = char:FindFirstChild("Head")
                 if head then
-                    createBillboard(head, plr.Name)
+                    ESP.Players[plr] = createBillboard(head, plr.Name, Color3.fromRGB(255, 255, 255), plr)
                 end
             end)
         end)
