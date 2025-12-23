@@ -991,8 +991,8 @@ function SimpleUI:createWindow(options)
 
     self:createElement("TextButton", {
         Name = "InputBlocker",
-        Size = UDim2.fromScale(1, 1),
-        Position = UDim2.fromScale(0, 0),
+        Size = UDim2.new(1, 0, 1, -topBar.Size.Y.Offset),
+        Position = UDim2.new(0, 0, 0, topBar.Size.Y.Offset),
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
@@ -1274,86 +1274,21 @@ function SimpleUI:createWindow(options)
     local TweenService = self:getService("TweenService")
     local UIS = self:getService("UserInputService")
 
-    local dragBar = self:createElement("TextButton", {
-        Name = "DragHandle",
-        Size = UDim2.new(0.4, 0, 0, 5),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BorderSizePixel = 0,
-        ZIndex = frame.ZIndex + 50,
-        AnchorPoint = Vector2.new(0.5, 0),
-        Active = true,
-        AutoButtonColor = false,
-        Text = "",
-        BackgroundTransparency = 0.3,
-        ClipsDescendants = true
-    }, frame)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(0, 8)
-    }, dragBar)
-
-    local fillBar = self:createElement("Frame", {
-        Name = "Fill",
-        Size = UDim2.new(1, 0, 1, 0),
-        Position = UDim2.new(0.5, 0, 0, 0),
-        AnchorPoint = Vector2.new(0.5, 0),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        ZIndex = dragBar.ZIndex + 1
-    }, dragBar)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(0, 8)
-    }, fillBar)
-
-    local function updateHandlePosition()
-        local yOffset = mainContainer.AbsolutePosition.Y + mainContainer.AbsoluteSize.Y - frame.AbsolutePosition.Y + 5
-        TweenService:Create(dragBar, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-            Position = UDim2.new(0.5, 0, 0, yOffset)
-        }):Play()
-    end
-
-    updateHandlePosition()
-    mainContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateHandlePosition)
-    mainContainer:GetPropertyChangedSignal("AbsolutePosition"):Connect(updateHandlePosition)
-    frame:GetPropertyChangedSignal("AbsolutePosition"):Connect(updateHandlePosition)
-
     local dragging = false
     local dragStart
     local startPos
 
-    dragBar.InputBegan:Connect(function(input)
+    topBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-
-            TweenService:Create(dragBar, TweenInfo.new(0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0.44, 0, 0, 6),
-                BackgroundTransparency = 0.1
-            }):Play()
-            TweenService:Create(fillBar, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0.4
-            }):Play()
         end
     end)
 
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if dragging then
-                dragging = false
-
-                TweenService:Create(dragBar, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out),
-                    {
-                        Size = UDim2.new(0.4, 0, 0, 5),
-                        BackgroundTransparency = 0.3
-                    }):Play()
-                TweenService:Create(fillBar, TweenInfo.new(0.8, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out),
-                    {
-                        BackgroundTransparency = 1
-                    }):Play()
-            end
+            dragging = false
         end
     end)
 
@@ -4240,6 +4175,7 @@ local function tweenToTarget(target, config)
     local bg, bv, bp
     local debugParts = {}
     local originalPlatformStand
+    local TweenService = SimpleUI:getService("TweenService")
     local function setNoclip(state)
         for _, v in pairs(character:GetDescendants()) do
             if v:IsA("BasePart") then
@@ -5823,13 +5759,13 @@ local TeleportTab = SimpleUI:createTab(window, "Teleport", {
 });
 local TeleportPage = TeleportTab.page
 
-local ItemTab = SimpleUI:createTab(window, "Items", {
+local ToolsTab = SimpleUI:createTab(window, "Tools", {
     Icon = {
-        Image = "rbxassetid://10723396000",
+        Image = "rbxassetid://10747383470",
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
 })
-local ItemPage = ItemTab.page
+local ToolsPage = ToolsTab.page
 
 local CraftingTab = SimpleUI:createTab(window, "Crafting", {
     Icon = {
@@ -5903,9 +5839,7 @@ SimpleUI:createSection(MainTab.page, "Auto Farming")
 
 SimpleUI:createDropdown(MainPage, "Travel Mode", {"Tween", "Teleport"}, "Teleport", function(selection)
     AutoFarmState.travelMode = selection
-end, {
-    Description = "Teleport is highly recommended here"
-})
+end, { Description = "Teleport is highly recommended here" })
 
 SimpleUI:createButton(MainPage, "Set Digging location", function()
     if getRegion(HumanoidRootPart) == "Deposit" then
@@ -5914,9 +5848,7 @@ SimpleUI:createButton(MainPage, "Set Digging location", function()
     else
         createNotification("❌ Must be at dig location")
     end
-end, {
-    Description = "Stand where you want to dig and then press this button to save the location."
-})
+end, { Description = "Stand where you want to dig and then press this button to save the location." })
 
 SimpleUI:createButton(MainPage, "Set Wash location", function()
     if getRegion(HumanoidRootPart) == "Water" then
@@ -5925,9 +5857,7 @@ SimpleUI:createButton(MainPage, "Set Wash location", function()
     else
         createNotification("❌ Must be at wash location")
     end
-end, {
-    Description = "Stand where you want to wash and then press this button to save the location."
-})
+end, { Description = "Stand where you want to wash and then press this button to save the location." })
 
 SimpleUI:createToggle(MainPage, "Auto Farm", false, function(state)
     AutoFarmState.active = state
@@ -6363,10 +6293,10 @@ SimpleUI:createToggle(TeleportPage, "Auto Teleport", false, function(state)
     end)
 end)
 
-SimpleUI:createSection(ItemPage, "Reforge")
+SimpleUI:createSection(ToolsPage, "Reforge")
 
 local selectedGUID = nil
-local equipmentInfo = SimpleUI:createParagraph(ItemPage, "Equipment Information", {})
+local equipmentInfo = SimpleUI:createParagraph(ToolsPage, "Equipment Information", {})
 
 local function safeSetFields(fields)
     pcall(function()
@@ -6423,7 +6353,7 @@ local function updateEquipmentInfo(guid)
     safeSetFields(fields)
 end
 
-local equipmentReforgeDropdown = SimpleUI:createDropdown(ItemPage, "Select Equipment", {}, nil, function(selection)
+local equipmentReforgeDropdown = SimpleUI:createDropdown(ToolsPage, "Select Equipment", {}, nil, function(selection)
     if type(selection) ~= "table" then
         selectedGUID = nil
         updateEquipmentInfo(nil)
@@ -6433,7 +6363,7 @@ local equipmentReforgeDropdown = SimpleUI:createDropdown(ItemPage, "Select Equip
     updateEquipmentInfo(selectedGUID)
 end)
 
-SimpleUI:createButton(ItemPage, "Refresh Equipment", function()
+SimpleUI:createButton(ToolsPage, "Refresh Equipment", function()
     local equipmentOptions = {}
     local nameCounts = {}
     if BackpackTwo and BackpackTwo.GetChildren then
@@ -6459,7 +6389,7 @@ SimpleUI:createButton(ItemPage, "Refresh Equipment", function()
     updateEquipmentInfo(nil)
 end)
 
-SimpleUI:createButton(ItemPage, "Reforge Equipment", function()
+SimpleUI:createButton(ToolsPage, "Reforge Equipment", function()
     if not selectedGUID then
         createNotification("Select an Equipment from your Backpack first!")
         return
@@ -6515,7 +6445,7 @@ SimpleUI:createButton(ItemPage, "Reforge Equipment", function()
     end)
 end)
 
-SimpleUI:createSection(ItemPage, "Pan Enchants")
+SimpleUI:createSection(ToolsPage, "Pan Enchants")
 
 local selectedMaterial = "Aurorite"
 local targetPanEnchant = "Prismatic"
@@ -6572,7 +6502,7 @@ local function performAutoEnchant(findFunc, remote, itemName, target, flag)
     end)
 end
 
-SimpleUI:createDropdown(ItemPage, "Select Material", {{
+SimpleUI:createDropdown(ToolsPage, "Select Material", {{
     text = "Aetherite"
 }, {
     text = "Aurorite"
@@ -6582,13 +6512,13 @@ SimpleUI:createDropdown(ItemPage, "Select Material", {{
     end
 end)
 
-SimpleUI:createDropdown(ItemPage, "Target Enchant", panEnchantNames, nil, function(selection)
+SimpleUI:createDropdown(ToolsPage, "Target Enchant", panEnchantNames, nil, function(selection)
     targetPanEnchant = selection
 end, {
     Description = "For obvious reasons you cannot get Book-Only enchants"
 })
 
-SimpleUI:createButton(ItemPage, "Enchant Pan", function()
+SimpleUI:createButton(ToolsPage, "Enchant Pan", function()
     local match = findPanMaterial()
     if not match then
         createNotification("Material not found: " .. selectedMaterial, 3)
@@ -6597,7 +6527,7 @@ SimpleUI:createButton(ItemPage, "Enchant Pan", function()
     enchantItem(PanEnchantRemote, match, selectedMaterial)
 end)
 
-SimpleUI:createButton(ItemPage, "Auto Enchant Pan", function()
+SimpleUI:createButton(ToolsPage, "Auto Enchant Pan", function()
     if autoEnchantingPan[1] then
         autoEnchantingPan[1] = false
         createNotification("Stopped auto enchanting pan", 2)
@@ -6608,7 +6538,7 @@ SimpleUI:createButton(ItemPage, "Auto Enchant Pan", function()
     performAutoEnchant(findPanMaterial, PanEnchantRemote, selectedMaterial, targetPanEnchant, autoEnchantingPan)
 end)
 
-SimpleUI:createSection(ItemPage, "Shovel Enchants")
+SimpleUI:createSection(ToolsPage, "Shovel Enchants")
 
 local selectedShovelModifier = "Iridescent"
 local targetShovelEnchant = "WellBalanced"
@@ -6638,7 +6568,7 @@ local function findShovelMaterial()
     return nil
 end
 
-SimpleUI:createDropdown(ItemPage, "Select Modifier", {{
+SimpleUI:createDropdown(ToolsPage, "Select Modifier", {{
     text = "Iridescent"
 }, {
     text = "Voidtorn"
@@ -6650,11 +6580,11 @@ SimpleUI:createDropdown(ItemPage, "Select Modifier", {{
     end
 end)
 
-SimpleUI:createDropdown(ItemPage, "Target Enchant", shovelEnchantNames, nil, function(selection)
+SimpleUI:createDropdown(ToolsPage, "Target Enchant", shovelEnchantNames, nil, function(selection)
     targetShovelEnchant = selection
 end)
 
-SimpleUI:createButton(ItemPage, "Enchant Shovel", function()
+SimpleUI:createButton(ToolsPage, "Enchant Shovel", function()
     local shovel = findShovelMaterial()
     if not shovel then
         createNotification("Shovel material not found", 3)
@@ -6663,7 +6593,7 @@ SimpleUI:createButton(ItemPage, "Enchant Shovel", function()
     enchantItem(ShovelEnchantRemote, shovel, selectedShovelModifier .. " Aetherite")
 end)
 
-SimpleUI:createButton(ItemPage, "Auto Enchant Shovel", function()
+SimpleUI:createButton(ToolsPage, "Auto Enchant Shovel", function()
     if autoEnchantingShovel[1] then
         autoEnchantingShovel[1] = false
         createNotification("Stopped auto enchanting shovel", 2)
@@ -6675,7 +6605,7 @@ SimpleUI:createButton(ItemPage, "Auto Enchant Shovel", function()
         targetShovelEnchant, autoEnchantingShovel)
 end)
 
-SimpleUI:createButton(ItemPage, "Stop All Enchanting", function()
+SimpleUI:createButton(ToolsPage, "Stop All Enchanting", function()
     if autoEnchantingPan then
         autoEnchantingPan[1] = false
     end
@@ -7148,15 +7078,32 @@ SimpleUI:createSlider(PlayerPage, "Walk Speed", 0, 100, walkSpeedValue, function
     end)
 end)
 
+if Humanoid then
+    Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if Humanoid.WalkSpeed ~= walkSpeedValue then
+            Humanoid.WalkSpeed = walkSpeedValue
+        end
+    end)
+end
+
 SimpleUI:createSlider(PlayerPage, "Jump Power", 1, 100, jumpPower, function(val)
     pcall(function()
-        superJumpPower = val
+        jumpPower = val
         if Humanoid then
             Humanoid.UseJumpPower = true
             Humanoid.JumpPower = val
         end
     end)
 end)
+
+if Humanoid then
+    Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+        if Humanoid.JumpPower ~= jumpPower then
+            Humanoid.UseJumpPower = true
+            Humanoid.JumpPower = jumpPower
+        end
+    end)
+end
 
 SimpleUI:createSection(MiscellaneousPage, "ESP")
 
