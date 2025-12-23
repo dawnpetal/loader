@@ -88,7 +88,8 @@ SimpleUI.DefaultElements = {
             Size = UDim2.new(1, 0, 0, 40),
             BorderSizePixel = 0,
             ZIndex = 1,
-            ClipsDescendants = false
+            ClipsDescendants = false,
+            Active = true
         },
         Theme = {
             BackgroundColor3 = "PrimaryColor",
@@ -1283,9 +1284,13 @@ function SimpleUI:createWindow(options)
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
+            input:GetPropertyChangedSignal("UserInputState"):Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
     end)
-
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
@@ -5839,7 +5844,9 @@ SimpleUI:createSection(MainTab.page, "Auto Farming")
 
 SimpleUI:createDropdown(MainPage, "Travel Mode", {"Tween", "Teleport"}, "Teleport", function(selection)
     AutoFarmState.travelMode = selection
-end, { Description = "Teleport is highly recommended here" })
+end, {
+    Description = "Teleport is highly recommended here"
+})
 
 SimpleUI:createButton(MainPage, "Set Digging location", function()
     if getRegion(HumanoidRootPart) == "Deposit" then
@@ -5848,7 +5855,9 @@ SimpleUI:createButton(MainPage, "Set Digging location", function()
     else
         createNotification("❌ Must be at dig location")
     end
-end, { Description = "Stand where you want to dig and then press this button to save the location." })
+end, {
+    Description = "Stand where you want to dig and then press this button to save the location."
+})
 
 SimpleUI:createButton(MainPage, "Set Wash location", function()
     if getRegion(HumanoidRootPart) == "Water" then
@@ -5857,7 +5866,9 @@ SimpleUI:createButton(MainPage, "Set Wash location", function()
     else
         createNotification("❌ Must be at wash location")
     end
-end, { Description = "Stand where you want to wash and then press this button to save the location." })
+end, {
+    Description = "Stand where you want to wash and then press this button to save the location."
+})
 
 SimpleUI:createToggle(MainPage, "Auto Farm", false, function(state)
     AutoFarmState.active = state
