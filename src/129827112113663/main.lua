@@ -61,7 +61,7 @@ SimpleUI.DefaultElements = {
             Name = "MainFrame",
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.new(0.5, 0, 0.5, 0),
-            Size = UDim2.new(0.85, 0, 0.55, 0),
+            Size = UDim2.new(0.85, 0, 0.60, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             ClipsDescendants = false
@@ -69,13 +69,13 @@ SimpleUI.DefaultElements = {
         Children = {{
             Class = "UISizeConstraint",
             Properties = {
-                MinSize = Vector2.new(500, 350),
-                MaxSize = Vector2.new(720, 550)
+                MinSize = Vector2.new(500, 335),
+                MaxSize = Vector2.new(800, 600)
             }
         }, {
             Class = "UIAspectRatioConstraint",
             Properties = {
-                AspectRatio = 1.5,
+                AspectRatio = 1.6,
                 AspectType = Enum.AspectType.FitWithinMaxSize,
                 DominantAxis = Enum.DominantAxis.Width
             }
@@ -531,7 +531,7 @@ SimpleUI.DefaultElements = {
             }
         },
         Display = {
-            Size = UDim2.new(0.2, 0, 0, 30),
+            Size = UDim2.new(0.3, 0, 0, 30),
             Position = UDim2.new(1, -10, 0.5, 0),
             AnchorPoint = Vector2.new(1, 0.5),
             TextSize = 13,
@@ -1089,17 +1089,13 @@ function SimpleUI:createWindow(options)
         local iconImage = iconData.Image or iconData.Url or ""
 
         if string.match(iconImage, "^https?://") then
-            if getcustomasset and self:getService("HttpService") then
-                local success, result = pcall(function()
-                    local fileName = "simpleui_icon_" .. tostring(tick()):gsub("%.", "_") .. ".png"
-                    local imageData = self:getService("HttpService"):GetAsync(iconImage)
-                    writefile(fileName, imageData)
-                    return getcustomasset(fileName)
-                end)
-                iconImage = (success and result) or ""
-            else
-                iconImage = ""
-            end
+            local success, result = pcall(function()
+                local fileName = "simpleui_icon_" .. tostring(tick()):gsub("%.", "_") .. ".png"
+                local imageData = game:HttpGet(iconImage)
+                writefile(fileName, imageData)
+                return getcustomasset(fileName)
+            end)
+            iconImage = (success and result) or ""
         elseif tonumber(iconImage) then
             iconImage = "rbxassetid://" .. iconImage
         end
@@ -1228,7 +1224,23 @@ function SimpleUI:createWindow(options)
         },
         ActiveTab = nil,
         ActivePage = nil,
-        TabUpdates = {}
+        TabUpdates = {},
+        SimpleGUI = gui,
+        hide = function()
+            frame.Visible = false
+        end,
+        show = function()
+            frame.Visible = true
+        end,
+        toggle = function()
+            frame.Visible = not frame.Visible
+        end,
+        destroy = function()
+            gui:Destroy()
+        end,
+        isVisible = function()
+            return frame.Visible
+        end
     }
 
     SimpleUI.Windows = SimpleUI.Windows or {}
@@ -2938,6 +2950,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
     local currentKey = defaultKey
     local listening = false
     local uis = self:getService("UserInputService")
+    local bindConnection
     local inputConnection
     local function updateDisplay()
         if listening then
@@ -2946,6 +2959,18 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
         else
             displayLabel.Text = "Key: " .. (currentKey and currentKey.Name or "Select Keybind...")
             display.BackgroundColor3 = theme.TertiaryColor
+        end
+    end
+    local function setupBind()
+        if bindConnection then
+            bindConnection:Disconnect()
+        end
+        if currentKey and callback then
+            bindConnection = uis.InputBegan:Connect(function(input, gameProcessed)
+                if not gameProcessed and input.KeyCode == currentKey then
+                    callback(currentKey)
+                end
+            end)
         end
     end
     display.Activated:Connect(function()
@@ -2963,9 +2988,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
                     inputConnection = nil
                 end
                 updateDisplay()
-                if callback then
-                    callback(currentKey)
-                end
+                setupBind()
             end
         end)
     end)
@@ -2982,6 +3005,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
         end)
     end
     updateDisplay()
+    setupBind()
     return {
         container = container,
         getKey = function()
@@ -2990,13 +3014,15 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
         setKey = function(key)
             currentKey = key
             updateDisplay()
-            if callback then
-                callback(currentKey)
-            end
+            setupBind()
         end,
         clear = function()
             currentKey = nil
             updateDisplay()
+            if bindConnection then
+                bindConnection:Disconnect()
+                bindConnection = nil
+            end
         end,
         setDescription = function(t)
             if not description and t then
@@ -3216,6 +3242,8 @@ function SimpleUI:createNotification(options)
     local player = Players.LocalPlayer
     local playerGui = player:WaitForChild("PlayerGui")
     local containerName = "SimpleUI_NotificationContainer"
+    local isMobile = self:isMobile()
+
     local container = playerGui:FindFirstChild(containerName)
     if not container then
         container = self:createElement("ScreenGui", {
@@ -3224,24 +3252,32 @@ function SimpleUI:createNotification(options)
             ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
             DisplayOrder = 999
         }, playerGui)
+
+        local holderSize = isMobile and UDim2.new(0, 280, 1, 0) or UDim2.new(0, 320, 1, 0)
+        local holderPosition = isMobile and UDim2.new(0.5, 0, 0, 10) or UDim2.new(1, -15, 0, 15)
+        local holderAnchor = isMobile and Vector2.new(0.5, 0) or Vector2.new(1, 0)
+
         local holder = self:createElement("Frame", {
             Name = "Holder",
-            Position = UDim2.new(1, -20, 0, 20),
-            AnchorPoint = Vector2.new(1, 0),
-            Size = UDim2.new(0, 340, 1, 0),
+            Position = holderPosition,
+            AnchorPoint = holderAnchor,
+            Size = holderSize,
             BackgroundTransparency = 1
         }, container)
+
         self:createElement("UIListLayout", {
             Name = "Layout",
             SortOrder = Enum.SortOrder.LayoutOrder,
             VerticalAlignment = Enum.VerticalAlignment.Top,
-            HorizontalAlignment = Enum.HorizontalAlignment.Right,
-            Padding = UDim.new(0, 12)
+            HorizontalAlignment = isMobile and Enum.HorizontalAlignment.Center or Enum.HorizontalAlignment.Right,
+            Padding = UDim.new(0, isMobile and 6 or 8)
         }, holder)
     end
+
     local holder = container:FindFirstChild("Holder")
     local theme = options.Theme or self.Themes.Default
     local notifType = options.Type or "Default"
+
     local typeColors = {
         Default = Color3.fromRGB(200, 200, 200),
         Info = Color3.fromRGB(30, 144, 255),
@@ -3249,6 +3285,7 @@ function SimpleUI:createNotification(options)
         Warning = Color3.fromRGB(255, 193, 7),
         Error = Color3.fromRGB(220, 53, 69)
     }
+
     local typeIcons = {
         Default = "rbxassetid://10709775704",
         Info = "rbxassetid://10723415903",
@@ -3256,80 +3293,96 @@ function SimpleUI:createNotification(options)
         Warning = "rbxassetid://10734951173",
         Error = "rbxassetid://10747384037"
     }
+
     local accentColor = typeColors[notifType] or typeColors.Default
     local duration = options.Duration or 5
+
     local notification = self:createElement("Frame", {
         Name = "Notification",
         Size = UDim2.new(1, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(35, 35, 40),
+        BackgroundColor3 = Color3.fromRGB(28, 28, 32),
         BorderSizePixel = 0,
         ClipsDescendants = false,
         LayoutOrder = tick()
     }, holder)
+
     self:createElement("Frame", {
         Name = "AccentBar",
-        Size = UDim2.new(0, 3, 1, 0),
+        Size = UDim2.new(0, 2, 1, 0),
         BackgroundColor3 = accentColor,
         BorderSizePixel = 0
     }, notification)
+
     local shadow = self:createElement("ImageLabel", {
         Name = "Shadow",
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(1, 30, 1, 30),
+        Size = UDim2.new(1, 20, 1, 20),
         BackgroundTransparency = 1,
         Image = "rbxassetid://7717391613",
         ImageColor3 = Color3.fromRGB(0, 0, 0),
-        ImageTransparency = 0.6,
+        ImageTransparency = 0.75,
         ScaleType = Enum.ScaleType.Slice,
         SliceCenter = Rect.new(100, 100, 100, 100),
         ZIndex = 0
     }, notification)
+
+    local basePadding = isMobile and 8 or 10
+    local sidePadding = isMobile and 10 or 12
+
     local content = self:createElement("Frame", {
         Name = "Content",
-        Position = UDim2.new(0, 12, 0, 0),
-        Size = UDim2.new(1, -36, 1, 0),
+        Position = UDim2.new(0, 2, 0, 0),
+        Size = UDim2.new(1, -2, 1, 0),
         BackgroundTransparency = 1
     }, notification)
-    local customHeight = options.Height or nil
-    local basePadding = options.Padding or 16
+
     self:createElement("UIPadding", {
         PaddingTop = UDim.new(0, basePadding),
         PaddingBottom = UDim.new(0, basePadding),
-        PaddingLeft = UDim.new(0, 0),
-        PaddingRight = UDim.new(0, 0)
+        PaddingLeft = UDim.new(0, sidePadding),
+        PaddingRight = UDim.new(0, sidePadding)
     }, content)
+
     local hasIcon = options.Icon == nil
     local iconImage = options.Icon or typeIcons[notifType]
-    local iconSize = options.IconSize or 26
+    local iconSize = isMobile and 18 or (options.IconSize or 20)
+
+    local iconFrame
     if hasIcon and iconImage then
-        self:createElement("ImageLabel", {
+        iconFrame = self:createElement("ImageLabel", {
             Name = "Icon",
             Size = UDim2.new(0, iconSize, 0, iconSize),
-            Position = UDim2.new(0, 0, 0, 0),
+            Position = UDim2.new(0, 0, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
             BackgroundTransparency = 1,
             Image = iconImage,
             ImageColor3 = options.IconColor or accentColor,
             ScaleType = Enum.ScaleType.Fit
         }, content)
     end
-    local textOffset = hasIcon and (iconSize + 10) or 0
+
+    local showClose = options.Closable ~= false
+    local textOffset = hasIcon and (iconSize + (isMobile and 8 or 10)) or 0
+
     local textContainer = self:createElement("Frame", {
         Name = "TextContainer",
         Position = UDim2.new(0, textOffset, 0, 0),
-        Size = UDim2.new(1, -textOffset - (options.Closable ~= false and 36 or 0), 1, 0),
+        Size = UDim2.new(1, -textOffset, 1, 0),
         BackgroundTransparency = 1
     }, content)
+
     self:createElement("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4),
+        Padding = UDim.new(0, isMobile and 1 or 2),
         VerticalAlignment = Enum.VerticalAlignment.Center
     }, textContainer)
-    local titleSize = options.TitleSize or 14
+
+    local titleSize = isMobile and 12 or (options.TitleSize or 13)
     local title = self:createElement("TextLabel", {
         Name = "Title",
         LayoutOrder = 1,
-        Size = UDim2.new(1, 0, 0, 0),
+        Size = UDim2.new(1, showClose and -(isMobile and 22 or 26) or 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Text = options.Title or "Notification",
@@ -3339,40 +3392,44 @@ function SimpleUI:createNotification(options)
         TextXAlignment = Enum.TextXAlignment.Left,
         TextWrapped = true,
         RichText = true,
-        LineHeight = 1.2
+        LineHeight = 1.1
     }, textContainer)
+
     if options.Description then
-        local descSize = options.DescriptionSize or 13
+        local descSize = isMobile and 11 or (options.DescriptionSize or 12)
         self:createElement("TextLabel", {
             Name = "Description",
             LayoutOrder = 2,
-            Size = UDim2.new(1, 0, 0, 0),
+            Size = UDim2.new(1, showClose and -(isMobile and 22 or 26) or 0, 0, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
             BackgroundTransparency = 1,
             Text = options.Description,
             Font = Enum.Font.Gotham,
             TextSize = descSize,
-            TextColor3 = options.DescriptionColor or Color3.fromRGB(200, 200, 200),
-            TextTransparency = 0.15,
+            TextColor3 = options.DescriptionColor or Color3.fromRGB(185, 185, 190),
+            TextTransparency = 0.2,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextWrapped = true,
             RichText = true,
-            LineHeight = 1.3
+            LineHeight = 1.2
         }, textContainer)
     end
-    if options.Closable ~= false then
+
+    if showClose then
+        local closeSize = isMobile and 16 or 18
         local closeButton = self:createElement("TextButton", {
             Name = "CloseButton",
-            Position = UDim2.new(1, 0, 0.5, 0),
-            AnchorPoint = Vector2.new(0, 0.5),
-            Size = UDim2.new(0, 20, 0, 20),
+            Position = UDim2.new(1, 0, 0, 0),
+            AnchorPoint = Vector2.new(1, 0),
+            Size = UDim2.new(0, closeSize, 0, closeSize),
             BackgroundTransparency = 1,
             Text = "×",
             Font = Enum.Font.GothamBold,
-            TextSize = 24,
-            TextColor3 = Color3.fromRGB(150, 150, 150),
+            TextSize = isMobile and 18 or 20,
+            TextColor3 = Color3.fromRGB(140, 140, 145),
             AutoButtonColor = false
         }, content)
+
         local isHovering = false
         closeButton.MouseEnter:Connect(function()
             isHovering = true
@@ -3382,14 +3439,16 @@ function SimpleUI:createNotification(options)
                 Rotation = 90
             }):Play()
         end)
+
         closeButton.MouseLeave:Connect(function()
             isHovering = false
             local TweenService = self:getService("TweenService")
             TweenService:Create(closeButton, TweenInfo.new(0.15), {
-                TextColor3 = Color3.fromRGB(150, 150, 150),
+                TextColor3 = Color3.fromRGB(140, 140, 145),
                 Rotation = 0
             }):Play()
         end)
+
         closeButton.MouseButton1Click:Connect(function()
             if not isHovering then
                 return
@@ -3397,6 +3456,7 @@ function SimpleUI:createNotification(options)
             self:dismissNotification(notification)
         end)
     end
+
     if options.Callback then
         local clickArea = self:createElement("TextButton", {
             Name = "ClickArea",
@@ -3405,28 +3465,32 @@ function SimpleUI:createNotification(options)
             Text = "",
             ZIndex = 1
         }, notification)
+
         clickArea.MouseButton1Click:Connect(function()
             options.Callback(notification)
         end)
+
         clickArea.MouseEnter:Connect(function()
-            local TweenService = self:getService("TweenService")
-            TweenService:Create(notification, TweenInfo.new(0.15), {
-                BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-            }):Play()
-        end)
-        clickArea.MouseLeave:Connect(function()
             local TweenService = self:getService("TweenService")
             TweenService:Create(notification, TweenInfo.new(0.15), {
                 BackgroundColor3 = Color3.fromRGB(35, 35, 40)
             }):Play()
         end)
+
+        clickArea.MouseLeave:Connect(function()
+            local TweenService = self:getService("TweenService")
+            TweenService:Create(notification, TweenInfo.new(0.15), {
+                BackgroundColor3 = Color3.fromRGB(28, 28, 32)
+            }):Play()
+        end)
     end
+
     task.defer(function()
         task.wait()
-        task.wait()
+
         local contentSize
-        if customHeight then
-            contentSize = customHeight
+        if options.Height then
+            contentSize = options.Height
         else
             local textHeight = 0
             for _, child in ipairs(textContainer:GetChildren()) do
@@ -3434,17 +3498,21 @@ function SimpleUI:createNotification(options)
                     textHeight = textHeight + child.AbsoluteSize.Y
                 end
             end
+
             local layoutPadding = textContainer:FindFirstChildOfClass("UIListLayout")
             if layoutPadding and #textContainer:GetChildren() > 1 then
                 textHeight = textHeight + (layoutPadding.Padding.Offset * (#textContainer:GetChildren() - 1))
             end
-            local minHeight = hasIcon and (iconSize + (basePadding * 2)) or 50
+
+            local minHeight = hasIcon and (iconSize + (basePadding * 2)) or (isMobile and 38 or 42)
             contentSize = math.max(textHeight + (basePadding * 2), minHeight)
         end
+
         notification.Size = UDim2.new(1, 0, 0, contentSize)
-        notification.Position = UDim2.new(0, 20, 0, 0)
+        notification.Position = UDim2.new(0, isMobile and 15 or 20, 0, 0)
         notification.BackgroundTransparency = 1
         shadow.ImageTransparency = 1
+
         if content then
             for _, child in ipairs(content:GetDescendants()) do
                 if child:IsA("TextLabel") or child:IsA("TextButton") then
@@ -3456,16 +3524,20 @@ function SimpleUI:createNotification(options)
                 end
             end
         end
+
         local TweenService = self:getService("TweenService")
-        local slideInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+        local slideInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
         local enterTweens = {}
+
         table.insert(enterTweens, TweenService:Create(notification, slideInfo, {
             Position = UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 0
         }))
+
         table.insert(enterTweens, TweenService:Create(shadow, slideInfo, {
-            ImageTransparency = 0.6
+            ImageTransparency = 0.75
         }))
+
         if content then
             for _, child in ipairs(content:GetDescendants()) do
                 if child:IsA("TextLabel") or child:IsA("TextButton") then
@@ -3483,30 +3555,32 @@ function SimpleUI:createNotification(options)
                 end
             end
         end
+
         for _, tween in ipairs(enterTweens) do
             tween:Play()
         end
+
         if options.Progress ~= false then
             local progressBar = self:createElement("Frame", {
                 Name = "ProgressBar",
-                Position = UDim2.new(0, 0, 1, -3),
-                Size = UDim2.new(1, 0, 0, 3),
+                Position = UDim2.new(0, 0, 1, -2),
+                Size = UDim2.new(1, 0, 0, 2),
                 BackgroundColor3 = accentColor,
                 BorderSizePixel = 0,
                 ZIndex = 10
             }, notification)
-            self:createElement("UICorner", {
-                CornerRadius = UDim.new(0, 3)
-            }, progressBar)
+
             TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-                Size = UDim2.new(0, 0, 0, 3)
+                Size = UDim2.new(0, 0, 0, 2)
             }):Play()
         end
+
         if options.AutoDismiss ~= false then
             task.wait(duration)
             self:dismissNotification(notification)
         end
     end)
+
     return notification
 end
 
@@ -3659,10 +3733,10 @@ function SimpleUI:createPopup(overlayName, options)
     closeButton.Position = UDim2.new(0.95, 0, 0.5, 0)
     closeButton.AnchorPoint = Vector2.new(0.5, 0.5)
     closeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    closeButton.Text = "X"
+    closeButton.Text = "x"
     closeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
     closeButton.TextSize = 14
-    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Font = Enum.Font.Arcade
     closeButton.TextScaled = true
     closeButton.Parent = topBar
     local closeButtonConstraint = Instance.new("UITextSizeConstraint")
@@ -3771,8 +3845,15 @@ end
 SimpleUI:createNotification({
     Title = "Validated!",
     Type = "Success",
-    Description = "Pre-requisites validated, script will start soon",
+    Description = "Pre-requisites validated, script will start soon! Powered by SimpleUI",
     Duration = 3
+})
+
+SimpleUI:createNotification({
+    Title = "UI keybind",
+    Type = "Info",
+    Description = "Default UI visibility toggle is the Q button on PC",
+    Duration = 10
 })
 
 local window = SimpleUI:createWindow({
@@ -5750,7 +5831,7 @@ end
 
 local MainTab = SimpleUI:createTab(window, "Main", {
     Icon = {
-        Image = "rbxassetid://10734910680",
+        Image = "rbxassetid://10709810948",
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
 });
@@ -5758,15 +5839,22 @@ local MainPage = MainTab.page
 
 local TeleportTab = SimpleUI:createTab(window, "Teleport", {
     Icon = {
-        Image = "rbxassetid://10734886202",
+        Image = "rbxassetid://16898613777",
+        Size = UDim2.new(0, 16, 0, 16),
+        ImageRectSize = Vector2.new(48, 48),
+        ImageRectOffset = Vector2.new(771, 98),
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
-});
+})
+
 local TeleportPage = TeleportTab.page
 
 local ToolsTab = SimpleUI:createTab(window, "Tools", {
     Icon = {
-        Image = "rbxassetid://10747383470",
+        Image = "rbxassetid://16898613044",
+        Size = UDim2.new(0, 16, 0, 16),
+        ImageRectSize = Vector2.new(48, 48),
+        ImageRectOffset = Vector2.new(771, 955),
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
 })
@@ -5774,7 +5862,7 @@ local ToolsPage = ToolsTab.page
 
 local CraftingTab = SimpleUI:createTab(window, "Crafting", {
     Icon = {
-        Image = "rbxassetid://10723424505",
+        Image = "rbxassetid://10723396542",
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
 })
@@ -5814,21 +5902,32 @@ local PlayerPage = PlayerTab.page
 
 local MiscellaneousTab = SimpleUI:createTab(window, "Miscellaneous", {
     Icon = {
-        Image = "rbxassetid://10734887784",
+        Image = "rbxassetid://10734963191",
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
 })
 local MiscellaneousPage = MiscellaneousTab.page
 
-local ServerTab = SimpleUI:createTab(window, "Server", {
+local OthersTab = SimpleUI:createTab(window, "Others", {
     Icon = {
         Image = "rbxassetid://10723404337",
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
 })
-local ServerPage = ServerTab.page
+local OthersPage = OthersTab.page
 
 --[[
+local WebhookTab = SimpleUI:createTab(window, "Webhook", {
+    Icon = {
+        Image = "rbxassetid://16898613869",
+        Size = UDim2.new(0, 16, 0, 16),
+        ImageRectSize = Vector2.new(48, 48),
+        ImageRectOffset = Vector2.new(967, 196),
+        ImageColor3 = Color3.fromRGB(255, 255, 255)
+    }
+})
+local WebhookPage = WebhookTab.page
+
 local SettingsTab = SimpleUI:createTab(window, "Settings", {
     Icon = {
         Image = "rbxassetid://10734950309",
@@ -7116,52 +7215,80 @@ if Humanoid then
     end)
 end
 
-SimpleUI:createSection(MiscellaneousPage, "ESP")
+SimpleUI:createSection(PlayerPage, "ESP")
 
-SimpleUI:createToggle(MiscellaneousPage, "Players ESP", false, function(enabled)
+SimpleUI:createToggle(PlayerPage, "Players ESP", false, function(enabled)
     if enabled then
-        local function addPlayer(plr)
-            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
-                local bb = createBillboard(plr.Character.Head, plr.Name, Color3.fromRGB(255, 255, 255), plr)
-                ESP.Players[plr] = bb
+        local function attachESP(plr)
+            if plr == LocalPlayer then return end
+
+            local char = plr.Character or plr.CharacterAdded:Wait()
+            local head = char:WaitForChild("Head", 5)
+            if not head then return end
+
+            if ESP.Players[plr] then
+                ESP.Players[plr]:Destroy()
             end
+
+            ESP.Players[plr] = createBillboard(
+                head,
+                plr.Name,
+                Color3.fromRGB(255, 255, 255),
+                plr
+            )
+        end
+
+        local function hookPlayer(plr)
+            if plr == LocalPlayer then return end
+
+            task.spawn(function()
+                attachESP(plr)
+            end)
+
+            ESP.Connections["Char_" .. plr.UserId] =
+                plr.CharacterAdded:Connect(function()
+                    task.wait()
+                    attachESP(plr)
+                end)
         end
 
         for _, plr in ipairs(Players:GetPlayers()) do
-            addPlayer(plr)
+            hookPlayer(plr)
         end
 
-        ESP.Connections.PlayerAdded = Players.PlayerAdded:Connect(function(plr)
-            plr.CharacterAdded:Connect(function(char)
-                task.wait(0.05)
-                local head = char:FindFirstChild("Head")
-                if head then
-                    ESP.Players[plr] = createBillboard(head, plr.Name, Color3.fromRGB(255, 255, 255), plr)
+        ESP.Connections.PlayerAdded =
+            Players.PlayerAdded:Connect(hookPlayer)
+
+        ESP.Connections.PlayerRemoving =
+            Players.PlayerRemoving:Connect(function(plr)
+                if ESP.Players[plr] then
+                    ESP.Players[plr]:Destroy()
+                    ESP.Players[plr] = nil
+                end
+
+                local conn = ESP.Connections["Char_" .. plr.UserId]
+                if conn then
+                    conn:Disconnect()
+                    ESP.Connections["Char_" .. plr.UserId] = nil
                 end
             end)
-        end)
-
-        ESP.Connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(plr)
-            if ESP.Players[plr] then
-                ESP.Players[plr]:Destroy()
-                ESP.Players[plr] = nil
-            end
-        end)
     else
-        for _, v in pairs(ESP.Players) do
-            v:Destroy()
+        for _, bb in pairs(ESP.Players) do
+            if bb then bb:Destroy() end
         end
-        if ESP.Connections.PlayerAdded then
-            ESP.Connections.PlayerAdded:Disconnect()
+
+        for _, conn in pairs(ESP.Connections) do
+            if typeof(conn) == "RBXScriptConnection" then
+                conn:Disconnect()
+            end
         end
-        if ESP.Connections.PlayerRemoving then
-            ESP.Connections.PlayerRemoving:Disconnect()
-        end
+
         ESP.Players = {}
+        ESP.Connections = {}
     end
 end)
 
-SimpleUI:createToggle(MiscellaneousPage, "Totems ESP", false, function(enabled)
+SimpleUI:createToggle(PlayerPage, "Totems ESP", false, function(enabled)
     local folder = workspace:FindFirstChild("ActiveTotems")
     if not folder then
         return
@@ -7207,21 +7334,27 @@ SimpleUI:createToggle(MiscellaneousPage, "Totems ESP", false, function(enabled)
     end
 end)
 
-SimpleUI:createButton(MiscellaneousPage, "Clear All ESP", function()
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BillboardGui") and obj.Name == "ESP" then
-            obj:Destroy()
+SimpleUI:createButton(PlayerPage, "Clear All ESP", function()
+    local function clearFromFolder(folder)
+        if not folder then return end
+        for _, obj in ipairs(folder:GetDescendants()) do
+            if obj:IsA("BillboardGui") and obj.Name == "ESPBillboard" then
+                obj:Destroy()
+            end
         end
     end
 
-    for _, bb in pairs(ESP.Players) do
+    clearFromFolder(workspace:FindFirstChild("ActiveTotems"))
+    clearFromFolder(workspace:FindFirstChild("Characters"))
+
+    for _, bb in pairs(ESP.Players or {}) do
         if bb and bb.Parent then
             bb:Destroy()
         end
     end
     ESP.Players = {}
 
-    for _, bb in pairs(ESP.Totems) do
+    for _, bb in pairs(ESP.Totems or {}) do
         if bb and bb.Parent then
             bb:Destroy()
         end
@@ -7229,7 +7362,7 @@ SimpleUI:createButton(MiscellaneousPage, "Clear All ESP", function()
     ESP.Totems = {}
 
     for _, conn in pairs(ESP.Connections or {}) do
-        if conn and conn.Disconnect then
+        if typeof(conn) == "RBXScriptConnection" then
             conn:Disconnect()
         end
     end
@@ -7326,9 +7459,9 @@ SimpleUI:createButton(MiscellaneousPage, "[DEBUG] Log Excavation Data", function
     print("=== END ===")
 end)
 
-SimpleUI:createSection(ServerPage, "Server")
+SimpleUI:createSection(OthersPage, "Server")
 
-SimpleUI:createToggle(ServerPage, "Anti-AFK", true, function(state)
+SimpleUI:createToggle(OthersPage, "Anti-AFK", true, function(state)
     local GC = getconnections or get_signal_cons
     if state then
         if GC then
@@ -7355,7 +7488,7 @@ SimpleUI:createToggle(ServerPage, "Anti-AFK", true, function(state)
     end
 end)
 
-SimpleUI:createButton(ServerPage, "Rejoin Server", function()
+SimpleUI:createButton(OthersPage, "Rejoin Server", function()
     if #Players:GetPlayers() <= 1 then
         LocalPlayer:Kick("Rejoining...")
         task.wait()
@@ -7365,7 +7498,7 @@ SimpleUI:createButton(ServerPage, "Rejoin Server", function()
     end
 end)
 
-SimpleUI:createButton(ServerPage, "Server Hop", function()
+SimpleUI:createButton(OthersPage, "Server Hop", function()
     local servers = {}
     local req = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId ..
                                                         "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true"))
@@ -7382,3 +7515,93 @@ SimpleUI:createButton(ServerPage, "Server Hop", function()
         createNotification("No available servers found", 4)
     end
 end)
+
+
+if SimpleUI:isMobile() then
+    local toggleButton = Instance.new("ImageButton")
+    toggleButton.Name = "ToggleUIButton"
+    toggleButton.Size = UDim2.new(0, 40, 0, 40)
+    toggleButton.Position = UDim2.new(0, 30, 0.5, -20)
+    toggleButton.AnchorPoint = Vector2.new(0.5, 0.5)
+    toggleButton.BackgroundTransparency = 1
+    toggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.ScaleType = Enum.ScaleType.Fit
+    toggleButton.Active = true
+    toggleButton.Parent = window.SimpleGUI
+
+    local iconUrl = "https://raw.githubusercontent.com/dawnpetal/website/refs/heads/main/assets/images/logo.png"
+    local finalImage = ""
+
+    local success, result = pcall(function()
+        local fileName = "simpleui_toggle_" .. tostring(tick()):gsub("%.", "_") .. ".png"
+        local imageData = game:HttpGet(iconUrl)
+        writefile(fileName, imageData)
+        return getcustomasset(fileName)
+    end)
+
+    if success then
+        finalImage = result
+    end
+
+    toggleButton.Image = finalImage ~= "" and finalImage or "rbxassetid://3926305904"
+
+    local TweenService = SimpleUI:getService("TweenService")
+    local UserInputService = SimpleUI:getService("UserInputService")
+
+    local dragging = false
+    local dragStart
+    local startPos
+    local hasMoved = false
+
+    local normalSize = UDim2.new(0, 40, 0, 40)
+    local pressSize = UDim2.new(0, 50, 0, 50)
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+    toggleButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = toggleButton.Position
+            hasMoved = false
+            TweenService:Create(toggleButton, tweenInfo, {
+                Size = pressSize
+            }):Play()
+        end
+    end)
+
+    toggleButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            TweenService:Create(toggleButton, tweenInfo, {
+                Size = normalSize
+            }):Play()
+            if not hasMoved then
+                if window.isVisible() then
+                    window.hide()
+                else
+                    window.show()
+                end
+            end
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and
+            (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                hasMoved = true
+                toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y)
+            end
+        end
+    end)
+else
+    SimpleUI:createSection(OthersPage, "User Interface")
+    
+    SimpleUI:createKeybind(OthersPage, "UI visibility keybind", Enum.KeyCode.Q, function(key)
+        window.toggle()
+    end)
+end
+
+--SimpleUI:createSection(WebhookPage, "Events")
