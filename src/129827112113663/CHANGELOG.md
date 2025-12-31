@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-# [Release]
+## [2.2] - 2025-12-31
+- `AutoCraft` at your service
+- Added `InventoryFilter`
+- Moved `Barriers` tab to `Miscellaneous` section
+- Fixed memory leak-ers (temporary fix)
+
 ## [2.1] - 2025-12-23
 - Completely new UI
 - Done a lot of optimization

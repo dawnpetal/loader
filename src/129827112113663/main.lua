@@ -31,26 +31,43 @@ SimpleUI.Themes = {
         SecondaryColorHover = Color3.fromRGB(58, 60, 68),
         SecondaryColorActive = Color3.fromRGB(76, 78, 88),
         SecondaryColorMouse1Down = Color3.fromRGB(34, 36, 40),
-
         TertiaryColor = Color3.fromRGB(48, 50, 56),
         TertiaryColorHover = Color3.fromRGB(64, 66, 74),
         TertiaryColorActive = Color3.fromRGB(86, 88, 100),
         TertiaryColorMouse1Down = Color3.fromRGB(40, 42, 46),
-
         TextInactive = Color3.fromRGB(185, 188, 196),
         TextActive = Color3.fromRGB(230, 232, 240),
         TextPrimary = Color3.fromRGB(245, 247, 252),
         TextSecondary = Color3.fromRGB(160, 165, 176),
-
         AccentColor = Color3.fromRGB(255, 145, 90),
-
         PrimaryFont = Enum.Font.GothamBold,
         PrimaryFontSize = 18,
         SecondaryFont = Enum.Font.GothamMedium,
         SecondaryFontSize = 16,
-
         PrimaryTransparency = 0.04,
         SecondaryTransparency = 0.63
+    },
+    Monokai = {
+        PrimaryColor = Color3.fromRGB(30, 30, 34),
+        SecondaryColor = Color3.fromRGB(60, 62, 54),
+        SecondaryColorHover = Color3.fromRGB(75, 78, 68),
+        SecondaryColorActive = Color3.fromRGB(90, 94, 82),
+        SecondaryColorMouse1Down = Color3.fromRGB(50, 52, 44),
+        TertiaryColor = Color3.fromRGB(70, 73, 63),
+        TertiaryColorHover = Color3.fromRGB(85, 89, 77),
+        TertiaryColorActive = Color3.fromRGB(100, 105, 91),
+        TertiaryColorMouse1Down = Color3.fromRGB(58, 60, 52),
+        TextInactive = Color3.fromRGB(248, 248, 240),
+        TextActive = Color3.fromRGB(255, 255, 255),
+        TextPrimary = Color3.fromRGB(248, 248, 240),
+        TextSecondary = Color3.fromRGB(205, 205, 200),
+        AccentColor = Color3.fromRGB(166, 226, 46),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.04,
+        SecondaryTransparency = 0.67
     }
 }
 
@@ -633,9 +650,9 @@ SimpleUI.WindowControlStyles = {
 
 function SimpleUI:getService(name)
     if not self.Services[name] then
-        local s = game:getService(name)
-        local cr = cloneref or (getrenv and getrenv().cloneref)
-        self.Services[name] = cr and cr(s) or s
+        self.Services[name] = (cloneref or function(x)
+            return x
+        end)(game:GetService(name))
     end
     return self.Services[name]
 end
@@ -974,7 +991,7 @@ end
 
 function SimpleUI:createWindow(options)
     options = options or {}
-    local theme = options.Theme or self.Themes.Dusk
+    local theme = options.Theme or self.Themes.Monokai
     local player = self:getService("Players").LocalPlayer
 
     local gui = self:createElement("ScreenGui", {
@@ -2207,6 +2224,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             TextColor3 = optionProps.TextColor3,
             TextSize = optionProps.TextSize,
             Font = optionProps.Font,
+            TextTruncate = Enum.TextTruncate.SplitWord,
             TextXAlignment = Enum.TextXAlignment.Left,
             AutoButtonColor = false,
             ZIndex = 253
@@ -3867,21 +3885,6 @@ local window = SimpleUI:createWindow({
 })
 -- ========================= STATES / VARS =========================
 
-local AutoFarmState = {
-    active = false,
-    actionMode = "Instant",
-    travelMode = "Teleport",
-    sandCFrame = nil,
-    waterCFrame = nil,
-    locked = false
-}
-
-local ESP = {
-    Players = {},
-    Totems = {},
-    Connections = {}
-}
-
 local Players = SimpleUI:getService("Players")
 local ReplicatedStorage = SimpleUI:getService("ReplicatedStorage")
 local PathfindingService = SimpleUI:getService("PathfindingService")
@@ -3889,6 +3892,7 @@ local TeleportService = SimpleUI:getService("TeleportService")
 local Workspace = SimpleUI:getService("Workspace")
 local RunService = SimpleUI:getService("RunService")
 local HttpService = SimpleUI:getService("HttpService")
+local Lighting = SimpleUI:getService("Lighting")
 
 local Player = Players.LocalPlayer
 local LocalPlayer = Player
@@ -3960,6 +3964,32 @@ local AutoFarmState = {
     active = false,
     actionMode = "Instant",
     travelMode = "Teleport",
+    sandCFrame = nil,
+    waterCFrame = nil,
+    locked = false
+}
+
+local ESP = {
+    Players = {},
+    Totems = {},
+    Connections = {}
+}
+
+local CraftingState = {
+    selectedEquipment = nil,
+    selectedMaterials = {},
+    discoveredRecipes = {},
+    autocraft = false,
+    autocraftRunning = false,
+    selectBestOres = false
+}
+
+local AutoFarmState = {
+    active = false,
+    actionMode = "Instant",
+    travelMode = "Teleport",
+    interrupted = false,
+    running = false,
     sandCFrame = nil,
     waterCFrame = nil,
     locked = false
@@ -4927,11 +4957,11 @@ local function handlePanAction(mode, actionType, executeToCompletion, killSwitch
             end
             local status = getPanStatus()
             if status and status.isFull then
-                createNotification(msgs.success)
+                -- createNotification(msgs.success)
                 break
             end
             if not isInValidRegion("Deposit") then
-                createNotification(msgs.leftRegion)
+                -- createNotification(msgs.leftRegion)
                 break
             end
             pcall(CollectInvokeServer, collectScript)
@@ -4942,9 +4972,7 @@ local function handlePanAction(mode, actionType, executeToCompletion, killSwitch
         if killSwitch and not killSwitch() then
             return "KILLED"
         end
-        createNotification(msgs.singleAction)
         pcall(CollectInvokeServer, collectScript)
-        createNotification(msgs.singleSuccess)
         return "SUCCESS"
     end
     local function emptyToCompletion(shakeScript, msgs)
@@ -4974,7 +5002,6 @@ local function handlePanAction(mode, actionType, executeToCompletion, killSwitch
                 return "KILLED"
             end
             local msgs = messages.dig
-            createNotification(msgs.start)
             local scripts = validatePan()
             if not scripts then
                 return "FAIL"
@@ -4985,7 +5012,6 @@ local function handlePanAction(mode, actionType, executeToCompletion, killSwitch
             end
             local status = getPanStatus()
             if status and status.isFull then
-                createNotification(msgs.alreadyFull)
                 return "SUCCESS"
             end
             if mode == "Legit" then
@@ -5015,7 +5041,6 @@ local function handlePanAction(mode, actionType, executeToCompletion, killSwitch
             end
             local status = getPanStatus()
             if status and status.isEmpty then
-                createNotification(messages.wash.PanEmpty)
                 return "SUCCESS"
             end
             pcall(function()
@@ -5173,14 +5198,26 @@ end
 
 local function getInventoryCount()
     local player = SimpleUI:getService("Players").LocalPlayer
-    local backpack = player:WaitForChild("BackpackTwo")
     local count = 0
-    for _, item in ipairs(backpack:GetChildren()) do
-        local itemType = item:GetAttribute("ItemType")
-        if itemType == "Valuable" or itemType == "Equipment" then
+
+    for _, item in ipairs(player.BackpackTwo:GetChildren()) do
+        local t = item:GetAttribute("ItemType")
+        if t == "Valuable" or t == "Equipment" then
             count = count + 1
         end
     end
+
+    local character = player.Character
+    if character then
+        local equipped = character:FindFirstChildOfClass("Tool")
+        if equipped then
+            local t = equipped:GetAttribute("ItemType")
+            if t == "Valuable" or t == "Equipment" then
+                count = count + 1
+            end
+        end
+    end
+
     return count
 end
 
@@ -5827,11 +5864,238 @@ local function createBillboard(target, name, color, player)
     return bb
 end
 
+local function getDiscoveredRecipes()
+    local discovered = {}
+    local discoveredIDs = {}
+
+    local UpdateRemote = ReplicatedStorage.Remotes.Crafting.UpdateDiscoveredEquipment
+
+    local waiting = true
+    local conn
+    conn = UpdateRemote.OnClientEvent:Connect(function(ids)
+        discoveredIDs = ids
+        waiting = false
+        conn:Disconnect()
+    end)
+
+    UpdateRemote:FireServer()
+
+    local timeout = 5
+    local elapsed = 0
+    while waiting and elapsed < timeout do
+        task.wait(0.1)
+        elapsed = elapsed + 0.1
+    end
+
+    for _, item in ipairs(ReplicatedStorage.Items.Equipment:GetChildren()) do
+        if item:GetAttribute("Hidden") then
+            local itemID = item:GetAttribute("ItemID")
+            if itemID and table.find(discoveredIDs, itemID) then
+                local equipData = item:FindFirstChild("EquipmentData")
+                if equipData and equipData:IsA("ModuleScript") then
+                    local success, data = pcall(require, equipData)
+                    if success and data.Materials then
+                        table.insert(discovered, {
+                            Name = item.Name,
+                            Item = item,
+                            Data = data
+                        })
+                    end
+                end
+            end
+        elseif not item:GetAttribute("AdminLimited") and not item:GetAttribute("ChristmasLimited") then
+            local equipData = item:FindFirstChild("EquipmentData")
+            if equipData and equipData:IsA("ModuleScript") then
+                local success, data = pcall(require, equipData)
+                if success and data.Materials then
+                    table.insert(discovered, {
+                        Name = item.Name,
+                        Item = item,
+                        Data = data
+                    })
+                end
+            end
+        end
+    end
+
+    table.sort(discovered, function(a, b)
+        return a.Name < b.Name
+    end)
+
+    return discovered
+end
+
+local function getAvailableMaterials(materialName, minWeight)
+    local available = {}
+    local backpackItems = BackpackTwo:GetChildren()
+    local charTool = Character and Character:FindFirstChildOfClass("Tool")
+
+    if charTool then
+        table.insert(backpackItems, charTool)
+    end
+
+    for _, tool in ipairs(backpackItems) do
+        if tool.Name == materialName then
+            local itemData = tool:FindFirstChild("ItemData")
+            if itemData then
+                local weight = itemData:GetAttribute("Weight") or 0
+                if weight >= (minWeight or 0) then
+                    table.insert(available, tool)
+                end
+            end
+        end
+    end
+
+    return available
+end
+
+local function compareMaterialQuality(a, b)
+    local ModifiersModule = require(ReplicatedStorage.GameInfo.Modifiers)
+
+    local weightA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Weight") or 0
+    local weightB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Weight") or 0
+
+    local modifierA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Modifier")
+    local modifierB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Modifier")
+
+    if modifierA and ModifiersModule[modifierA] then
+        weightA = weightA * ModifiersModule[modifierA].Multiplier
+    end
+
+    if modifierB and ModifiersModule[modifierB] then
+        weightB = weightB * ModifiersModule[modifierB].Multiplier
+    end
+
+    return weightB < weightA
+end
+
+local function calculateQuality(materials, recipe)
+    local QualityModule = require(ReplicatedStorage.Modules.Inventory.CraftingQuality)
+    return QualityModule.DetermineQuality(materials, recipe)
+end
+
+local function updateCraftingStatus(craftingStatus)
+    if not CraftingState.selectedEquipment then
+        craftingStatus.setFields({"No equipment selected", "Select an equipment to begin"})
+        return
+    end
+
+    local recipe = CraftingState.selectedEquipment.Data
+    local fields = {"Equipment: " .. CraftingState.selectedEquipment.Name, "Price: " .. formatPrice(recipe.Price or 0)}
+
+    local allMaterialsAvailable = true
+
+    for materialName, requirements in pairs(recipe.Materials) do
+        local selectedCount = CraftingState.selectedMaterials[materialName] and
+                                  #CraftingState.selectedMaterials[materialName] or 0
+        local required = requirements.Amount
+        local available = #getAvailableMaterials(materialName, requirements.MinWeight)
+
+        local status = string.format("%s: %d/%d selected (%d available)", materialName, selectedCount, required,
+            available)
+
+        if selectedCount < required then
+            allMaterialsAvailable = false
+        end
+
+        table.insert(fields, {
+            text = status,
+            isSubField = true
+        })
+    end
+
+    local quality = calculateQuality(CraftingState.selectedMaterials, recipe)
+
+    if quality then
+        local starDisplay = string.rep("★", quality)
+        table.insert(fields, "Quality: " .. starDisplay .. " (" .. quality .. "/5)")
+
+        if quality < 5 then
+            table.insert(fields, {
+                text = "⚠ Not maximum quality - you can still craft",
+                isSubField = true
+            })
+        end
+    else
+        table.insert(fields, "Quality: ??? (insufficient materials)")
+    end
+
+    if allMaterialsAvailable then
+        table.insert(fields, "✅ Ready to craft")
+    else
+        table.insert(fields, "❌ Missing materials")
+    end
+
+    craftingStatus.setFields(fields)
+end
+
+local function selectBestMaterials(craftingStatus)
+    if not CraftingState.selectedEquipment then
+        return
+    end
+
+    CraftingState.selectedMaterials = {}
+
+    local recipe = CraftingState.selectedEquipment.Data
+
+    for materialName, requirements in pairs(recipe.Materials) do
+        local available = getAvailableMaterials(materialName, requirements.MinWeight)
+        table.sort(available, compareMaterialQuality)
+
+        CraftingState.selectedMaterials[materialName] = {}
+
+        for i = 1, math.min(requirements.Amount, #available) do
+            table.insert(CraftingState.selectedMaterials[materialName], available[i])
+        end
+    end
+
+    updateCraftingStatus(craftingStatus)
+end
+
+local function canCraft()
+    if not CraftingState.selectedEquipment then
+        return false
+    end
+
+    local recipe = CraftingState.selectedEquipment.Data
+
+    for materialName, requirements in pairs(recipe.Materials) do
+        local selectedCount = CraftingState.selectedMaterials[materialName] and
+                                  #CraftingState.selectedMaterials[materialName] or 0
+        if selectedCount < requirements.Amount then
+            return false
+        end
+    end
+
+    return true
+end
+
+local function performCraft(equipmentItem, recipe, materials)
+    local CraftRemote = ReplicatedStorage.Remotes.Crafting.CraftEquipment
+
+    local success, result, model, craftedItem, auxData = pcall(function()
+        return CraftRemote:InvokeServer(equipmentItem, materials)
+    end)
+
+    if not success then
+        return false, "Remote call failed"
+    end
+
+    if not result then
+        return false, "Server rejected craft"
+    end
+
+    return true, craftedItem
+end
+
 -- ========================= TABS =========================
 
 local MainTab = SimpleUI:createTab(window, "Main", {
     Icon = {
-        Image = "rbxassetid://10709810948",
+        Image = "rbxassetid://16898613509",
+        Size = UDim2.new(0, 16, 0, 16),
+        ImageRectSize = Vector2.new(48, 48),
+        ImageRectOffset = Vector2.new(771, 759),
         ImageColor3 = Color3.fromRGB(255, 255, 255)
     }
 });
@@ -5883,14 +6147,6 @@ local ShopTab = SimpleUI:createTab(window, "Shop", {
     }
 })
 local ShopPage = ShopTab.page
-
-local BarriersTab = SimpleUI:createTab(window, "Barriers", {
-    Icon = {
-        Image = "rbxassetid://10709782497",
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local BarriersPage = BarriersTab.page
 
 local PlayerTab = SimpleUI:createTab(window, "Player", {
     Icon = {
@@ -5970,218 +6226,242 @@ end, {
 })
 
 SimpleUI:createToggle(MainPage, "Auto Farm", false, function(state)
-    AutoFarmState.active = state
-    AutoFarmState.interrupted = false
     if state then
+        if AutoFarmState.running then
+            return
+        end
+
+        AutoFarmState.active = true
+        AutoFarmState.running = true
+        AutoFarmState.interrupted = false
+
         if not AutoFarmState.travelMode or AutoFarmState.travelMode == "" then
             createNotification("❌ Select travel mode!")
             AutoFarmState.active = false
+            AutoFarmState.running = false
             return
         end
+
         if not AutoFarmState.actionMode or AutoFarmState.actionMode == "" then
             createNotification("❌ Select farming mode!")
             AutoFarmState.active = false
+            AutoFarmState.running = false
             return
         end
+
         if not (AutoFarmState.sandCFrame and AutoFarmState.waterCFrame) then
             createNotification("❌ Set locations!")
             AutoFarmState.active = false
+            AutoFarmState.running = false
             return
         end
+
         createNotification("🚀 Starting!")
+
         task.spawn(function()
-            while AutoFarmState.active do
-                local shouldSkip = false
-                if not TaskManager:requestTask("AutoFarm", 1) then
-                    task.wait(0.1)
-                    shouldSkip = true
+            local function teardown()
+                if AutoFarmState.locked then
+                    unlockCharacter()
+                    AutoFarmState.locked = false
                 end
-                if not shouldSkip and not TaskManager:waitForTurn("AutoFarm", 5) then
-                    shouldSkip = true
-                end
-                if not shouldSkip and not TaskManager:startTask("AutoFarm") then
-                    task.wait(0.1)
-                    shouldSkip = true
-                end
-                if not shouldSkip then
-                    local function moveToLocation(targetCFrame, locationName)
-                        local completed = false
-                        local success = false
-                        local targetObj = {
-                            Position = targetCFrame.Position,
-                            CFrame = targetCFrame
-                        }
-                        if AutoFarmState.travelMode == "Tween" then
-                            tweenToTarget(targetObj, {
-                                CruiseHeight = 4,
-                                MinHeight = 1,
-                                MaxHeight = 6,
-                                LongDistanceThreshold = 100,
-                                DirectFlightThreshold = 30,
-                                AdaptiveHeight = false,
-                                UseDirectFlight = true,
-                                HoverDuration = 0,
-                                LandingDuration = 0.3,
-                                StopDistance = 5,
-                                OnComplete = function(moveSuccess)
-                                    success = moveSuccess or false
-                                    completed = true
-                                end
-                            })
-                        else
-                            teleportToTarget(targetObj.Position, {
-                                Mode = "Standard",
-                                OnComplete = function(moveSuccess)
-                                    success = moveSuccess or false
-                                    completed = true
-                                end
-                            })
-                        end
-                        local timeout = 45
-                        local elapsed = 0
-                        while not completed and elapsed < timeout and AutoFarmState.active do
-                            task.wait(0.05)
-                            elapsed = elapsed + 0.05
-                        end
-                        if success then
-                            lockCharacterAt(targetCFrame)
-                            AutoFarmState.locked = true
-                        end
-                        return success
-                    end
-                    local function doAction(actionType, expectedRegion)
-                        local success, result = pcall(function()
-                            local pan = equipPan()
-                            if not pan then
-                                createNotification("No pan?!")
-                                return false
-                            end
-                            local currentRegion = getRegion(HumanoidRootPart)
-                            if currentRegion ~= expectedRegion then
-                                return false
-                            end
-                            local killSwitch = function()
-                                return AutoFarmState.active
-                            end
-                            local actionResult = handlePanAction(AutoFarmState.actionMode, actionType, true, killSwitch)
-                            return actionResult ~= "MAX_RETRY_FAIL" and actionResult ~= "KILLED"
-                        end)
-                        return success and result
-                    end
-                    local function performTask(taskName, nextTask, targetCFrame, actionType, expectedRegion,
-                        locationName)
-                        TaskManager:setNextTask(nextTask)
-                        TaskManager:setCurrentTask(taskName)
-                        local startTime = os.clock()
-                        local reached = moveToLocation(targetCFrame, locationName)
-                        local duration = os.clock() - startTime
-                        if reached then
-                            local actionStart = os.clock()
-                            task.wait(0.100)
-                            if doAction(actionType, expectedRegion) then
-                                local actionDuration = os.clock() - actionStart
-                                TaskManager:setCurrentTask("AutoFarm")
-                                return true
-                            end
-                        end
-                        return false
-                    end
-                    local function checkAndDoSell()
-                        if not SellSettings.autoSell then
-                            return false
-                        end
-                        local shouldSell = false
-                        local type = SellSettings.type or "Threshold"
-                        if type == "Threshold" then
-                            shouldSell = getInventoryCount() >= (tonumber(SellThreshold) or 50)
-                        elseif type == "Time" then
-                            shouldSell = SellSettings._scheduledSell or
-                                             (os.clock() - (SellSettings._lastSell or 0) >= (tonumber(SellDelay) or 300))
-                        end
-                        if shouldSell then
-                            local sellSuccess = sellInventory({}, SellSettings.mode or "Teleport")
-                            if sellSuccess then
-                                SellSettings._lastSell = os.clock()
-                                SellSettings._scheduledSell = false
-                                if Players.LocalPlayer and Players.LocalPlayer.Character and
-                                    Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                                    lockCharacterAt(Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                                    AutoFarmState.locked = true
-                                end
-                                return true
-                            end
-                        end
-                        return false
-                    end
-                    while AutoFarmState.active and TaskManager:canRun("AutoFarm") do
-                        local innerSkip = false
-                        if AutoFarmState.interrupted then
-                            if AutoFarmState.locked then
-                                unlockCharacter()
-                                AutoFarmState.locked = false
-                            end
-                            while AutoFarmState.interrupted and AutoFarmState.active do
-                                task.wait(0.1)
-                            end
-                            innerSkip = true
-                        end
-                        if not innerSkip then
-                            local success, errorMsg = pcall(function()
-                                if not (Players.LocalPlayer and Players.LocalPlayer.Character and
-                                    Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) then
-                                    AutoFarmState.active = false
-                                    return
-                                end
-                                PanStatus = getPanStatus()
-                                if not PanStatus then
-                                    task.wait(0.050)
-                                    return
-                                end
-                                checkAndDoSell()
-                                if PanStatus.isFull then
-                                    if performTask("MovingToWater", "WashPan", AutoFarmState.waterCFrame, "Wash",
-                                        "Water", "water") then
-                                    else
-                                        AutoFarmState.active = false
-                                    end
-                                elseif PanStatus.isEmpty or not PanStatus.isFull then
-                                    if not performTask("MovingToSand", "DigSand", AutoFarmState.sandCFrame, "Dig",
-                                        "Deposit", "sand deposit") then
-                                        AutoFarmState.active = false
-                                    end
-                                end
-                            end)
-                            if not success then
-                                if AutoFarmState.locked then
-                                    unlockCharacter()
-                                    AutoFarmState.locked = false
-                                end
-                                task.wait(0.050)
-                            end
-                        end
-                        if AutoFarmState.active then
-                            task.wait(0.01)
-                        end
-                    end
+
+                if TaskManager:getMainTask() == "AutoFarm" then
                     TaskManager:finishTask("AutoFarm")
                 end
+
+                TaskManager:clearSubTasks()
+                AutoFarmState.running = false
             end
-            if AutoFarmState.locked then
-                unlockCharacter()
-                AutoFarmState.locked = false
+
+            local function moveToLocation(targetCFrame)
+                local completed = false
+                local success = false
+
+                local targetObj = {
+                    Position = targetCFrame.Position,
+                    CFrame = targetCFrame
+                }
+
+                if AutoFarmState.travelMode == "Tween" then
+                    tweenToTarget(targetObj, {
+                        CruiseHeight = 4,
+                        MinHeight = 1,
+                        MaxHeight = 6,
+                        LongDistanceThreshold = 100,
+                        DirectFlightThreshold = 30,
+                        AdaptiveHeight = false,
+                        UseDirectFlight = true,
+                        HoverDuration = 0,
+                        LandingDuration = 0.3,
+                        StopDistance = 5,
+                        OnComplete = function(ok)
+                            success = ok or false
+                            completed = true
+                        end
+                    })
+                else
+                    teleportToTarget(targetObj.Position, {
+                        Mode = "Standard",
+                        OnComplete = function(ok)
+                            success = ok or false
+                            completed = true
+                        end
+                    })
+                end
+
+                local elapsed = 0
+                while not completed and elapsed < 45 and AutoFarmState.active do
+                    task.wait(0.05)
+                    elapsed = elapsed + 0.05
+                end
+
+                if success then
+                    lockCharacterAt(targetCFrame)
+                    AutoFarmState.locked = true
+                end
+
+                return success
             end
-            unlockCharacter()
+
+            local function doAction(actionType, expectedRegion)
+                local ok, result = pcall(function()
+                    local pan = equipPan()
+                    if not pan then
+                        return false
+                    end
+
+                    if getRegion(HumanoidRootPart) ~= expectedRegion then
+                        return false
+                    end
+
+                    local killSwitch = function()
+                        return AutoFarmState.active
+                    end
+
+                    local r = handlePanAction(AutoFarmState.actionMode, actionType, true, killSwitch)
+                    return r ~= "MAX_RETRY_FAIL" and r ~= "KILLED"
+                end)
+
+                return ok and result
+            end
+
+            local function performTask(taskName, nextTask, targetCFrame, actionType, expectedRegion)
+                TaskManager:setCurrentTask(taskName)
+                TaskManager:setNextTask(nextTask)
+
+                if not moveToLocation(targetCFrame) then
+                    return false
+                end
+
+                task.wait(0.1)
+
+                if not doAction(actionType, expectedRegion) then
+                    return false
+                end
+
+                TaskManager:setCurrentTask("AutoFarm")
+                return true
+            end
+
+            local function checkAndDoSell()
+                if not SellSettings.autoSell then
+                    return
+                end
+
+                local shouldSell = false
+                local mode = SellSettings.type or "Threshold"
+
+                if mode == "Threshold" then
+                    shouldSell = getInventoryCount() >= (tonumber(SellThreshold) or 50)
+                elseif mode == "Time" then
+                    shouldSell = SellSettings._scheduledSell or
+                                     (os.clock() - (SellSettings._lastSell or 0) >= (tonumber(SellDelay) or 300))
+                end
+
+                if shouldSell then
+                    if sellInventory({}, SellSettings.mode or "Teleport") then
+                        SellSettings._lastSell = os.clock()
+                        SellSettings._scheduledSell = false
+
+                        if Players.LocalPlayer and Players.LocalPlayer.Character and
+                            Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            lockCharacterAt(Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
+                            AutoFarmState.locked = true
+                        end
+                    end
+                end
+            end
+
+            while AutoFarmState.active do
+                local acquired = TaskManager:requestTask("AutoFarm", 1)
+
+                if acquired then
+                    local hasTurn = TaskManager:waitForTurn("AutoFarm", 5)
+
+                    if hasTurn then
+                        local started = TaskManager:startTask("AutoFarm")
+
+                        if started then
+                            while AutoFarmState.active and TaskManager:canRun("AutoFarm") do
+                                if AutoFarmState.interrupted then
+                                    if AutoFarmState.locked then
+                                        unlockCharacter()
+                                        AutoFarmState.locked = false
+                                    end
+
+                                    while AutoFarmState.interrupted and AutoFarmState.active do
+                                        task.wait(0.1)
+                                    end
+                                end
+
+                                local ok = pcall(function()
+                                    local panStatus = getPanStatus()
+                                    if not panStatus then
+                                        task.wait(0.05)
+                                        return
+                                    end
+
+                                    checkAndDoSell()
+
+                                    if panStatus.isFull then
+                                        if not performTask("MovingToWater", "WashPan", AutoFarmState.waterCFrame,
+                                            "Wash", "Water") then
+                                            AutoFarmState.active = false
+                                        end
+                                    else
+                                        if not performTask("MovingToSand", "DigSand", AutoFarmState.sandCFrame, "Dig",
+                                            "Deposit") then
+                                            AutoFarmState.active = false
+                                        end
+                                    end
+                                end)
+
+                                if not ok then
+                                    if AutoFarmState.locked then
+                                        unlockCharacter()
+                                        AutoFarmState.locked = false
+                                    end
+                                    task.wait(0.05)
+                                end
+
+                                task.wait(0.01)
+                            end
+
+                            TaskManager:finishTask("AutoFarm")
+                        else
+                            task.wait(0.1)
+                        end
+                    end
+                else
+                    task.wait(0.1)
+                end
+            end
+
+            teardown()
             createNotification("🛑 Stopped")
         end)
     else
-        TaskManager:clearSubTasks()
-        if TaskManager:getMainTask() == "AutoFarm" then
-            TaskManager:finishTask("AutoFarm")
-        end
-        if AutoFarmState.locked then
-            unlockCharacter()
-            AutoFarmState.locked = false
-        end
+        AutoFarmState.active = false
     end
 end)
 
@@ -6897,20 +7177,129 @@ SimpleUI:createParagraph(FavouritePage, "Auto Favourite System",
         isSubField = true
     }})
 
---[[
-SimpleUI:createSection(CraftingPage, "Crafting")
+SimpleUI:createSection(CraftingPage, "Equipment Crafting")
 
+local craftingStatus = SimpleUI:createParagraph(CraftingPage, "Crafting Status",
+    {"No equipment selected", "Select an equipment to begin"})
 
-local equipmentCraftingDropdown = SimpleUI:createDropdown(CraftingPage, "Select Equipment", {}, nil, function()
+local equipmentDropdown = SimpleUI:createDropdown(CraftingPage, "Select Equipment", {}, nil, function(selection)
+    for _, recipe in ipairs(CraftingState.discoveredRecipes) do
+        if recipe.Name == selection then
+            CraftingState.selectedEquipment = recipe
+            CraftingState.selectedMaterials = {}
+            updateCraftingStatus(craftingStatus)
 
+            if CraftingState.selectBestOres then
+                selectBestMaterials(craftingStatus)
+            end
+
+            return
+        end
+    end
+end)
+
+SimpleUI:createButton(CraftingPage, "Load Discovered Recipes", function()
+    CraftingState.discoveredRecipes = getDiscoveredRecipes()
+
+    local options = {}
+    for _, recipe in ipairs(CraftingState.discoveredRecipes) do
+        table.insert(options, recipe.Name)
+    end
+
+    equipmentDropdown.setOptions(options)
+
+    createNotification("Loaded " .. #options .. " discovered recipes", 3)
+end)
+
+SimpleUI:createToggle(CraftingPage, "Select Best Ores", false, function(state)
+    CraftingState.selectBestOres = state
+
+    if state and CraftingState.selectedEquipment then
+        selectBestMaterials(craftingStatus)
+    end
 end, {
-    Description = "Only discovered recipes are available"
+    Description = "Automatically select highest quality materials when equipment is chosen"
 })
 
-SimpleUI:createButton(CraftingPage, "Refresh Equipment list", function()
+SimpleUI:createButton(CraftingPage, "Craft Equipment", function()
+    if not canCraft() then
+        createNotification("Cannot craft - missing materials or no equipment selected", 4)
+        return
+    end
 
+    local success, craftedItem = performCraft(CraftingState.selectedEquipment.Item,
+        CraftingState.selectedEquipment.Data, CraftingState.selectedMaterials)
+
+    if success then
+        createNotification("Successfully crafted " .. CraftingState.selectedEquipment.Name, 4)
+        CraftingState.selectedMaterials = {}
+        updateCraftingStatus(craftingStatus)
+
+        if CraftingState.selectBestOres then
+            task.wait(0.5)
+            selectBestMaterials(craftingStatus)
+        end
+    else
+        createNotification("Crafting failed: " .. tostring(craftedItem), 4)
+    end
 end)
-]]
+
+SimpleUI:createToggle(CraftingPage, "Auto Craft", false, function(state)
+    CraftingState.autocraft = state
+
+    if not state then
+        return
+    end
+
+    if CraftingState.autocraftRunning then
+        return
+    end
+
+    CraftingState.autocraftRunning = true
+
+    task.spawn(function()
+        while CraftingState.autocraft do
+            if CraftingState.selectedEquipment then
+                if CraftingState.selectBestOres then
+                    selectBestMaterials(craftingStatus)
+                end
+
+                while CraftingState.autocraft and not canCraft() do
+                    if CraftingState.selectBestOres then
+                        selectBestMaterials(craftingStatus)
+                    end
+
+                    updateCraftingStatus(craftingStatus)
+                    task.wait(2)
+                end
+
+                if CraftingState.autocraft then
+                    local success = performCraft(CraftingState.selectedEquipment.Item,
+                        CraftingState.selectedEquipment.Data, CraftingState.selectedMaterials)
+
+                    if success then
+                        CraftingState.selectedMaterials = {}
+                        updateCraftingStatus(craftingStatus)
+                        task.wait(1)
+                    else
+                        task.wait(3)
+                    end
+                end
+            else
+                updateCraftingStatus(craftingStatus)
+                task.wait(1)
+            end
+        end
+
+        CraftingState.autocraftRunning = false
+    end)
+
+end, {
+    Description = "Continuously craft selected equipment when materials are available"
+})
+
+SimpleUI:createParagraph(CraftingPage, "About Select Best Ores",
+    {"This toggle acts like a two-step verification so you don't accidentally craft, you have to keep it enabled for craft to work"})
 
 SimpleUI:createSection(CraftingPage, "Firefly Flare")
 
@@ -7141,40 +7530,7 @@ SimpleUI:createButton(ShopPage, "Buy Others", function()
     handlePurchase("others", selectedOptions.other)
 end)
 
-SimpleUI:createSection(BarriersPage, "Remove Barriers")
-
-SimpleUI:createButton(BarriersPage, "Remove Vines", function()
-    local vines = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("Vines")
-    if vines then
-        vines:Destroy()
-    end
-end, {
-    Description = "Removes vines in Deeproot Area"
-})
-
-SimpleUI:createButton(BarriersPage, "Remove Abyssal Gate", function()
-    local abyssAssets = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("AbyssAssets")
-    local gate = abyssAssets and abyssAssets:FindFirstChild("Gate")
-    if gate then
-        gate:Destroy()
-    end
-end, {
-    Description = "Removes the 25,000 items barrier in Abyssal Depths"
-})
-
-SimpleUI:createButton(BarriersPage, "Remove Mountain Block", function()
-    local mountains = Map and Map:FindFirstChild("Mountains")
-    local added = mountains and mountains:FindFirstChild("Added")
-    local gateBlock = added and added:FindFirstChild("GateBlockScript") and
-                          added.GateBlockScript:FindFirstChild("GateBlockage")
-    if gateBlock then
-        gateBlock:Destroy()
-    end
-end, {
-    Description = "Removes the big final rock to reach the summit peak"
-})
-
-SimpleUI:createSection(PlayerPage, "Local Player Misc")
+SimpleUI:createSection(PlayerPage, "Humanoid")
 
 local jumpPower = Humanoid.JumpPower or 50
 local walkSpeedValue = Humanoid and Humanoid.WalkSpeed or 16
@@ -7215,66 +7571,83 @@ if Humanoid then
     end)
 end
 
+SimpleUI:createSlider(PlayerPage, "Adjust FOV", 30, 120, Camera.FieldOfView, function(value)
+    Camera.FieldOfView = value
+end, {
+    Increment = 1
+})
+
+local fogDensity = 0.1
+local atmosphere = Lighting:FindFirstChildWhichIsA("Atmosphere") or Instance.new("Atmosphere", Lighting)
+RunService.RenderStepped:Connect(function()
+    if atmosphere then
+        atmosphere.Density = math.clamp(fogDensity, 0, 1)
+    end
+end)
+SimpleUI:createSlider(PlayerPage, "Fog Density", 0.30, 1, 0.40, function(value)
+    fogDensity = value
+end, {Increment = 0.01})
+
 SimpleUI:createSection(PlayerPage, "ESP")
 
 SimpleUI:createToggle(PlayerPage, "Players ESP", false, function(enabled)
     if enabled then
         local function attachESP(plr)
-            if plr == LocalPlayer then return end
+            if plr == LocalPlayer then
+                return
+            end
 
             local char = plr.Character or plr.CharacterAdded:Wait()
             local head = char:WaitForChild("Head", 5)
-            if not head then return end
+            if not head then
+                return
+            end
 
             if ESP.Players[plr] then
                 ESP.Players[plr]:Destroy()
             end
 
-            ESP.Players[plr] = createBillboard(
-                head,
-                plr.Name,
-                Color3.fromRGB(255, 255, 255),
-                plr
-            )
+            ESP.Players[plr] = createBillboard(head, plr.Name, Color3.fromRGB(255, 255, 255), plr)
         end
 
         local function hookPlayer(plr)
-            if plr == LocalPlayer then return end
+            if plr == LocalPlayer then
+                return
+            end
 
             task.spawn(function()
                 attachESP(plr)
             end)
 
-            ESP.Connections["Char_" .. plr.UserId] =
-                plr.CharacterAdded:Connect(function()
-                    task.wait()
-                    attachESP(plr)
-                end)
+            ESP.Connections["Char_" .. plr.UserId] = plr.CharacterAdded:Connect(function()
+                task.wait()
+                attachESP(plr)
+            end)
         end
 
         for _, plr in ipairs(Players:GetPlayers()) do
             hookPlayer(plr)
         end
 
-        ESP.Connections.PlayerAdded =
-            Players.PlayerAdded:Connect(hookPlayer)
+        ESP.Connections.PlayerAdded = Players.PlayerAdded:Connect(hookPlayer)
 
-        ESP.Connections.PlayerRemoving =
-            Players.PlayerRemoving:Connect(function(plr)
-                if ESP.Players[plr] then
-                    ESP.Players[plr]:Destroy()
-                    ESP.Players[plr] = nil
-                end
+        ESP.Connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(plr)
+            if ESP.Players[plr] then
+                ESP.Players[plr]:Destroy()
+                ESP.Players[plr] = nil
+            end
 
-                local conn = ESP.Connections["Char_" .. plr.UserId]
-                if conn then
-                    conn:Disconnect()
-                    ESP.Connections["Char_" .. plr.UserId] = nil
-                end
-            end)
+            local conn = ESP.Connections["Char_" .. plr.UserId]
+            if conn then
+                conn:Disconnect()
+                ESP.Connections["Char_" .. plr.UserId] = nil
+            end
+        end)
     else
         for _, bb in pairs(ESP.Players) do
-            if bb then bb:Destroy() end
+            if bb then
+                bb:Destroy()
+            end
         end
 
         for _, conn in pairs(ESP.Connections) do
@@ -7336,7 +7709,9 @@ end)
 
 SimpleUI:createButton(PlayerPage, "Clear All ESP", function()
     local function clearFromFolder(folder)
-        if not folder then return end
+        if not folder then
+            return
+        end
         for _, obj in ipairs(folder:GetDescendants()) do
             if obj:IsA("BillboardGui") and obj.Name == "ESPBillboard" then
                 obj:Destroy()
@@ -7450,14 +7825,38 @@ SimpleUI:createButton(MiscellaneousPage, "View Item Chances", function()
 
 end)
 
-SimpleUI:createButton(MiscellaneousPage, "[DEBUG] Log Excavation Data", function()
-    if not ExcavationState.data then
-        refreshData()
+SimpleUI:createSection(MiscellaneousPage, "Remove Barriers")
+
+SimpleUI:createButton(MiscellaneousPage, "Remove Vines", function()
+    local vines = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("Vines")
+    if vines then
+        vines:Destroy()
     end
-    print("=== Excavation Data Dump ===")
-    print(HttpService:JSONEncode(ExcavationState.data))
-    print("=== END ===")
-end)
+end, {
+    Description = "Removes vines in Deeproot Area"
+})
+
+SimpleUI:createButton(MiscellaneousPage, "Remove Abyssal Gate", function()
+    local abyssAssets = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("AbyssAssets")
+    local gate = abyssAssets and abyssAssets:FindFirstChild("Gate")
+    if gate then
+        gate:Destroy()
+    end
+end, {
+    Description = "Removes the 25,000 items barrier in Abyssal Depths"
+})
+
+SimpleUI:createButton(MiscellaneousPage, "Remove Mountain Block", function()
+    local mountains = Map and Map:FindFirstChild("Mountains")
+    local added = mountains and mountains:FindFirstChild("Added")
+    local gateBlock = added and added:FindFirstChild("GateBlockScript") and
+                          added.GateBlockScript:FindFirstChild("GateBlockage")
+    if gateBlock then
+        gateBlock:Destroy()
+    end
+end, {
+    Description = "Removes the big final rock to reach the summit peak"
+})
 
 SimpleUI:createSection(OthersPage, "Server")
 
@@ -7516,8 +7915,44 @@ SimpleUI:createButton(OthersPage, "Server Hop", function()
     end
 end)
 
+SimpleUI:createSection(OthersPage, "User Interface")
 
 if SimpleUI:isMobile() then
+    local TweenService = (SimpleUI and SimpleUI.getService) and SimpleUI:getService("TweenService")
+    local UserInputService = (SimpleUI and SimpleUI.getService) and SimpleUI:getService("UserInputService")
+
+    local folderName = "SimpleScripts"
+    local fileName = folderName .. "/logo.png"
+    local iconUrl = "https://raw.githubusercontent.com/dawnpetal/website/refs/heads/main/assets/images/logo.png"
+    local logoAsset
+
+    local canUseFilesystem = makefolder and isfolder and listfiles and isfile and delfile and writefile and
+                                 getcustomasset
+
+    if canUseFilesystem then
+        if not isfolder(folderName) then
+            makefolder(folderName)
+        end
+
+        for _, file in ipairs(listfiles("")) do
+            local cleanFile = file:gsub("^/", "")
+            if cleanFile:lower():find("simpleui") and isfile(cleanFile) then
+                delfile(cleanFile)
+            end
+        end
+
+        if not isfile(fileName) then
+            local success, imageData = pcall(function()
+                return game:HttpGet(iconUrl)
+            end)
+            if success and imageData then
+                writefile(fileName, imageData)
+            end
+        end
+
+        logoAsset = getcustomasset(fileName)
+    end
+
     local toggleButton = Instance.new("ImageButton")
     toggleButton.Name = "ToggleUIButton"
     toggleButton.Size = UDim2.new(0, 40, 0, 40)
@@ -7527,81 +7962,349 @@ if SimpleUI:isMobile() then
     toggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
     toggleButton.ScaleType = Enum.ScaleType.Fit
     toggleButton.Active = true
+    toggleButton.Image = logoAsset or "rbxassetid://10734900011"
     toggleButton.Parent = window.SimpleGUI
 
-    local iconUrl = "https://raw.githubusercontent.com/dawnpetal/website/refs/heads/main/assets/images/logo.png"
-    local finalImage = ""
-
-    local success, result = pcall(function()
-        local fileName = "simpleui_toggle_" .. tostring(tick()):gsub("%.", "_") .. ".png"
-        local imageData = game:HttpGet(iconUrl)
-        writefile(fileName, imageData)
-        return getcustomasset(fileName)
-    end)
-
-    if success then
-        finalImage = result
-    end
-
-    toggleButton.Image = finalImage ~= "" and finalImage or "rbxassetid://3926305904"
-
-    local TweenService = SimpleUI:getService("TweenService")
-    local UserInputService = SimpleUI:getService("UserInputService")
-
     local dragging = false
-    local dragStart
-    local startPos
+    local dragStart, startPos
     local hasMoved = false
-
     local normalSize = UDim2.new(0, 40, 0, 40)
     local pressSize = UDim2.new(0, 50, 0, 50)
     local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
-    toggleButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = toggleButton.Position
-            hasMoved = false
-            TweenService:Create(toggleButton, tweenInfo, {
-                Size = pressSize
-            }):Play()
-        end
-    end)
+    if toggleButton and TweenService then
+        toggleButton.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = toggleButton.Position
+                hasMoved = false
+                TweenService:Create(toggleButton, tweenInfo, {
+                    Size = pressSize
+                }):Play()
+            end
+        end)
 
-    toggleButton.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-            TweenService:Create(toggleButton, tweenInfo, {
-                Size = normalSize
-            }):Play()
-            if not hasMoved then
-                if window.isVisible() then
-                    window.hide()
-                else
-                    window.show()
+        toggleButton.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+                TweenService:Create(toggleButton, tweenInfo, {
+                    Size = normalSize
+                }):Play()
+                if not hasMoved then
+                    if window.isVisible() then
+                        window.hide()
+                    else
+                        window.show()
+                    end
                 end
             end
-        end
-    end)
+        end)
+    end
 
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and
-            (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
-                hasMoved = true
-                toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale,
-                    startPos.Y.Offset + delta.Y)
+    if UserInputService then
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and
+                (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType ==
+                    Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                    hasMoved = true
+                    toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale,
+                        startPos.Y.Offset + delta.Y)
+                end
             end
-        end
-    end)
+        end)
+    end
 else
-    SimpleUI:createSection(OthersPage, "User Interface")
-    
     SimpleUI:createKeybind(OthersPage, "UI visibility keybind", Enum.KeyCode.Q, function(key)
         window.toggle()
     end)
 end
 
---SimpleUI:createSection(WebhookPage, "Events")
+local inventory = game:GetService("Players").LocalPlayer.PlayerGui.BackpackGui.Backpack.Inventory
+local scrollingFrame = inventory.ScrollingFrame
+local gridFrame = scrollingFrame.UIGridFrame
+
+local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Filter", true, function(state)
+    local existingPanel = inventory:FindFirstChild("FilterPanel")
+
+    if existingPanel then
+        existingPanel:Destroy()
+        task.wait()
+    end
+
+    if state then
+        local filterPanel = Instance.new("Frame")
+        filterPanel.Name = "FilterPanel"
+        filterPanel.Parent = inventory
+        filterPanel.AnchorPoint = Vector2.new(0, 0)
+        filterPanel.Position = UDim2.new(1, 0.02, 0, -30)
+        filterPanel.Size = UDim2.new(0.22, 0, 1.08, 0)
+        filterPanel.BackgroundTransparency = 1
+        filterPanel.BorderSizePixel = 0
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 0)
+        padding.PaddingBottom = UDim.new(0.04, 0)
+        padding.PaddingLeft = UDim.new(0.06, 0)
+        padding.PaddingRight = UDim.new(0.06, 0)
+        padding.Parent = filterPanel
+
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0.018, 0)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = filterPanel
+
+        local fontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold,
+            Enum.FontStyle.Italic)
+
+        local title = Instance.new("TextLabel")
+        title.Name = "CurrentFilter"
+        title.Parent = filterPanel
+        title.Size = UDim2.new(1, 0, 0.16, 0)
+        title.BackgroundTransparency = 1
+        title.Text = "Filter: All Items"
+        title.TextWrapped = true
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        title.TextYAlignment = Enum.TextYAlignment.Center
+        title.FontFace = fontFace
+        title.TextScaled = true
+        title.LineHeight = 1
+        title.TextColor3 = Color3.fromRGB(245, 245, 245)
+        title.LayoutOrder = 1
+
+        local titleStroke = Instance.new("UIStroke")
+        titleStroke.Color = Color3.fromRGB(0, 0, 0)
+        titleStroke.Thickness = 1
+        titleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+        titleStroke.Parent = title
+
+        local function createFilterButton(text, color, order)
+            local button = Instance.new("TextButton")
+            button.Name = text .. "Filter"
+            button.Parent = filterPanel
+            button.Size = UDim2.new(1, 0, 0.075, 0)
+            button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
+            button.BorderSizePixel = 0
+            button.Text = text
+            button.FontFace = fontFace
+            button.TextScaled = true
+            button.LineHeight = 1
+            button.TextColor3 = color
+            button.AutoButtonColor = false
+            button.LayoutOrder = order
+
+            local stroke = Instance.new("UIStroke")
+            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke.Color = color
+            stroke.Thickness = 1
+            stroke.Parent = button
+
+            return button
+        end
+
+        local FILTER_BUTTONS = {{"Ores", Color3.fromRGB(190, 190, 190)}, {"Equipments", Color3.fromRGB(255, 90, 90)},
+                                {"Totems/Relics", Color3.fromRGB(120, 220, 120)},
+                                {"Geodes", Color3.fromRGB(90, 170, 255)}, {"Maps", Color3.fromRGB(200, 160, 255)},
+                                {"Others", Color3.fromRGB(200, 120, 255)}, {"All Items", Color3.fromRGB(245, 245, 245)}}
+
+        local ICON_CATEGORY = {
+            ["rbxassetid://71590406800942"] = "Equipments",
+            ["rbxassetid://128090935503267"] = "Equipments",
+            ["rbxassetid://95192688083586"] = "Equipments",
+            ["rbxassetid://84287308918508"] = "Ores",
+            ["rbxassetid://18624930841"] = "Totems/Relics",
+            ["rbxassetid://6947202399"] = "Totems/Relics",
+            ["rbxassetid://9019175526"] = "Geodes",
+            ["rbxassetid://8360687671"] = "Maps"
+        }
+
+        local connections = {}
+        local itemCache = {}
+        local currentFilter = "All Items"
+        local isUpdating = false
+
+        local PADDING = 10
+        local originalCanvasSize = scrollingFrame.CanvasSize
+        local originalCanvasPos = scrollingFrame.CanvasPosition
+
+        local function getCategory(button)
+            local icon = button:FindFirstChild("TypeIcon")
+            if icon and icon:IsA("ImageLabel") then
+                return ICON_CATEGORY[icon.Image] or "Others"
+            end
+            return "Others"
+        end
+
+        local function cacheItem(button)
+            if not itemCache[button] then
+                itemCache[button] = {
+                    pos = button.Position,
+                    vis = button.Visible,
+                    cat = getCategory(button)
+                }
+            end
+            return itemCache[button]
+        end
+
+        local function getAllItems()
+            local items = {}
+            for _, child in ipairs(gridFrame:GetChildren()) do
+                if child:IsA("TextButton") then
+                    table.insert(items, child)
+                end
+            end
+            return items
+        end
+
+        local function calculateLayout(visibleItems)
+            if #visibleItems == 0 then
+                return 0
+            end
+
+            local firstItem = visibleItems[1]
+            local itemWidth = firstItem.AbsoluteSize.X
+            local itemHeight = firstItem.AbsoluteSize.Y
+            local frameWidth = gridFrame.AbsoluteSize.X
+
+            local cols = math.max(1, math.floor((frameWidth + PADDING) / (itemWidth + PADDING)))
+            local rows = math.ceil(#visibleItems / cols)
+
+            for i, item in ipairs(visibleItems) do
+                local row = math.floor((i - 1) / cols)
+                local col = (i - 1) % cols
+                item.Position = UDim2.fromOffset(col * (itemWidth + PADDING), row * (itemHeight + PADDING))
+            end
+
+            return rows * (itemHeight + PADDING)
+        end
+
+        local function applyFilter(filter)
+            if isUpdating then
+                return
+            end
+            isUpdating = true
+
+            currentFilter = filter
+            local items = getAllItems()
+
+            if filter == "All Items" then
+                for _, item in ipairs(items) do
+                    local cached = itemCache[item]
+                    if cached then
+                        item.Visible = cached.vis
+                        item.Position = cached.pos
+                    else
+                        item.Visible = true
+                    end
+                end
+                scrollingFrame.CanvasSize = originalCanvasSize
+                scrollingFrame.CanvasPosition = originalCanvasPos
+            else
+                local visible = {}
+                for _, item in ipairs(items) do
+                    local cached = cacheItem(item)
+                    if cached.cat == filter then
+                        item.Visible = true
+                        table.insert(visible, item)
+                    else
+                        item.Visible = false
+                    end
+                end
+
+                local canvasHeight = calculateLayout(visible)
+                scrollingFrame.CanvasSize = UDim2.fromOffset(0, canvasHeight)
+                scrollingFrame.CanvasPosition = Vector2.zero
+            end
+
+            isUpdating = false
+        end
+
+        local debounce = false
+        local function onItemsChanged()
+            if debounce then
+                return
+            end
+            debounce = true
+
+            task.wait(0.1)
+
+            local items = getAllItems()
+            for _, item in ipairs(items) do
+                if not itemCache[item] then
+                    cacheItem(item)
+                end
+            end
+
+            applyFilter(currentFilter)
+            debounce = false
+        end
+
+        for _, item in ipairs(getAllItems()) do
+            cacheItem(item)
+        end
+
+        for i, data in ipairs(FILTER_BUTTONS) do
+            local text, color = data[1], data[2]
+            local button = createFilterButton(text, color, i + 1)
+
+            table.insert(connections, button.MouseButton1Click:Connect(function()
+                title.Text = "Filter: " .. text
+                applyFilter(text)
+            end))
+
+            table.insert(connections, button.MouseEnter:Connect(function()
+                button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            end))
+
+            table.insert(connections, button.MouseLeave:Connect(function()
+                button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
+            end))
+        end
+
+        table.insert(connections, gridFrame.ChildAdded:Connect(onItemsChanged))
+        table.insert(connections, gridFrame.ChildRemoved:Connect(onItemsChanged))
+
+        table.insert(connections, filterPanel.Destroying:Connect(function()
+            for _, conn in ipairs(connections) do
+                if conn.Connected then
+                    conn:Disconnect()
+                end
+            end
+            table.clear(connections)
+            table.clear(itemCache)
+        end))
+    end
+end)
+
+SimpleUI:createSlider(OthersPage, "UI Scale", 0.5, 2, 1, function(value)
+    local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then
+        return
+    end
+
+    local boostsUI = playerGui:FindFirstChild("MainUI") and playerGui.MainUI:FindFirstChild("Boosts")
+    local bottomRight = playerGui:FindFirstChild("MainUI") and playerGui.MainUI:FindFirstChild("BottomRight")
+
+    if boostsUI then
+        local uiScale = boostsUI:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+        uiScale.Parent = boostsUI
+        SimpleUI:getService("TweenService"):Create(uiScale,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Scale = value
+            }):Play()
+    end
+
+    if bottomRight then
+        local uiScaleBR = bottomRight:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+        uiScaleBR.Parent = bottomRight
+        SimpleUI:getService("TweenService"):Create(uiScaleBR,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Scale = value
+            }):Play()
+    end
+end, {
+    Increment = 0.001
+})

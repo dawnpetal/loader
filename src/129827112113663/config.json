@@ -1,18 +1,19 @@
 {
   "name": "Prospecting!",
-  "version": "2.1",
+  "version": "2.2",
   "description": "Automates various tasks in the game Prospecting!",
   "author": "DawnPetal",
-  "last_updated": "2025-12-22",
+  "last_updated": "2025-12-31",
   "features": [
     "Auto Farm",
     "Auto Sell",
-    "Instant Shop",
+    "Shop",
     "Teleport",
-    "Crafting",
     "Reforging",
     "Excavation",
+    "Auto Crafting",
     "Auto Geode",
+    "Auto Runes",
     "Auto Favourite"
   ],
   "prerequisites": {
