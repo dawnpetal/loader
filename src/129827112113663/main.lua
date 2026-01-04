@@ -3817,38 +3817,53 @@ end
 
 -- ========================= VALIDATION =========================
 
-local function validateHandshake()
-    local env = getgenv()
-    local storage = nil
-    for k, v in pairs(env) do
-        if type(k) == "userdata" and v == true then
-            storage = k
-            break
-        end
-    end
-    if not storage then return false end
-    local mt = getmetatable(storage)
-    if not mt or not mt.__index then return false end
-    local h = mt.__index
-    return h.Func(h.Time, h.Salt) == h.Key
+local function getStorage()
+	local registry = getgenv().__PrereqStorageRegistry
+	if not registry then
+		return nil
+	end
+	
+	for k, v in pairs(getgenv()) do
+		if type(k) == "userdata" and v == true then
+			if registry[k] then
+				return k
+			end
+		end
+	end
+	return nil
 end
 
-local function getPrerequisites()
-    local env = getgenv()
-    local storage = env.__PREREQS
-    if not storage then return nil end
-    local libs = {}
-    for proxy in pairs(storage) do
-        local mt = getmetatable(proxy)
-        if mt and mt.__index and mt.__tostring then
-            libs[tostring(proxy)] = mt.__index()
-        end
-    end
-    return libs
+local proxy = getStorage()
+
+if not proxy then
+	error("Loader required")
 end
 
-local prereqs = getPrerequisites()
-local TaskManager = prereqs.TaskManager
+local storageRegistry = getgenv().__PrereqStorageRegistry
+local moduleRegistry = getgenv().__PrereqModuleRegistry
+
+if not storageRegistry or not moduleRegistry then
+	error("Loader required")
+end
+
+local data = storageRegistry[proxy]
+local prereqs = data.Prereqs
+
+if not prereqs or not next(prereqs) then
+	error("Loader required")
+end
+
+local function getPrerequisite(name)
+	for p in pairs(prereqs) do
+		local info = moduleRegistry[p]
+		if info and info.name == name then
+			return info.module
+		end
+	end
+	error("Missing: " .. name)
+end
+
+local TaskManager = getPrerequisite("TaskManager")
 
 SimpleUI:createNotification({
     Title = "Validated!",
@@ -8018,256 +8033,259 @@ local gridFrame = scrollingFrame.UIGridFrame
 
 local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Filter", true, function(state)
     local existingPanel = inventory:FindFirstChild("FilterPanel")
-
     if existingPanel then
         existingPanel:Destroy()
         task.wait()
     end
 
-    if state then
-        local filterPanel = Instance.new("Frame")
-        filterPanel.Name = "FilterPanel"
-        filterPanel.Parent = inventory
-        filterPanel.AnchorPoint = Vector2.new(0, 0)
-        filterPanel.Position = UDim2.new(1, 0.02, 0, -30)
-        filterPanel.Size = UDim2.new(0.22, 0, 1.08, 0)
-        filterPanel.BackgroundTransparency = 1
-        filterPanel.BorderSizePixel = 0
+    if not state then
+        return
+    end
 
-        local padding = Instance.new("UIPadding")
-        padding.PaddingTop = UDim.new(0, 0)
-        padding.PaddingBottom = UDim.new(0.04, 0)
-        padding.PaddingLeft = UDim.new(0.06, 0)
-        padding.PaddingRight = UDim.new(0.06, 0)
-        padding.Parent = filterPanel
+    local filterPanel = Instance.new("Frame")
+    filterPanel.Name = "FilterPanel"
+    filterPanel.Parent = inventory
+    filterPanel.AnchorPoint = Vector2.new(0, 0)
+    filterPanel.Position = UDim2.new(1, 0.02, 0, -30)
+    filterPanel.Size = UDim2.new(0.22, 0, 1.08, 0)
+    filterPanel.BackgroundTransparency = 1
+    filterPanel.BorderSizePixel = 0
 
-        local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0.018, 0)
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Parent = filterPanel
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 0)
+    padding.PaddingBottom = UDim.new(0.04, 0)
+    padding.PaddingLeft = UDim.new(0.06, 0)
+    padding.PaddingRight = UDim.new(0.06, 0)
+    padding.Parent = filterPanel
 
-        local fontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold,
-            Enum.FontStyle.Italic)
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0.018, 0)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = filterPanel
 
-        local title = Instance.new("TextLabel")
-        title.Name = "CurrentFilter"
-        title.Parent = filterPanel
-        title.Size = UDim2.new(1, 0, 0.16, 0)
-        title.BackgroundTransparency = 1
-        title.Text = "Filter: All Items"
-        title.TextWrapped = true
-        title.TextXAlignment = Enum.TextXAlignment.Left
-        title.TextYAlignment = Enum.TextYAlignment.Center
-        title.FontFace = fontFace
-        title.TextScaled = true
-        title.LineHeight = 1
-        title.TextColor3 = Color3.fromRGB(245, 245, 245)
-        title.LayoutOrder = 1
+    local fontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Italic)
 
-        local titleStroke = Instance.new("UIStroke")
-        titleStroke.Color = Color3.fromRGB(0, 0, 0)
-        titleStroke.Thickness = 1
-        titleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-        titleStroke.Parent = title
+    local title = Instance.new("TextLabel")
+    title.Name = "CurrentFilter"
+    title.Parent = filterPanel
+    title.Size = UDim2.new(1, 0, 0.16, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "Filter: All Items"
+    title.TextWrapped = true
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.TextYAlignment = Enum.TextYAlignment.Center
+    title.FontFace = fontFace
+    title.TextScaled = true
+    title.LineHeight = 1
+    title.TextColor3 = Color3.fromRGB(245, 245, 245)
+    title.LayoutOrder = 1
 
-        local function createFilterButton(text, color, order)
-            local button = Instance.new("TextButton")
-            button.Name = text .. "Filter"
-            button.Parent = filterPanel
-            button.Size = UDim2.new(1, 0, 0.075, 0)
-            button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
-            button.BorderSizePixel = 0
-            button.Text = text
-            button.FontFace = fontFace
-            button.TextScaled = true
-            button.LineHeight = 1
-            button.TextColor3 = color
-            button.AutoButtonColor = false
-            button.LayoutOrder = order
+    local titleStroke = Instance.new("UIStroke")
+    titleStroke.Color = Color3.fromRGB(0, 0, 0)
+    titleStroke.Thickness = 1
+    titleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+    titleStroke.Parent = title
 
-            local stroke = Instance.new("UIStroke")
-            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            stroke.Color = color
-            stroke.Thickness = 1
-            stroke.Parent = button
+    local function createFilterButton(text, color, order)
+        local button = Instance.new("TextButton")
+        button.Name = text .. "Filter"
+        button.Parent = filterPanel
+        button.Size = UDim2.new(1, 0, 0.075, 0)
+        button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
+        button.BorderSizePixel = 0
+        button.Text = text
+        button.FontFace = fontFace
+        button.TextScaled = true
+        button.LineHeight = 1
+        button.TextColor3 = color
+        button.AutoButtonColor = false
+        button.LayoutOrder = order
 
-            return button
+        local stroke = Instance.new("UIStroke")
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Color = color
+        stroke.Thickness = 1
+        stroke.Parent = button
+
+        return button
+    end
+
+    local FILTER_BUTTONS = {
+        {"Ores", Color3.fromRGB(190, 190, 190)},
+        {"Equipments", Color3.fromRGB(255, 90, 90)},
+        {"Totems/Relics", Color3.fromRGB(120, 220, 120)},
+        {"Geodes", Color3.fromRGB(90, 170, 255)},
+        {"Maps", Color3.fromRGB(200, 160, 255)},
+        {"Others", Color3.fromRGB(200, 120, 255)},
+        {"All Items", Color3.fromRGB(245, 245, 245)}
+    }
+
+    local ICON_CATEGORY = {
+        ["rbxassetid://71590406800942"] = "Equipments",
+        ["rbxassetid://128090935503267"] = "Equipments",
+        ["rbxassetid://95192688083586"] = "Equipments",
+        ["rbxassetid://84287308918508"] = "Ores",
+        ["rbxassetid://18624930841"] = "Totems/Relics",
+        ["rbxassetid://6947202399"] = "Totems/Relics",
+        ["rbxassetid://9019175526"] = "Geodes",
+        ["rbxassetid://8360687671"] = "Maps"
+    }
+
+    local connections = {}
+    local itemCache = {}
+    local currentFilter = "All Items"
+    local isUpdating = false
+    local filterChanged = false
+
+    local PADDING = 10
+    local originalCanvasSize = scrollingFrame.CanvasSize
+
+    local function getCategory(button)
+        local icon = button:FindFirstChild("TypeIcon")
+        if icon and icon:IsA("ImageLabel") then
+            return ICON_CATEGORY[icon.Image] or "Others"
+        end
+        return "Others"
+    end
+
+    local function cacheItem(button)
+        if not itemCache[button] then
+            itemCache[button] = {
+                pos = button.Position,
+                vis = button.Visible,
+                cat = getCategory(button)
+            }
+        end
+        return itemCache[button]
+    end
+
+    local function getAllItems()
+        local items = {}
+        for _, child in ipairs(gridFrame:GetChildren()) do
+            if child:IsA("TextButton") then
+                table.insert(items, child)
+            end
+        end
+        return items
+    end
+
+    local function calculateLayout(visibleItems)
+        if #visibleItems == 0 then
+            return 0
         end
 
-        local FILTER_BUTTONS = {{"Ores", Color3.fromRGB(190, 190, 190)}, {"Equipments", Color3.fromRGB(255, 90, 90)},
-                                {"Totems/Relics", Color3.fromRGB(120, 220, 120)},
-                                {"Geodes", Color3.fromRGB(90, 170, 255)}, {"Maps", Color3.fromRGB(200, 160, 255)},
-                                {"Others", Color3.fromRGB(200, 120, 255)}, {"All Items", Color3.fromRGB(245, 245, 245)}}
+        local firstItem = visibleItems[1]
+        local itemWidth = firstItem.AbsoluteSize.X
+        local itemHeight = firstItem.AbsoluteSize.Y
+        local frameWidth = gridFrame.AbsoluteSize.X
 
-        local ICON_CATEGORY = {
-            ["rbxassetid://71590406800942"] = "Equipments",
-            ["rbxassetid://128090935503267"] = "Equipments",
-            ["rbxassetid://95192688083586"] = "Equipments",
-            ["rbxassetid://84287308918508"] = "Ores",
-            ["rbxassetid://18624930841"] = "Totems/Relics",
-            ["rbxassetid://6947202399"] = "Totems/Relics",
-            ["rbxassetid://9019175526"] = "Geodes",
-            ["rbxassetid://8360687671"] = "Maps"
-        }
+        local cols = math.max(1, math.floor((frameWidth + PADDING) / (itemWidth + PADDING)))
+        local rows = math.ceil(#visibleItems / cols)
 
-        local connections = {}
-        local itemCache = {}
-        local currentFilter = "All Items"
-        local isUpdating = false
-
-        local PADDING = 10
-        local originalCanvasSize = scrollingFrame.CanvasSize
-        local originalCanvasPos = scrollingFrame.CanvasPosition
-
-        local function getCategory(button)
-            local icon = button:FindFirstChild("TypeIcon")
-            if icon and icon:IsA("ImageLabel") then
-                return ICON_CATEGORY[icon.Image] or "Others"
-            end
-            return "Others"
+        for i, item in ipairs(visibleItems) do
+            local row = math.floor((i - 1) / cols)
+            local col = (i - 1) % cols
+            item.Position = UDim2.fromOffset(col * (itemWidth + PADDING), row * (itemHeight + PADDING))
         end
 
-        local function cacheItem(button)
-            if not itemCache[button] then
-                itemCache[button] = {
-                    pos = button.Position,
-                    vis = button.Visible,
-                    cat = getCategory(button)
-                }
-            end
-            return itemCache[button]
-        end
+        return rows * (itemHeight + PADDING)
+    end
 
-        local function getAllItems()
-            local items = {}
-            for _, child in ipairs(gridFrame:GetChildren()) do
-                if child:IsA("TextButton") then
-                    table.insert(items, child)
-                end
-            end
-            return items
-        end
+    local function applyFilter(filter)
+        if isUpdating then return end
+        isUpdating = true
 
-        local function calculateLayout(visibleItems)
-            if #visibleItems == 0 then
-                return 0
-            end
+        local savedScroll = scrollingFrame.CanvasPosition
+        currentFilter = filter
+        local items = getAllItems()
 
-            local firstItem = visibleItems[1]
-            local itemWidth = firstItem.AbsoluteSize.X
-            local itemHeight = firstItem.AbsoluteSize.Y
-            local frameWidth = gridFrame.AbsoluteSize.X
-
-            local cols = math.max(1, math.floor((frameWidth + PADDING) / (itemWidth + PADDING)))
-            local rows = math.ceil(#visibleItems / cols)
-
-            for i, item in ipairs(visibleItems) do
-                local row = math.floor((i - 1) / cols)
-                local col = (i - 1) % cols
-                item.Position = UDim2.fromOffset(col * (itemWidth + PADDING), row * (itemHeight + PADDING))
-            end
-
-            return rows * (itemHeight + PADDING)
-        end
-
-        local function applyFilter(filter)
-            if isUpdating then
-                return
-            end
-            isUpdating = true
-
-            currentFilter = filter
-            local items = getAllItems()
-
-            if filter == "All Items" then
-                for _, item in ipairs(items) do
-                    local cached = itemCache[item]
-                    if cached then
-                        item.Visible = cached.vis
-                        item.Position = cached.pos
-                    else
-                        item.Visible = true
-                    end
-                end
-                scrollingFrame.CanvasSize = originalCanvasSize
-                scrollingFrame.CanvasPosition = originalCanvasPos
-            else
-                local visible = {}
-                for _, item in ipairs(items) do
-                    local cached = cacheItem(item)
-                    if cached.cat == filter then
-                        item.Visible = true
-                        table.insert(visible, item)
-                    else
-                        item.Visible = false
-                    end
-                end
-
-                local canvasHeight = calculateLayout(visible)
-                scrollingFrame.CanvasSize = UDim2.fromOffset(0, canvasHeight)
-                scrollingFrame.CanvasPosition = Vector2.zero
-            end
-
-            isUpdating = false
-        end
-
-        local debounce = false
-        local function onItemsChanged()
-            if debounce then
-                return
-            end
-            debounce = true
-
-            task.wait(0.1)
-
-            local items = getAllItems()
+        if filter == "All Items" then
             for _, item in ipairs(items) do
-                if not itemCache[item] then
-                    cacheItem(item)
+                local cached = itemCache[item]
+                if cached then
+                    item.Visible = cached.vis
+                    item.Position = cached.pos
+                else
+                    item.Visible = true
                 end
             end
-
-            applyFilter(currentFilter)
-            debounce = false
+            scrollingFrame.CanvasSize = originalCanvasSize
+        else
+            local visible = {}
+            for _, item in ipairs(items) do
+                local cached = cacheItem(item)
+                if cached.cat == filter then
+                    item.Visible = true
+                    table.insert(visible, item)
+                else
+                    item.Visible = false
+                end
+            end
+            local canvasHeight = calculateLayout(visible)
+            scrollingFrame.CanvasSize = UDim2.fromOffset(0, canvasHeight)
         end
 
+        if filterChanged then
+            scrollingFrame.CanvasPosition = Vector2.zero
+            filterChanged = false
+        else
+            scrollingFrame.CanvasPosition = savedScroll
+        end
+
+        isUpdating = false
+    end
+
+    local debounce = false
+    local function onItemsChanged(child)
+        if debounce then return end
+        if not child:IsA("TextButton") then return end
+        debounce = true
+        task.wait(0.05)
         for _, item in ipairs(getAllItems()) do
             cacheItem(item)
         end
+        applyFilter(currentFilter)
+        debounce = false
+    end
 
-        for i, data in ipairs(FILTER_BUTTONS) do
-            local text, color = data[1], data[2]
-            local button = createFilterButton(text, color, i + 1)
+    for _, item in ipairs(getAllItems()) do
+        cacheItem(item)
+    end
 
-            table.insert(connections, button.MouseButton1Click:Connect(function()
-                title.Text = "Filter: " .. text
-                applyFilter(text)
-            end))
+    for i, data in ipairs(FILTER_BUTTONS) do
+        local text, color = data[1], data[2]
+        local button = createFilterButton(text, color, i + 1)
 
-            table.insert(connections, button.MouseEnter:Connect(function()
-                button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            end))
+        table.insert(connections, button.MouseButton1Click:Connect(function()
+            filterChanged = true
+            title.Text = "Filter: " .. text
+            applyFilter(text)
+        end))
 
-            table.insert(connections, button.MouseLeave:Connect(function()
-                button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
-            end))
-        end
+        table.insert(connections, button.MouseEnter:Connect(function()
+            button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        end))
 
-        table.insert(connections, gridFrame.ChildAdded:Connect(onItemsChanged))
-        table.insert(connections, gridFrame.ChildRemoved:Connect(onItemsChanged))
-
-        table.insert(connections, filterPanel.Destroying:Connect(function()
-            for _, conn in ipairs(connections) do
-                if conn.Connected then
-                    conn:Disconnect()
-                end
-            end
-            table.clear(connections)
-            table.clear(itemCache)
+        table.insert(connections, button.MouseLeave:Connect(function()
+            button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
         end))
     end
+
+    table.insert(connections, gridFrame.ChildAdded:Connect(onItemsChanged))
+    table.insert(connections, gridFrame.ChildRemoved:Connect(onItemsChanged))
+
+    table.insert(connections, filterPanel.Destroying:Connect(function()
+        for _, conn in ipairs(connections) do
+            if conn.Connected then
+                conn:Disconnect()
+            end
+        end
+        table.clear(connections)
+        table.clear(itemCache)
+    end))
 end)
+
 
 SimpleUI:createSlider(OthersPage, "UI Scale", 0.5, 2, 1, function(value)
     local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")

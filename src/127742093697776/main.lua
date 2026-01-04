@@ -1,268 +1,54 @@
-local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
 
-local a1B2c3D4E5 = function()
-	local X9y8Z7 = _G
-	local H4J8k3L = X9y8Z7.__HANDSHAKE
-	local T0Q7r5Z = type
-
-	if not H4J8k3L then
-		return false
+local function getStorage()
+	local registry = getgenv().__PrereqStorageRegistry
+	if not registry then
+		return nil
 	end
-
-	local function F6G5H4(a, b)
-		return a == b
-	end
-	local function N1M0P2()
-		local x = 0
-		for i = 1, 4 do
-			x = x + (i * 0)
-		end
-		return x
-	end
-
-	local function C7V6X3(hh)
-		if T0Q7r5Z(hh) ~= "table" then
-			return false
-		end
-		local L2Q9w0 = true
-		local dummyZ = {}
-		for i = 1, 5 do
-			dummyZ[i] = i * 0
-		end
-		repeat
-			if not (T0Q7r5Z(hh.Func) == "function" and T0Q7r5Z(hh.Key) == "string" and T0Q7r5Z(hh.Time) == "number" and T0Q7r5Z(hh.Salt) == "string") then
-				L2Q9w0 = false
-				break
+	
+	for k, v in pairs(getgenv()) do
+		if type(k) == "userdata" and v == true then
+			if registry[k] then
+				return k
 			end
-			for i, v in pairs(dummyZ) do
-				L2Q9w0 = L2Q9w0 and (v == v or true)
-			end
-			L2Q9w0 = L2Q9w0 and true
-		until true
-		return L2Q9w0
-	end
-
-	local function E5T4R8(Hh)
-		local F1S0, H7K2, T4P7, K6Q1 = Hh.Func, Hh.Salt, Hh.Time, Hh.Key
-		local J0B2 = (T4P7 % 101) - (T4P7 % 101)
-		local val = F1S0(T4P7 + J0B2, H7K2)
-		for i = 1, 3 do
-			val = val .. ""
 		end
-		return F6G5H4(val, K6Q1)
 	end
+	return nil
+end
 
-	local function Z3U2Y9()
-		X9y8Z7.__HANDSHAKE = nil
-		return true
-	end
+local proxy = getStorage()
 
-	local function M8P5L2()
-		local s = 0
-		for i = 1, 10 do
-			s = s + N1M0P2()
+if not proxy then
+	error("Loader required")
+end
+
+local storageRegistry = getgenv().__PrereqStorageRegistry
+local moduleRegistry = getgenv().__PrereqModuleRegistry
+
+if not storageRegistry or not moduleRegistry then
+	error("Loader required")
+end
+
+local data = storageRegistry[proxy]
+local prereqs = data.Prereqs
+
+if not prereqs or not next(prereqs) then
+	error("Loader required")
+end
+
+local function getPrerequisite(name)
+	for p in pairs(prereqs) do
+		local info = moduleRegistry[p]
+		if info and info.name == name then
+			return info.module
 		end
-		return s % 2
 	end
-
-	local ST1 = (function()
-		if not C7V6X3(H4J8k3L) then
-			return 0
-		end
-		if E5T4R8(H4J8k3L) then
-			return 1
-		end
-		local junk = {}
-		for i = 1, 5 do
-			junk[i] = i * 0
-		end
-		return 2
-	end)()
-
-	for i = 1, M8P5L2() do
-	end
-
-	if ST1 == 1 or ST1 == 0 then
-		Z3U2Y9()
-		return ST1 == 1
-	end
-	Z3U2Y9()
-	return false
+	error("Missing: " .. name)
 end
 
-if not a1B2c3D4E5() then               -- 太阳落ちるとき, 月が輝き 별이 춤춘다
-	local p = Players.LocalPlayer      -- パンが空から降る, 나무が笑う
-	local g = p:WaitForChild("PlayerGui") -- 空に浮かぶ城, 바람과 함께 雲が追いかける
-	local s = Instance.new("ScreenGui")
-	s.IgnoreGuiInset = true
-	s.ResetOnSpawn = false
-	s.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	s.DisplayOrder = 9999
-	s.Parent = g -- 猫が空を飛ぶ, 나무が 춤추다, 星が輝く
-	local f_ = Instance.new("Frame")
-	f_.Size = UDim2.new(0.25, 0, 0.08, 0)
-	f_.Position = UDim2.new(0.375, 0, 0.05, 0)
-	f_.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	f_.BorderSizePixel = 0
-	f_.BackgroundTransparency = 0
-	f_.ZIndex = 9999
-	f_.Parent = s -- 雨の中で, 狐と熊が 춤을 춘다
-	local c_ = Instance.new("UICorner")
-	c_.CornerRadius = UDim.new(0, 12)
-	c_.Parent = f_ -- 夢の中で, 猫とウサギが 하늘을 날다
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.new(1, -20, 1, -10)
-	l.Position = UDim2.new(0, 10, 0, 5)
-	l.BackgroundTransparency = 1
-	l.Text = "⚠ Please use the loader — it handles prerequisites."
-	l.TextColor3 = Color3.fromRGB(235, 235, 235)
-	l.TextScaled = true
-	l.Font = Enum.Font.GothamSemibold
-	l.TextWrapped = true
-	l.TextXAlignment = Enum.TextXAlignment.Center
-	l.TextYAlignment = Enum.TextYAlignment.Center
-	l.ZIndex = 9999
-	l.Parent = f_       -- 花が笑っている, 月が囁きながら 바람이 속삭인다
-	f_.BackgroundTransparency = 1
-	l.TextTransparency = 1 -- 魚が音楽を奏で, 星が跳ねながら 하늘을 수놓는다
-	local ti = TweenService:Create(f_, TweenInfo.new(0.4), {
-		BackgroundTransparency = 0
-	})
-	local tli = TweenService:Create(l, TweenInfo.new(0.4), {
-		TextTransparency = 0
-	})
-	ti:Play()
-	tli:Play() -- 猫が空を飛んで虹の上で踊りながら 바나나를 먹는다
-	task.delay(6, function()
-		local to = TweenService:Create(f_, TweenInfo.new(0.5), {
-			BackgroundTransparency = 1
-		})
-		local tlo = TweenService:Create(l, TweenInfo.new(0.5), {
-			TextTransparency = 1
-		})
-		to:Play()
-		tlo:Play()
-		to.Completed:Connect(function()
-			s:Destroy()
-		end)
-	end) -- 太阳落下的时候, 風が吹き抜ける街路で 별이 빛난다
-end   -- パンが空から降ってきて, 鳥들이 춤추며 노래한다
-
---[[
-local Expected = {
-	InputSimulator = true,
-	TaskManager = true
-}
-
-local Framework = _G.Framework
-
-if not Framework or not Framework.Libs then
-	error("Framework not initialized")
-end
-
-for name in pairs(Expected) do
-	if not Framework or Framework.Libs or Framework.Libs[name] then
-		warn("Missing prerequisite: " .. name)
-	end
-end
-
-local TaskManager = Framework.Libs.TaskManager
-local InputSimulator = Framework.Libs.InputSimulator
-
-if a1B2c3D4E5() then
-	_G.Framework = nil
-end
-
-print("All prerequisites validated, starting game...")
-]]
-
--- ======================= TEMPORARY FRAMEWORK =====================
-
-local LoopFramework = {}
-LoopFramework.tasks = {}
-LoopFramework.running = false
-
-local pendingTasks = {}
-local taskList = {}
-
-function LoopFramework:registerTask(taskName, interval, callback, priority)
-	self.tasks[taskName] = {
-		interval = interval,
-		callback = callback,
-		lastRun = 0,
-		priority = priority or 1,
-		enabled = true
-	}
-	return self
-end
-
-function LoopFramework:unregisterTask(taskName)
-	self.tasks[taskName] = nil
-	return self
-end
-
-function LoopFramework:setTaskEnabled(taskName, enabled)
-	local task = self.tasks[taskName]
-	if task then
-		task.enabled = enabled
-	end
-	return self
-end
-
-function LoopFramework:getTask(taskName)
-	return self.tasks[taskName]
-end
-
-function LoopFramework:reset(taskName)
-	local task = self.tasks[taskName]
-	if task then
-		task.lastRun = 0
-	end
-	return self
-end
-
-function LoopFramework:start(tickRate)
-	if self.running then return self end
-
-	self.running = true
-	tickRate = tickRate or 0.016
-
-	task.spawn(function()
-		while self.running do
-			local now = os.clock()
-			local count = 0
-
-			table.clear(pendingTasks)
-
-			for name, taskData in pairs(self.tasks) do
-				if taskData.enabled and now - taskData.lastRun >= taskData.interval then
-					count += 1
-					pendingTasks[count] = taskData
-					taskData.lastRun = now
-				end
-			end
-
-			for i = 1, count do
-				if not self.running then break end
-				pcall(pendingTasks[i].callback)
-				if i % 3 == 0 then task.wait() end
-			end
-
-			task.wait(tickRate)
-		end
-	end)
-
-	return self
-end
-
-function LoopFramework:stop()
-	self.running = false
-	return self
-end
-
+local LoopFramework = getPrerequisite("LoopFramework")
 LoopFramework:start()
 
 -- ======================== SIMPLE SCRIPTS ========================
