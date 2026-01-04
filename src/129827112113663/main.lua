@@ -48,12 +48,12 @@ SimpleUI.Themes = {
         SecondaryTransparency = 0.63
     },
     Monokai = {
-        PrimaryColor = Color3.fromRGB(30, 30, 34),
-        SecondaryColor = Color3.fromRGB(60, 62, 54),
+        PrimaryColor = Color3.fromRGB(20, 20, 24),
+        SecondaryColor = Color3.fromRGB(45, 47, 49),
         SecondaryColorHover = Color3.fromRGB(75, 78, 68),
         SecondaryColorActive = Color3.fromRGB(90, 94, 82),
         SecondaryColorMouse1Down = Color3.fromRGB(50, 52, 44),
-        TertiaryColor = Color3.fromRGB(70, 73, 63),
+        TertiaryColor = Color3.fromRGB(50, 53, 53),
         TertiaryColorHover = Color3.fromRGB(85, 89, 77),
         TertiaryColorActive = Color3.fromRGB(100, 105, 91),
         TertiaryColorMouse1Down = Color3.fromRGB(58, 60, 52),
@@ -66,7 +66,7 @@ SimpleUI.Themes = {
         PrimaryFontSize = 18,
         SecondaryFont = Enum.Font.Code,
         SecondaryFontSize = 16,
-        PrimaryTransparency = 0.04,
+        PrimaryTransparency = 0,
         SecondaryTransparency = 0.67
     }
 }
@@ -3818,47 +3818,37 @@ end
 -- ========================= VALIDATION =========================
 
 local function validateHandshake()
-    local env = _G
-    local h = env.__HANDSHAKE
-    local function isValidSchema(t)
-        return type(t) == "table" and type(t.Func) == "function" and type(t.Key) == "string" and type(t.Time) ==
-                   "number" and type(t.Salt) == "string"
+    local env = getgenv()
+    local storage = nil
+    for k, v in pairs(env) do
+        if type(k) == "userdata" and v == true then
+            storage = k
+            break
+        end
     end
-    local function resolve(hs)
-        return hs.Func(hs.Time, hs.Salt) == hs.Key
+    if not storage then return false end
+    local mt = getmetatable(storage)
+    if not mt or not mt.__index then return false end
+    local h = mt.__index
+    return h.Func(h.Time, h.Salt) == h.Key
+end
+
+local function getPrerequisites()
+    local env = getgenv()
+    local storage = env.__PREREQS
+    if not storage then return nil end
+    local libs = {}
+    for proxy in pairs(storage) do
+        local mt = getmetatable(proxy)
+        if mt and mt.__index and mt.__tostring then
+            libs[tostring(proxy)] = mt.__index()
+        end
     end
-    local ok = h and isValidSchema(h) and resolve(h)
-    env.__HANDSHAKE = nil
-    return ok == true
+    return libs
 end
 
-if not validateHandshake() then
-    SimpleUI:createNotification({
-        Title = "ERROR",
-        Type = "Error",
-        Description = "Please use the loader to run this script as it handles pre-requisites.",
-        Duration = 20
-    })
-end
-
-local Required = {
-    TaskManager = true
-}
-
-local Framework = _G.Framework
-assert(Framework and Framework.Libs, "Framework not initialized")
-
-for name in pairs(Required) do
-    if not Framework.Libs[name] then
-        warn(("Missing prerequisite: %s"):format(name))
-    end
-end
-
-local TaskManager = Framework.Libs.TaskManager
-
-if validateHandshake() then
-    _G.Framework = nil
-end
+local prereqs = getPrerequisites()
+local TaskManager = prereqs.TaskManager
 
 SimpleUI:createNotification({
     Title = "Validated!",
