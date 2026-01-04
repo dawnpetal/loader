@@ -3818,49 +3818,49 @@ end
 -- ========================= VALIDATION =========================
 
 local function getStorage()
-	local registry = getgenv().__PrereqStorageRegistry
-	if not registry then
-		return nil
-	end
-	
-	for k, v in pairs(getgenv()) do
-		if type(k) == "userdata" and v == true then
-			if registry[k] then
-				return k
-			end
-		end
-	end
-	return nil
+    local registry = getgenv().__PrereqStorageRegistry
+    if not registry then
+        return nil
+    end
+
+    for k, v in pairs(getgenv()) do
+        if type(k) == "userdata" and v == true then
+            if registry[k] then
+                return k
+            end
+        end
+    end
+    return nil
 end
 
 local proxy = getStorage()
 
 if not proxy then
-	error("Loader required")
+    error("Loader required")
 end
 
 local storageRegistry = getgenv().__PrereqStorageRegistry
 local moduleRegistry = getgenv().__PrereqModuleRegistry
 
 if not storageRegistry or not moduleRegistry then
-	error("Loader required")
+    error("Loader required")
 end
 
 local data = storageRegistry[proxy]
 local prereqs = data.Prereqs
 
 if not prereqs or not next(prereqs) then
-	error("Loader required")
+    error("Loader required")
 end
 
 local function getPrerequisite(name)
-	for p in pairs(prereqs) do
-		local info = moduleRegistry[p]
-		if info and info.name == name then
-			return info.module
-		end
-	end
-	error("Missing: " .. name)
+    for p in pairs(prereqs) do
+        local info = moduleRegistry[p]
+        if info and info.name == name then
+            return info.module
+        end
+    end
+    error("Missing: " .. name)
 end
 
 local TaskManager = getPrerequisite("TaskManager")
@@ -7591,7 +7591,9 @@ RunService.RenderStepped:Connect(function()
 end)
 SimpleUI:createSlider(PlayerPage, "Fog Density", 0.30, 1, 0.40, function(value)
     fogDensity = value
-end, {Increment = 0.01})
+end, {
+    Increment = 0.01
+})
 
 SimpleUI:createSection(PlayerPage, "ESP")
 
@@ -7602,8 +7604,12 @@ SimpleUI:createToggle(PlayerPage, "Players ESP", false, function(enabled)
                 return
             end
 
-            local char = plr.Character or plr.CharacterAdded:Wait()
-            local head = char:WaitForChild("Head", 5)
+            local char = plr.Character
+            if not char then
+                return
+            end
+
+            local head = char:FindFirstChild("Head")
             if not head then
                 return
             end
@@ -7620,13 +7626,19 @@ SimpleUI:createToggle(PlayerPage, "Players ESP", false, function(enabled)
                 return
             end
 
-            task.spawn(function()
+            if plr.Character then
+                attachESP(plr)
+            end
+
+            ESP.Connections["Char_" .. plr.UserId] = plr.CharacterAdded:Connect(function()
                 attachESP(plr)
             end)
 
-            ESP.Connections["Char_" .. plr.UserId] = plr.CharacterAdded:Connect(function()
-                task.wait()
-                attachESP(plr)
+            plr.CharacterRemoving:Connect(function()
+                if ESP.Players[plr] then
+                    ESP.Players[plr]:Destroy()
+                    ESP.Players[plr] = nil
+                end
             end)
         end
 
@@ -8064,7 +8076,8 @@ local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Fi
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Parent = filterPanel
 
-    local fontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Italic)
+    local fontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold,
+        Enum.FontStyle.Italic)
 
     local title = Instance.new("TextLabel")
     title.Name = "CurrentFilter"
@@ -8111,15 +8124,10 @@ local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Fi
         return button
     end
 
-    local FILTER_BUTTONS = {
-        {"Ores", Color3.fromRGB(190, 190, 190)},
-        {"Equipments", Color3.fromRGB(255, 90, 90)},
-        {"Totems/Relics", Color3.fromRGB(120, 220, 120)},
-        {"Geodes", Color3.fromRGB(90, 170, 255)},
-        {"Maps", Color3.fromRGB(200, 160, 255)},
-        {"Others", Color3.fromRGB(200, 120, 255)},
-        {"All Items", Color3.fromRGB(245, 245, 245)}
-    }
+    local FILTER_BUTTONS = {{"Ores", Color3.fromRGB(190, 190, 190)}, {"Equipments", Color3.fromRGB(255, 90, 90)},
+                            {"Totems/Relics", Color3.fromRGB(120, 220, 120)}, {"Geodes", Color3.fromRGB(90, 170, 255)},
+                            {"Maps", Color3.fromRGB(200, 160, 255)}, {"Others", Color3.fromRGB(200, 120, 255)},
+                            {"All Items", Color3.fromRGB(245, 245, 245)}}
 
     local ICON_CATEGORY = {
         ["rbxassetid://71590406800942"] = "Equipments",
@@ -8193,7 +8201,9 @@ local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Fi
     end
 
     local function applyFilter(filter)
-        if isUpdating then return end
+        if isUpdating then
+            return
+        end
         isUpdating = true
 
         local savedScroll = scrollingFrame.CanvasPosition
@@ -8238,8 +8248,12 @@ local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Fi
 
     local debounce = false
     local function onItemsChanged(child)
-        if debounce then return end
-        if not child:IsA("TextButton") then return end
+        if debounce then
+            return
+        end
+        if not child:IsA("TextButton") then
+            return
+        end
         debounce = true
         task.wait(0.05)
         for _, item in ipairs(getAllItems()) do
@@ -8285,7 +8299,6 @@ local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Fi
         table.clear(itemCache)
     end))
 end)
-
 
 SimpleUI:createSlider(OthersPage, "UI Scale", 0.5, 2, 1, function(value)
     local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
