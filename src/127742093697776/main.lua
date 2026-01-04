@@ -49,7 +49,7 @@ local function getPrerequisite(name)
 end
 
 local LoopFramework = getPrerequisite("LoopFramework")
-LoopFramework:start()
+LoopFramework.start()
 
 -- ======================== SIMPLE SCRIPTS ========================
 
