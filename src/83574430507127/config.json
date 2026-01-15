@@ -1,0 +1,13 @@
+{
+  "name": "Just Flip Bro",
+  "version": "0.1.0-alpha",
+  "description": "This game is still in its beta stage, and many features are unstable or incomplete, the features you see here represents the max extent of what's currently possible",
+  "author": "DawnPetal",
+  "last_updated": "2025-10-29",
+  "features": [
+    "Auto Flip"
+  ],
+    "prerequisites": {
+    "LoopFramework": "utils/LoopFramework.lua"
+  }
+}

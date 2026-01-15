@@ -1,0 +1,11 @@
+{
+  "name": "Dig to Earth's Core!",
+  "version": "0.1.0-alpha",
+  "description": "",
+  "author": "DawnPetal",
+  "last_updated": "2025-09-29",
+  "features": [
+    "Auto Farm",
+    "Miscellaneous"
+  ]
+}

@@ -1,0 +1,15 @@
+.DS_Store
+.vscode/
+.idea/
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+*.rej
+coverage/
+dist/
+build/
+.env
+*.luac

@@ -1,0 +1,15 @@
+{
+  "name": "Escape Tsunami For Brainrots",
+  "version": "1.0.1",
+  "description": "A very poorly designed game with no server validation whatsoever",
+  "author": "DawnPetal",
+  "last_updated": "2026-01-11",
+  "features": [
+    "Auto Farm",
+    "Auto Buy",
+    "Auto Claim Brainrots"
+  ],
+    "prerequisites": {
+    "LoopFramework": "utils/LoopFramework.lua"
+  }
+}
