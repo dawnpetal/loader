@@ -25,34 +25,33 @@ SimpleUI.Themes = {
         PrimaryTransparency = 0.05,
         SecondaryTransparency = 0.8
     },
-    Dusk = {
-        PrimaryColor = Color3.fromRGB(16, 17, 20),
-        SecondaryColor = Color3.fromRGB(32, 34, 40),
-        SecondaryColorHover = Color3.fromRGB(44, 46, 54),
-        SecondaryColorActive = Color3.fromRGB(60, 62, 74),
-        SecondaryColorMouse1Down = Color3.fromRGB(26, 28, 32),
+    Secondary = {
+        PrimaryColor = Color3.fromRGB(13, 14, 17),
+        SecondaryColor = Color3.fromRGB(24, 26, 30),
+        SecondaryColorHover = Color3.fromRGB(36, 38, 44),
+        SecondaryColorActive = Color3.fromRGB(54, 57, 64),
+        SecondaryColorMouse1Down = Color3.fromRGB(18, 20, 23),
 
-        TertiaryColor = Color3.fromRGB(40, 42, 50),
-        TertiaryColorHover = Color3.fromRGB(54, 56, 66),
-        TertiaryColorActive = Color3.fromRGB(74, 76, 90),
-        TertiaryColorMouse1Down = Color3.fromRGB(34, 36, 42),
+        TertiaryColor = Color3.fromRGB(30, 32, 38),
+        TertiaryColorHover = Color3.fromRGB(46, 49, 56),
+        TertiaryColorActive = Color3.fromRGB(68, 72, 82),
+        TertiaryColorMouse1Down = Color3.fromRGB(22, 24, 28),
 
-        TextPrimary = Color3.fromRGB(246, 248, 252),
-        TextActive = Color3.fromRGB(228, 231, 238),
-        TextInactive = Color3.fromRGB(186, 190, 200),
-        TextSecondary = Color3.fromRGB(150, 156, 170),
+        TextPrimary = Color3.fromRGB(232, 231, 228),
+        TextActive = Color3.fromRGB(205, 203, 198),
+        TextInactive = Color3.fromRGB(162, 160, 155),
+        TextSecondary = Color3.fromRGB(128, 126, 122),
 
-        AccentColor = Color3.fromRGB(255, 154, 98),
+        AccentColor = Color3.fromRGB(190, 140, 255),
 
         PrimaryFont = Enum.Font.GothamBold,
         PrimaryFontSize = 18,
         SecondaryFont = Enum.Font.GothamMedium,
         SecondaryFontSize = 16,
 
-        PrimaryTransparency = 0.03,
+        PrimaryTransparency = 0.015,
         SecondaryTransparency = 0.60
     }
-
 }
 
 SimpleUI.DefaultElements = {
@@ -962,7 +961,7 @@ end
 
 function SimpleUI:createWindow(options)
     options = options or {}
-    local theme = options.Theme or self.Themes.Dusk
+    local theme = options.Theme or self.Themes.Secondary
     local player = self:getService("Players").LocalPlayer
 
     local gui = self:createElement("ScreenGui", {
