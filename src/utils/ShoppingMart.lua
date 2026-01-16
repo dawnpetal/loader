@@ -126,7 +126,7 @@ local CATEGORY_FOLDERS = {
     Totems = ReplicatedStorage.Items.Totems,
     Potions = ReplicatedStorage.Potions,
     Shovels = ReplicatedStorage.Shovels,
-    Sluices = ReplicatedStorage.Items.Sluices,
+    Sluices = ReplicatedStorage.Items.Sluices
 }
 
 function ItemCatalog.DetermineCategory(item)
@@ -183,7 +183,11 @@ end
 
 function ShoppingMartClass:UpdateScrollCanvas(scrollFrame, layout)
     local contentSize = layout.AbsoluteContentSize
-    scrollFrame.CanvasSize = UDim2.new(0, contentSize.X / self.uiScale, 0, contentSize.Y / self.uiScale)
+    local padding = scrollFrame:FindFirstChildOfClass("UIPadding")
+    local padTop = padding and padding.PaddingTop.Offset or 0
+    local padBottom = padding and padding.PaddingBottom.Offset or 0
+    local buffer = 20
+    scrollFrame.CanvasSize = UDim2.fromOffset(0, contentSize.Y + padTop + padBottom + buffer)
 end
 
 function ShoppingMartClass:AddToCart(itemData)
