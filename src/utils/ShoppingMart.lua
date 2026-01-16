@@ -1,6 +1,6 @@
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -121,20 +121,32 @@ function ItemCatalog.Build()
     return catalog
 end
 
-function ItemCatalog.DetermineCategory(item, stats)
-    if stats:GetAttribute("ShakeSpeed") and not stats:GetAttribute("Duration") then
-        return "Pans"
-    elseif stats:GetAttribute("DigSpeed") and not stats:GetAttribute("Duration") then
-        return "Shovels"
-    elseif stats:GetAttribute("SluiceSpeed") then
-        return "Sluices"
-    elseif item.Name:lower():find("potion") then
-        return "Potions"
-    elseif item.Name:lower():find("totem") then
-        return "Totems"
-    else
+local CATEGORY_FOLDERS = {
+    Pans = ReplicatedStorage.Items.Pans,
+    Totems = ReplicatedStorage.Items.Totems,
+    Potions = ReplicatedStorage.Potions,
+    Shovels = ReplicatedStorage.Shovels,
+    Sluices = ReplicatedStorage.Items.Sluices,
+}
+
+function ItemCatalog.DetermineCategory(item)
+    if not item then
         return "Others"
     end
+
+    local itemNameLower = item.Name:lower()
+
+    for category, folder in pairs(CATEGORY_FOLDERS) do
+        if folder then
+            for _, child in folder:GetChildren() do
+                if child.Name:lower() == itemNameLower then
+                    return category
+                end
+            end
+        end
+    end
+
+    return "Others"
 end
 
 local ShoppingMartClass = {}
@@ -171,7 +183,7 @@ end
 
 function ShoppingMartClass:UpdateScrollCanvas(scrollFrame, layout)
     local contentSize = layout.AbsoluteContentSize
-    scrollFrame.CanvasSize = UDim2.new(0, contentSize.X / self.uiScale, 0, contentSize.Y / self.uiScale)
+    scrollFrame.CanvasSize = UDim2.new(0, contentSize.X / self.uiScale, 0, contentSize.Y + 15 / self.uiScale)
 end
 
 function ShoppingMartClass:AddToCart(itemData)
