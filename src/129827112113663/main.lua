@@ -30,7 +30,7 @@ SimpleUI.Themes = {
         SecondaryColor = Color3.fromRGB(24, 26, 30),
         SecondaryColorHover = Color3.fromRGB(36, 38, 44),
         SecondaryColorActive = Color3.fromRGB(54, 57, 64),
-        SecondaryColorMouse1Down = Color3.fromRGB(18, 20, 23),
+        SecondaryColorMouse1Down = Color3.fromRGB(38, 40, 43),
 
         TertiaryColor = Color3.fromRGB(30, 32, 38),
         TertiaryColorHover = Color3.fromRGB(46, 49, 56),
@@ -50,7 +50,7 @@ SimpleUI.Themes = {
         SecondaryFontSize = 16,
 
         PrimaryTransparency = 0.015,
-        SecondaryTransparency = 0.60
+        SecondaryTransparency = 0.50
     }
 }
 
@@ -633,11 +633,92 @@ SimpleUI.WindowControlStyles = {
 
 function SimpleUI:getService(name)
     if not self.Services[name] then
-        self.Services[name] = (cloneref or function(x)
-            return x
-        end)(game:GetService(name))
+        local service = game:GetService(name)
+        if cloneref then
+            local success, cloned = pcall(cloneref, service)
+            if success then
+                service = cloned
+            end
+        end
+
+        self.Services[name] = service
     end
     return self.Services[name]
+end
+
+function SimpleUI:_getSafeContainer()
+    if gethui then
+        local success, result = pcall(gethui)
+        if success and result then
+            return result
+        end
+    end
+
+    local success, coreGui = pcall(function()
+        return self:getService("CoreGui")
+    end)
+    if success and coreGui then
+        return coreGui
+    end
+
+    return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+end
+
+function SimpleUI:_generateIdentifier(prefix)
+    local chars = "ACEGIKMOQSUWYZbdfhjlnprtvxz!@#$%^&*()_+-=[];',.123456789"
+    local result = prefix or ""
+    for i = 1, 16 do
+        local rand = math.random(1, #chars)
+        result = result .. chars:sub(rand, rand)
+    end
+    return result
+end
+
+function SimpleUI:_lockMetatable(tbl)
+    if not setreadonly or not getrawmetatable then
+        return tbl
+    end
+
+    local mt = getrawmetatable(tbl) or {}
+
+    mt.__metatable = "The metatable is locked"
+
+    local originalIndex = mt.__index
+    mt.__index = function(t, k)
+        if checkcaller and not checkcaller() then
+            return nil
+        end
+
+        if type(originalIndex) == "function" then
+            return originalIndex(t, k)
+        else
+            return originalIndex[k]
+        end
+    end
+
+    setrawmetatable(tbl, mt)
+    if setreadonly then
+        setreadonly(mt, true)
+    end
+
+    return tbl
+end
+
+function SimpleUI:_wrapRemoteCall(remote, ...)
+    if not remote then
+        return
+    end
+
+    local args = {...}
+
+    if newcclosure then
+        local wrapped = newcclosure(function()
+            return remote:FireServer(unpack(args))
+        end)
+        return wrapped()
+    else
+        return remote:FireServer(unpack(args))
+    end
 end
 
 function SimpleUI:isMobile()
@@ -890,7 +971,7 @@ function SimpleUI:createWindowControl(controlType, style, parent, index, totalCo
             if not gui then
                 return
             end
-            local TweenService = game:GetService("TweenService")
+            local TweenService = self:getService("TweenService")
             local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
             for _, obj in ipairs(gui:GetDescendants()) do
                 if obj:IsA("GuiObject") then
@@ -941,7 +1022,7 @@ function SimpleUI:createWindowControl(controlType, style, parent, index, totalCo
             if not inputBlocker then
                 return
             end
-            local TweenService = game:GetService("TweenService")
+            local TweenService = self:getService("TweenService")
             if not mainContainer:GetAttribute("OpenSize") then
                 mainContainer:SetAttribute("OpenSize", mainContainer.Size)
             end
@@ -962,13 +1043,12 @@ end
 function SimpleUI:createWindow(options)
     options = options or {}
     local theme = options.Theme or self.Themes.Secondary
-    local player = self:getService("Players").LocalPlayer
 
     local gui = self:createElement("ScreenGui", {
-        Name = options.Name or "SimpleUI",
+        Name = options.Name or self:_generateIdentifier(),
         ResetOnSpawn = false,
         DisplayOrder = 1
-    }, player:WaitForChild("PlayerGui"))
+    }, self:_getSafeContainer())
 
     local frameData = self:merge(self.DefaultElements.MainFrame, options.MainFrame)
     local frame = self:createElement(frameData.Class, frameData.Properties, gui)
@@ -3179,10 +3259,6 @@ function SimpleUI:createParagraph(page, title, fields, options)
         ZIndex = 4
     }, page)
 
-    local constraint = Instance.new("UISizeConstraint")
-    constraint.MinSize = Vector2.new(0, 50)
-    constraint.Parent = container
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 4)
     corner.Parent = container
@@ -3372,20 +3448,18 @@ end
 
 function SimpleUI:createNotification(options)
     options = options or {}
-    local Players = self:getService("Players")
-    local player = Players.LocalPlayer
-    local playerGui = player:WaitForChild("PlayerGui")
     local containerName = "SimpleUI_NotificationContainer"
     local isMobile = self:isMobile()
+    local parent = self:_getSafeContainer()
 
-    local container = playerGui:FindFirstChild(containerName)
+    local container = parent:FindFirstChild(containerName)
     if not container then
         container = self:createElement("ScreenGui", {
             Name = containerName,
             ResetOnSpawn = false,
             ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
             DisplayOrder = 999
-        }, playerGui)
+        }, parent)
 
         local holderSize = isMobile and UDim2.new(0, 280, 1, 0) or UDim2.new(0, 320, 1, 0)
         local holderPosition = isMobile and UDim2.new(0.5, 0, 0, 10) or UDim2.new(1, -15, 0, 15)
@@ -3803,7 +3877,7 @@ function SimpleUI:createPopup(overlayName, options)
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.IgnoreGuiInset = true
-    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    screenGui.Parent = self:_getSafeContainer()
     local blurFrame = Instance.new("TextButton")
     blurFrame.Name = "BlurBackground"
     blurFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -3816,7 +3890,7 @@ function SimpleUI:createPopup(overlayName, options)
     blurFrame.Parent = screenGui
     local blurEffect = Instance.new("BlurEffect")
     blurEffect.Size = 20
-    blurEffect.Parent = game:GetService("Lighting")
+    blurEffect.Parent = self:getService("Lighting")
     local popup = Instance.new("Frame")
     popup.Name = "Popup"
     popup.Size = width
@@ -3997,7 +4071,6 @@ SimpleUI:createNotification({
 })
 
 local window = SimpleUI:createWindow({
-    Name = "SimpleUI",
     TitleLabel = {
         Properties = {
             Text = "Prospecting!"
