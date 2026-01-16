@@ -26,49 +26,33 @@ SimpleUI.Themes = {
         SecondaryTransparency = 0.8
     },
     Dusk = {
-        PrimaryColor = Color3.fromRGB(22, 23, 26),
-        SecondaryColor = Color3.fromRGB(42, 44, 50),
-        SecondaryColorHover = Color3.fromRGB(58, 60, 68),
-        SecondaryColorActive = Color3.fromRGB(76, 78, 88),
-        SecondaryColorMouse1Down = Color3.fromRGB(34, 36, 40),
-        TertiaryColor = Color3.fromRGB(48, 50, 56),
-        TertiaryColorHover = Color3.fromRGB(64, 66, 74),
-        TertiaryColorActive = Color3.fromRGB(86, 88, 100),
-        TertiaryColorMouse1Down = Color3.fromRGB(40, 42, 46),
-        TextInactive = Color3.fromRGB(185, 188, 196),
-        TextActive = Color3.fromRGB(230, 232, 240),
-        TextPrimary = Color3.fromRGB(245, 247, 252),
-        TextSecondary = Color3.fromRGB(160, 165, 176),
-        AccentColor = Color3.fromRGB(255, 145, 90),
+        PrimaryColor = Color3.fromRGB(16, 17, 20),
+        SecondaryColor = Color3.fromRGB(32, 34, 40),
+        SecondaryColorHover = Color3.fromRGB(44, 46, 54),
+        SecondaryColorActive = Color3.fromRGB(60, 62, 74),
+        SecondaryColorMouse1Down = Color3.fromRGB(26, 28, 32),
+
+        TertiaryColor = Color3.fromRGB(40, 42, 50),
+        TertiaryColorHover = Color3.fromRGB(54, 56, 66),
+        TertiaryColorActive = Color3.fromRGB(74, 76, 90),
+        TertiaryColorMouse1Down = Color3.fromRGB(34, 36, 42),
+
+        TextPrimary = Color3.fromRGB(246, 248, 252),
+        TextActive = Color3.fromRGB(228, 231, 238),
+        TextInactive = Color3.fromRGB(186, 190, 200),
+        TextSecondary = Color3.fromRGB(150, 156, 170),
+
+        AccentColor = Color3.fromRGB(255, 154, 98),
+
         PrimaryFont = Enum.Font.GothamBold,
         PrimaryFontSize = 18,
         SecondaryFont = Enum.Font.GothamMedium,
         SecondaryFontSize = 16,
-        PrimaryTransparency = 0.04,
-        SecondaryTransparency = 0.63
-    },
-    Monokai = {
-        PrimaryColor = Color3.fromRGB(20, 20, 24),
-        SecondaryColor = Color3.fromRGB(45, 47, 49),
-        SecondaryColorHover = Color3.fromRGB(75, 78, 68),
-        SecondaryColorActive = Color3.fromRGB(90, 94, 82),
-        SecondaryColorMouse1Down = Color3.fromRGB(50, 52, 44),
-        TertiaryColor = Color3.fromRGB(50, 53, 53),
-        TertiaryColorHover = Color3.fromRGB(85, 89, 77),
-        TertiaryColorActive = Color3.fromRGB(100, 105, 91),
-        TertiaryColorMouse1Down = Color3.fromRGB(58, 60, 52),
-        TextInactive = Color3.fromRGB(248, 248, 240),
-        TextActive = Color3.fromRGB(255, 255, 255),
-        TextPrimary = Color3.fromRGB(248, 248, 240),
-        TextSecondary = Color3.fromRGB(205, 205, 200),
-        AccentColor = Color3.fromRGB(166, 226, 46),
-        PrimaryFont = Enum.Font.Code,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.Code,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0,
-        SecondaryTransparency = 0.67
+
+        PrimaryTransparency = 0.03,
+        SecondaryTransparency = 0.60
     }
+
 }
 
 SimpleUI.DefaultElements = {
@@ -734,16 +718,12 @@ function SimpleUI:updateScrollingContainer(container)
         return container
     end
 
-    local padding = container:FindFirstChildWhichIsA("UIPadding")
-    local paddingOffset = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset) or 0
     local totalHeight = layout.AbsoluteContentSize.Y
-    local availableHeight = container.AbsoluteSize.Y - paddingOffset
+    local availableHeight = container.AbsoluteSize.Y
     local needsScrolling = totalHeight > availableHeight
     local isScrollFrame = container:IsA("ScrollingFrame")
 
     if needsScrolling and not isScrollFrame then
-        local containerIndex = table.find(parent:GetChildren(), container)
-
         local scroll = self:createElement("ScrollingFrame", {
             Name = container.Name,
             Position = container.Position,
@@ -758,11 +738,11 @@ function SimpleUI:updateScrollingContainer(container)
             Visible = container.Visible,
             ClipsDescendants = true,
             ScrollBarThickness = 0,
-            CanvasSize = UDim2.new(0, 0, 0, totalHeight + paddingOffset),
-            ScrollingDirection = Enum.ScrollingDirection.Y,
             ScrollBarImageColor3 = Color3.fromRGB(200, 200, 200),
-            ScrollBarImageTransparency = 0,
-            AutomaticCanvasSize = Enum.AutomaticSize.None,
+            ScrollBarImageTransparency = 1,
+            ScrollingDirection = Enum.ScrollingDirection.Y,
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
             ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
             ScrollingEnabled = true,
             Active = true
@@ -779,7 +759,6 @@ function SimpleUI:updateScrollingContainer(container)
 
         if gui and self.Windows and self.Windows[gui] then
             local window = self.Windows[gui]
-
             if window.Elements and window.Elements.Pages then
                 for pageName, page in pairs(window.Elements.Pages) do
                     if page == container then
@@ -788,11 +767,9 @@ function SimpleUI:updateScrollingContainer(container)
                     end
                 end
             end
-
             if window.ActivePage == container then
                 window.ActivePage = scroll
             end
-
             if window.Elements.TabsContainer == container then
                 window.Elements.TabsContainer = scroll
             end
@@ -801,16 +778,10 @@ function SimpleUI:updateScrollingContainer(container)
         container:Destroy()
         container = scroll
 
-    elseif needsScrolling and isScrollFrame then
-        local newCanvasSize = UDim2.new(0, 0, 0, totalHeight + paddingOffset)
-        if container.CanvasSize ~= newCanvasSize then
-            container.CanvasSize = newCanvasSize
-        end
-
     elseif not needsScrolling and isScrollFrame then
-        if container.CanvasSize ~= UDim2.new(0, 0, 0, 0) then
-            container.CanvasSize = UDim2.new(0, 0, 0, 0)
-        end
+        container.ScrollBarThickness = 0
+    elseif needsScrolling and isScrollFrame then
+        container.ScrollBarImageTransparency = 1
     end
 
     if layout and not layout:GetAttribute("AutoScrollHooked") then
@@ -991,21 +962,39 @@ end
 
 function SimpleUI:createWindow(options)
     options = options or {}
-    local theme = options.Theme or self.Themes.Monokai
+    local theme = options.Theme or self.Themes.Dusk
     local player = self:getService("Players").LocalPlayer
 
     local gui = self:createElement("ScreenGui", {
         Name = options.Name or "SimpleUI",
-        ResetOnSpawn = false
+        ResetOnSpawn = false,
+        DisplayOrder = 1
     }, player:WaitForChild("PlayerGui"))
 
     local frameData = self:merge(self.DefaultElements.MainFrame, options.MainFrame)
     local frame = self:createElement(frameData.Class, frameData.Properties, gui)
     frame.ClipsDescendants = false
 
+    local uiScale = Instance.new("UIScale")
+    uiScale.Name = "WindowScale"
+    uiScale.Scale = math.clamp(options.defaultScale or 1, 0.5, 2)
+    uiScale.Parent = frame
+
     local topBarData = self:merge(self.DefaultElements.TopBar, options.TopBar)
     local topBarProps = self:applyTheme(topBarData.Properties, topBarData.Theme, theme)
     local topBar = self:createElement(topBarData.Class, topBarProps, frame)
+
+    self:createElement("TextButton", {
+        Name = "InputBlocker",
+        Size = UDim2.new(1, 0, 1, -topBar.Size.Y.Offset),
+        Position = UDim2.new(0, 0, 0, topBar.Size.Y.Offset),
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = frame.ZIndex,
+        Active = true,
+        Selectable = false
+    }, frame)
 
     if frameData.Children then
         for _, child in ipairs(frameData.Children) do
@@ -1171,7 +1160,6 @@ function SimpleUI:createWindow(options)
     local mainContainerData = self:merge(self.DefaultElements.MainContainer, options.MainContainer)
     local mainContainerProps = self:applyTheme(mainContainerData.Properties, mainContainerData.Theme, theme)
     local mainContainer = self:createElement(mainContainerData.Class, mainContainerProps, frame)
-    mainContainer.Active = true
 
     local function createContainerWithPadding(containerData, parent)
         local container = self:createElement(containerData.Class, containerData.Properties, parent)
@@ -1228,6 +1216,23 @@ function SimpleUI:createWindow(options)
             Tabs = {},
             Pages = {}
         },
+        _uiScale = uiScale,
+        getScale = function()
+            return uiScale.Scale
+        end,
+        setScale = function(value, tween)
+            value = math.clamp(tonumber(value) or 1, 0.100, 3)
+
+            if tween then
+                local ts = self:getService("TweenService")
+                local info = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+                ts:Create(uiScale, info, {
+                    Scale = value
+                }):Play()
+            else
+                uiScale.Scale = value
+            end
+        end,
         ActiveTab = nil,
         ActivePage = nil,
         TabUpdates = {},
@@ -1324,8 +1329,6 @@ function SimpleUI:createWindow(options)
                 startPos.Y.Offset + delta.Y)
         end
     end)
-
-    gui.DisplayOrder = 0 
 
     return windowInstance
 end
@@ -1497,6 +1500,130 @@ function SimpleUI:createTab(window, name, options)
     }
 end
 
+function SimpleUI:createComponentContainer(config, theme)
+    local container = self:createElement("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = theme[config.colorTier or "SecondaryColor"],
+        BackgroundTransparency = theme.SecondaryTransparency,
+        BorderSizePixel = 0,
+        ZIndex = 4
+    }, config.parent)
+
+    if config.minHeight then
+        local constraint = Instance.new("UISizeConstraint")
+        constraint.MinSize = Vector2.new(0, config.minHeight)
+        constraint.Parent = container
+    end
+
+    if config.corner then
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, config.corner)
+        corner.Parent = container
+    end
+
+    local padding = config.padding or {}
+    if type(padding) == "number" then
+        padding = {
+            top = padding,
+            bottom = padding,
+            left = padding,
+            right = padding
+        }
+    end
+
+    local uiPadding = Instance.new("UIPadding")
+    uiPadding.PaddingTop = UDim.new(0, padding.top or 8)
+    uiPadding.PaddingBottom = UDim.new(0, padding.bottom or 8)
+    uiPadding.PaddingLeft = UDim.new(0, padding.left or 10)
+    uiPadding.PaddingRight = UDim.new(0, padding.right or 0)
+    uiPadding.Parent = container
+
+    local textZone, interactiveZone, layout
+
+    if config.layout == "textLeft" then
+        textZone = self:createElement("Frame", {
+            Size = UDim2.new(config.textWidth or 0.65, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            ZIndex = 5
+        }, container)
+
+        layout = Instance.new("UIListLayout")
+        layout.FillDirection = Enum.FillDirection.Vertical
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        layout.VerticalAlignment = config.hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Padding = UDim.new(0, 5)
+        layout.Parent = textZone
+
+        interactiveZone = container
+
+    elseif config.layout == "stacked" then
+        local contentFrame = self:createElement("Frame", {
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            BackgroundTransparency = 1,
+            ZIndex = 5
+        }, container)
+
+        layout = Instance.new("UIListLayout")
+        layout.FillDirection = Enum.FillDirection.Vertical
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        layout.VerticalAlignment = Enum.VerticalAlignment.Top
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Padding = UDim.new(0, config.spacing or 4)
+        layout.Parent = contentFrame
+
+        if not config.hasDescription then
+            contentFrame.Position = UDim2.new(0, 0, 0.5, 0)
+            contentFrame.AnchorPoint = Vector2.new(0, 0.5)
+        end
+
+        textZone = contentFrame
+        interactiveZone = contentFrame
+
+    else
+        textZone = container
+        interactiveZone = container
+    end
+
+    return {
+        container = container,
+        textZone = textZone,
+        interactiveZone = interactiveZone,
+        layout = layout
+    }
+end
+
+function SimpleUI:createLabel(parent, text, theme, config)
+    config = config or {}
+    return self:createElement("TextLabel", {
+        Size = UDim2.new(1, config.widthOffset or 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text or "",
+        TextColor3 = theme[config.colorTier or "TextPrimary"],
+        TextSize = config.size or 14,
+        Font = theme[config.font or "SecondaryFont"],
+        TextXAlignment = config.align or Enum.TextXAlignment.Left,
+        TextWrapped = true,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = config.order or 1,
+        ZIndex = 5
+    }, parent)
+end
+
+function SimpleUI:createDescription(parent, text, theme, order)
+    if not text or text == "" then
+        return nil
+    end
+    return self:createLabel(parent, text, theme, {
+        colorTier = "TextSecondary",
+        size = 14,
+        order = order or 2
+    })
+end
+
 function SimpleUI:createSection(page, text, options)
     if not page then
         return
@@ -1550,82 +1677,72 @@ function SimpleUI:createButton(page, text, callback, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
-    local data = self:merge(self.DefaultElements.Button, options)
     local mobile = self:isMobile()
-    local props = self:applyTheme(data.Properties, data.Theme, theme)
-    props.Text, props.Name = "", "ButtonContainer"
-    local button = self:createElement(data.Class, props, page)
-    if data.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = data.Corner.CornerRadius
-        }, button)
-    end
-    local descriptionText = options.Description or options.description
-    local hasDescription = descriptionText and descriptionText ~= ""
-    local container = self:createElement("Frame", {
-        Size = UDim2.new(1, -40, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        AnchorPoint = Vector2.new(0, 0),
+
+    local hasDescription = options.Description and options.Description ~= ""
+
+    local zones = self:createComponentContainer({
+        parent = page,
+        layout = "stacked",
+        minHeight = 35,
+        padding = hasDescription and {
+            top = 10,
+            bottom = 10,
+            left = 10,
+            right = 0
+        } or {
+            top = 0,
+            bottom = 0,
+            left = 10,
+            right = 0
+        },
+        spacing = hasDescription and 2 or 0,
+        hasDescription = hasDescription,
+        corner = 4,
+        colorTier = "SecondaryColor"
+    }, theme)
+
+    local title = self:createLabel(zones.textZone, text, theme, {
+        colorTier = "TextPrimary",
+        size = 15,
+        order = 1,
+        widthOffset = -30
+    })
+
+    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+
+    local arrow = self:createElement("ImageLabel", {
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
         BackgroundTransparency = 1,
-        ClipsDescendants = false
-    }, button)
-    if hasDescription then
-        self:createElement("UIPadding", {
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8)
-        }, container)
-    end
-    local layout = self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    }, container)
-    local titleProps = self:applyTheme(data.Title.Properties, data.Title.Theme, theme)
-    titleProps.Text = text or titleProps.Text
-    titleProps.Size = UDim2.new(1, 0, 0, 0)
-    titleProps.Position = UDim2.new(0, 0, 0, 0)
-    titleProps.AutomaticSize = Enum.AutomaticSize.Y
-    titleProps.TextWrapped = true
-    titleProps.LayoutOrder = 1
-    titleProps.ZIndex = 5
-    local title = self:createElement("TextLabel", titleProps, container)
-    local description
-    if hasDescription then
-        description = self:createElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = descriptionText,
-            TextColor3 = theme.TextSecondary,
-            TextSize = 14,
-            Font = titleProps.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            LayoutOrder = 2,
-            ZIndex = 5
-        }, container)
-    end
-    local function updateButtonSize()
-        button.Size = UDim2.new(button.Size.X.Scale, button.Size.X.Offset, 0,
-            layout.AbsoluteContentSize.Y + (hasDescription and 16 or 24))
-    end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateButtonSize)
-    task.defer(updateButtonSize)
-    local arrowProps = self:applyTheme(data.Arrow.Properties, data.Arrow.Theme, theme)
-    local arrow = self:createElement("ImageLabel", arrowProps, button)
+        Image = "rbxassetid://113826256227095",
+        ImageRectOffset = Vector2.new(448, 192),
+        ImageRectSize = Vector2.new(64, 64),
+        ImageColor3 = theme.TextPrimary,
+        ZIndex = 5
+    }, zones.container)
+
     local state, held = "Base", false
+
     local function setColor(s)
-        local currentTheme = theme
         if s == "Base" then
-            button.BackgroundColor3 = currentTheme.SecondaryColor
+            zones.container.BackgroundColor3 = theme.SecondaryColor
         elseif s == "Hover" then
-            button.BackgroundColor3 = currentTheme.SecondaryColorHover
+            zones.container.BackgroundColor3 = theme.SecondaryColorHover
         elseif s == "Button1Down" then
-            button.BackgroundColor3 = currentTheme.SecondaryColorMouse1Down
+            zones.container.BackgroundColor3 = theme.SecondaryColorMouse1Down
         end
     end
+
+    local button = self:createElement("TextButton", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 6
+    }, zones.container)
+
     if not mobile then
         button.MouseEnter:Connect(function()
             if not held then
@@ -1668,48 +1785,69 @@ function SimpleUI:createButton(page, text, callback, options)
             end
         end)
     end
+
     setColor("Base")
+
     local api = {}
+
     function api:setTitle(t)
         title.Text = t
     end
+
     function api:setDescription(t)
-        if not description and t then
-            description = self:createElement("TextLabel", {
-                Size = UDim2.new(1, 0, 0, 0),
-                BackgroundTransparency = 1,
-                Text = t,
-                TextColor3 = theme.TextSecondary,
-                TextSize = 14,
-                Font = titleProps.Font,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                TextWrapped = true,
-                AutomaticSize = Enum.AutomaticSize.Y,
-                LayoutOrder = 2,
-                ZIndex = 5
-            }, container)
-        elseif description then
-            description.Text = t or ""
-            description.Visible = (t ~= nil and t ~= "")
+        local hadDescription = description ~= nil and description.Visible
+        local hasDescription = t and t ~= ""
+
+        if description and t then
+            description.Text = t
+            description.Visible = true
+        elseif description and not t then
+            description.Visible = false
+        elseif not description and t then
+            description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+        end
+
+        if hadDescription ~= hasDescription then
+            local padding = zones.container:FindFirstChildOfClass("UIPadding")
+            if padding then
+                if hasDescription then
+                    padding.PaddingTop = UDim.new(0, 10)
+                    padding.PaddingBottom = UDim.new(0, 10)
+                    zones.layout.Padding = UDim.new(0, 2)
+                    zones.textZone.Position = UDim2.new(0, 0, 0, 0)
+                    zones.textZone.AnchorPoint = Vector2.new(0, 0)
+                else
+                    padding.PaddingTop = UDim.new(0, 0)
+                    padding.PaddingBottom = UDim.new(0, 0)
+                    zones.layout.Padding = UDim.new(0, 0)
+                    zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
+                    zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
+                end
+            end
         end
     end
+
     function api:setCallback(cb)
         callback = cb
     end
+
     function api:setVisible(v)
-        button.Visible = v
+        zones.container.Visible = v
     end
+
     function api:getElements()
         return {
-            Button = button,
+            Container = zones.container,
             Title = title,
             Description = description,
             Arrow = arrow
         }
     end
+
     function api:getState()
         return state
     end
+
     return api
 end
 
@@ -1719,107 +1857,76 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
-    local toggleData = self:merge(self.DefaultElements.Toggle, options)
-    local containerProps = self:applyTheme(toggleData.Properties, toggleData.Theme, theme)
-    containerProps.AutomaticSize = Enum.AutomaticSize.Y
-    local container = self:createElement(toggleData.Class, containerProps, page)
-    if toggleData.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = toggleData.Corner.CornerRadius
-        }, container)
-    end
-    local descriptionText = options.Description or options.description
-    local hasDescription = descriptionText and descriptionText ~= ""
-    local textContainer = self:createElement("Frame", {
-        Size = UDim2.new(1, -80, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        AnchorPoint = Vector2.new(0, 0),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false,
-        ZIndex = 5
-    }, container)
-    if hasDescription then
-        self:createElement("UIPadding", {
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8)
-        }, textContainer)
-    end
-    local layout = self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    }, textContainer)
-    local labelProps = self:applyTheme({
-        Size = UDim2.new(1, 0, 0, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextSize = toggleData.Label.TextSize,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        LayoutOrder = 1,
-        ZIndex = 5
-    }, toggleData.Label.Theme, theme)
-    local label = self:createElement("TextLabel", labelProps, textContainer)
-    local description
-    if hasDescription then
-        description = self:createElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = descriptionText,
-            TextColor3 = theme.TextSecondary,
-            TextSize = 14,
-            Font = labelProps.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            LayoutOrder = 2,
-            ZIndex = 5
-        }, textContainer)
-    end
-    local function updateContainerSize()
-        container.Size = UDim2.new(container.Size.X.Scale, container.Size.X.Offset, 0,
-            layout.AbsoluteContentSize.Y + (hasDescription and 16 or 24))
-    end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateContainerSize)
-    task.defer(updateContainerSize)
-    local switchProps = self:applyTheme(toggleData.Switch, toggleData.Switch.Theme, theme)
+    local hasDescription = options.Description and options.Description ~= ""
+
+    local zones = self:createComponentContainer({
+        parent = page,
+        layout = "textLeft",
+        textWidth = 0.7,
+        minHeight = 35,
+        padding = hasDescription and {
+            top = 10,
+            bottom = 10,
+            left = 10,
+            right = 0
+        } or {
+            top = 0,
+            bottom = 0,
+            left = 10,
+            right = 0
+        },
+        spacing = hasDescription and 2 or 0,
+        hasDescription = hasDescription,
+        corner = 4,
+        colorTier = "SecondaryColor"
+    }, theme)
+
+    local label = self:createLabel(zones.textZone, text, theme, {
+        colorTier = "TextPrimary",
+        size = 14,
+        order = 1
+    })
+
+    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+
     local switch = self:createElement("TextButton", {
-        Size = switchProps.Size,
-        Position = switchProps.Position,
-        AnchorPoint = switchProps.AnchorPoint,
-        BackgroundColor3 = switchProps.BackgroundColor3,
-        BorderSizePixel = switchProps.BorderSizePixel,
+        Size = UDim2.new(0, 40, 0, 20),
+        Position = UDim2.new(1, -50, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundColor3 = theme.SecondaryColorMouse1Down,
+        BorderSizePixel = 0,
         Text = "",
         AutoButtonColor = false,
         ZIndex = 5
-    }, container)
+    }, zones.container)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, switch)
-    local indicatorProps = self:applyTheme(toggleData.Indicator, toggleData.Indicator.Theme, theme)
+
     local indicator = self:createElement("Frame", {
-        Size = indicatorProps.Size,
-        Position = indicatorProps.Position,
-        AnchorPoint = indicatorProps.AnchorPoint,
-        BackgroundColor3 = indicatorProps.BackgroundColor3,
-        BorderSizePixel = indicatorProps.BorderSizePixel,
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0, 2, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundColor3 = theme.TextInactive,
+        BorderSizePixel = 0,
         ZIndex = 6
     }, switch)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, indicator)
+
     local state = defaultValue or false
     local lastToggleTime = 0
     local TOGGLE_COOLDOWN = 0.450
     local tweenService = self:getService("TweenService")
+
     local function updateToggle(animate)
         local posGoal = state and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
         local colorGoal = state and theme.AccentColor or theme.SecondaryColorMouse1Down
         local indicatorColorGoal = state and theme.TextActive or theme.TextInactive
+
         if animate then
             tweenService:Create(indicator, TweenInfo.new(0.2), {
                 Position = posGoal
@@ -1836,10 +1943,13 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
             indicator.BackgroundColor3 = indicatorColorGoal
         end
     end
+
     updateToggle(false)
+
     if state and callback then
         callback(state)
     end
+
     switch.Activated:Connect(function()
         local now = tick()
         if now - lastToggleTime < TOGGLE_COOLDOWN then
@@ -1854,7 +1964,7 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
     end)
 
     return {
-        container = container,
+        container = zones.container,
         getState = function()
             return state
         end,
@@ -1863,23 +1973,35 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
             updateToggle(true)
         end,
         setDescription = function(t)
-            if not description and t then
-                description = self:createElement("TextLabel", {
-                    Size = UDim2.new(1, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    Text = t,
-                    TextColor3 = theme.TextSecondary,
-                    TextSize = 14,
-                    Font = labelProps.Font,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextWrapped = true,
-                    AutomaticSize = Enum.AutomaticSize.Y,
-                    LayoutOrder = 2,
-                    ZIndex = 5
-                }, textContainer)
-            elseif description then
-                description.Text = t or ""
-                description.Visible = (t ~= nil and t ~= "")
+            local hadDescription = description ~= nil and description.Visible
+            local hasDescription = t and t ~= ""
+
+            if description and t then
+                description.Text = t
+                description.Visible = true
+            elseif description and not t then
+                description.Visible = false
+            elseif not description and t then
+                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+            end
+
+            if hadDescription ~= hasDescription then
+                local padding = zones.container:FindFirstChildOfClass("UIPadding")
+                if padding then
+                    if hasDescription then
+                        padding.PaddingTop = UDim.new(0, 10)
+                        padding.PaddingBottom = UDim.new(0, 10)
+                        zones.layout.Padding = UDim.new(0, 2)
+                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
+                    else
+                        padding.PaddingTop = UDim.new(0, 0)
+                        padding.PaddingBottom = UDim.new(0, 0)
+                        zones.layout.Padding = UDim.new(0, 0)
+                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
+                    end
+                end
             end
         end
     }
@@ -1891,104 +2013,69 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
     end
     dropdownOptions = dropdownOptions or {}
     local theme = self:getTheme(page)
-    local data = self:merge(self.DefaultElements.Dropdown, dropdownOptions)
     local mobile = self:isMobile()
     local multiSelect = dropdownOptions.MultiSelect or false
-    local containerProps = self:applyTheme(data.Properties, data.Theme, theme)
-    containerProps.AutomaticSize = Enum.AutomaticSize.Y
-    local container = self:createElement(data.Class, containerProps, page)
-    if data.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = data.Corner.CornerRadius
-        }, container)
-    end
-    local descriptionText = dropdownOptions.Description or dropdownOptions.description
-    local hasDescription = descriptionText and descriptionText ~= ""
-    local textContainer = self:createElement("Frame", {
-        Size = UDim2.new(1, -190, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        AnchorPoint = Vector2.new(0, 0),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false,
-        ZIndex = 5
-    }, container)
-    if hasDescription then
-        self:createElement("UIPadding", {
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8)
-        }, textContainer)
-    end
-    local layout = self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    }, textContainer)
-    local labelProps = self:applyTheme({
-        Size = UDim2.new(1, 0, 0, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextSize = data.Label.TextSize,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        LayoutOrder = 1,
-        ZIndex = 5
-    }, data.Label.Theme, theme)
-    local label = self:createElement("TextLabel", labelProps, textContainer)
-    local description
-    if hasDescription then
-        description = self:createElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = descriptionText,
-            TextColor3 = theme.TextSecondary,
-            TextSize = 14,
-            Font = labelProps.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            LayoutOrder = 2,
-            ZIndex = 5
-        }, textContainer)
-    end
-    local function updateContainerSize()
-        container.Size = UDim2.new(container.Size.X.Scale, container.Size.X.Offset, 0,
-            layout.AbsoluteContentSize.Y + (hasDescription and 16 or 24))
-    end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateContainerSize)
-    task.defer(updateContainerSize)
-    local displayProps = self:applyTheme(data.Display, data.Display.Theme, theme)
+    local changedEvent = Instance.new("BindableEvent")
+    local hasDescription = dropdownOptions.Description and dropdownOptions.Description ~= ""
+
+    local zones = self:createComponentContainer({
+        parent = page,
+        layout = "textLeft",
+        textWidth = 0.5,
+        minHeight = 35,
+        padding = hasDescription and {
+            top = 10,
+            bottom = 10,
+            left = 10,
+            right = 0
+        } or {
+            top = 0,
+            bottom = 0,
+            left = 10,
+            right = 0
+        },
+        spacing = hasDescription and 2 or 0,
+        hasDescription = hasDescription,
+        corner = 4,
+        colorTier = "SecondaryColor"
+    }, theme)
+
+    local label = self:createLabel(zones.textZone, text, theme, {
+        colorTier = "TextPrimary",
+        size = 14,
+        order = 1
+    })
+
+    local description = self:createDescription(zones.textZone, dropdownOptions.Description, theme, 2)
+
     local display = self:createElement("TextButton", {
-        Size = displayProps.Size,
-        Position = displayProps.Position,
-        AnchorPoint = displayProps.AnchorPoint,
-        BackgroundColor3 = displayProps.BackgroundColor3,
+        Size = UDim2.new(0, 160, 0, 30),
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = theme.TertiaryColor,
         BorderSizePixel = 0,
         Text = "",
-        TextColor3 = displayProps.TextColor3,
-        TextSize = displayProps.TextSize,
-        Font = displayProps.Font,
         AutoButtonColor = false,
         ZIndex = 5
-    }, container)
+    }, zones.container)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(0, 4)
     }, display)
+
     local displayLabel = self:createElement("TextLabel", {
         Size = UDim2.new(1, -28, 1, 0),
         Position = UDim2.new(0, 8, 0, 0),
         BackgroundTransparency = 1,
         Text = "",
-        TextColor3 = displayProps.TextColor3,
-        TextSize = displayProps.TextSize,
-        Font = displayProps.Font,
+        TextColor3 = theme.TextPrimary,
+        TextSize = 13,
+        Font = theme.SecondaryFont,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         ZIndex = 6
     }, display)
+
     local arrow = self:createElement("ImageLabel", {
         Size = UDim2.new(0, 12, 0, 12),
         Position = UDim2.new(1, -8, 0.5, 0),
@@ -1998,8 +2085,10 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         ImageColor3 = theme.TextPrimary,
         ZIndex = 6
     }, display)
+
     local displayState = "Base"
     local isOpen = false
+
     local function updateDisplayColor()
         if displayState == "Base" then
             display.BackgroundColor3 = theme.TertiaryColor
@@ -2011,6 +2100,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             display.BackgroundColor3 = theme.TertiaryColorMouse1Down
         end
     end
+
     if not mobile then
         display.MouseEnter:Connect(function()
             if not isOpen then
@@ -2031,6 +2121,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             updateDisplayColor()
         end)
     end
+
     local gui = page
     while gui do
         if gui:IsA("ScreenGui") then
@@ -2038,19 +2129,21 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         end
         gui = gui.Parent
     end
-    local containerTheme = self:applyTheme({}, data.Container.Theme, theme)
+
     local listContainer = self:createElement("Frame", {
-        Size = UDim2.new(0, displayProps.Size.X.Offset, 0, 0),
-        BackgroundColor3 = containerTheme.BackgroundColor3,
-        BackgroundTransparency = containerTheme.BackgroundTransparency,
+        Size = UDim2.new(0, 160, 0, 0),
+        BackgroundColor3 = theme.TertiaryColor,
+        BackgroundTransparency = theme.PrimaryTransparency,
         BorderSizePixel = 0,
         Visible = false,
         ZIndex = 250,
         ClipsDescendants = true
     }, gui)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(0, 4)
     }, listContainer)
+
     local searchBox = self:createElement("TextBox", {
         Size = UDim2.new(1, -8, 0, 28),
         Position = UDim2.new(0, 4, 0, 4),
@@ -2067,24 +2160,28 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         Visible = false,
         ZIndex = 251
     }, listContainer)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(0, 4)
     }, searchBox)
+
     self:createElement("UIPadding", {
         PaddingLeft = UDim.new(0, 8),
         PaddingRight = UDim.new(0, 8)
     }, searchBox)
+
     local scrollList = self:createElement("ScrollingFrame", {
         Size = UDim2.new(1, 0, 1, -36),
         Position = UDim2.new(0, 0, 0, 36),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ScrollBarThickness = 4,
+        ScrollBarThickness = 0,
         ScrollBarImageColor3 = theme.TextSecondary,
         CanvasSize = UDim2.new(0, 0, 0, 0),
         ZIndex = 251,
         AutomaticCanvasSize = Enum.AutomaticSize.Y
     }, listContainer)
+
     local listLayout = self:createElement("UIListLayout", {
         FillDirection = Enum.FillDirection.Vertical,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -2092,12 +2189,14 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 2)
     }, scrollList)
+
     self:createElement("UIPadding", {
         PaddingTop = UDim.new(0, 4),
         PaddingBottom = UDim.new(0, 4),
         PaddingLeft = UDim.new(0, 4),
         PaddingRight = UDim.new(0, 4)
     }, scrollList)
+
     local normalizedOptions = {}
     local optionDataMap = {}
     for i, opt in ipairs(options) do
@@ -2110,6 +2209,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             optionDataMap[tostring(opt)] = opt
         end
     end
+
     local selectedValues = {}
     if multiSelect then
         if type(defaultValue) == "table" then
@@ -2128,6 +2228,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             selectedValues = nil
         end
     end
+
     local isToggling = false
     local inputBlocker = nil
     local targetHeight = 0
@@ -2135,6 +2236,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
     local userInputService = self:getService("UserInputService")
     local tweenService = self:getService("TweenService")
     local inputConnection
+
     local function closeDropdown()
         if inputBlocker then
             inputBlocker:Destroy()
@@ -2145,7 +2247,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         end
         isOpen = false
         tweenService:Create(listContainer, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, displayProps.Size.X.Offset, 0, 0)
+            Size = UDim2.new(0, 160, 0, 0)
         }):Play()
         task.wait(0.15)
         listContainer.Visible = false
@@ -2156,6 +2258,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             inputConnection = nil
         end
     end
+
     local function updateDisplay()
         if multiSelect then
             local selected = {}
@@ -2169,6 +2272,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             displayLabel.Text = selectedValues or "Select"
         end
     end
+
     local function filterOptions(query)
         query = query:lower()
         for _, child in ipairs(scrollList:GetChildren()) do
@@ -2184,6 +2288,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             end
         end
     end
+
     local function updateListPosition()
         local displayPos = display.AbsolutePosition
         local displaySize = display.AbsoluteSize
@@ -2206,35 +2311,39 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         end
         listContainer.Position = UDim2.new(0, displayPos.X, 0, yPos)
     end
+
     local function createOption(optionText, index)
-        local optionProps = self:applyTheme(data.Option, data.Option.Theme, theme)
         local optionContainer = self:createElement("Frame", {
-            Size = UDim2.new(1, -8, 0, optionProps.Size.Y.Offset),
+            Size = UDim2.new(1, -8, 0, 28),
             BackgroundTransparency = 1,
             ZIndex = 252,
             LayoutOrder = index
         }, scrollList)
+
         local option = self:createElement("TextButton", {
             Size = UDim2.new(1, 0, 1, 0),
             Position = UDim2.new(0, 0, 0, 0),
-            BackgroundColor3 = optionProps.BackgroundColor3,
+            BackgroundColor3 = theme.TertiaryColor,
             BorderSizePixel = 0,
             Text = optionText,
-            TextColor3 = optionProps.TextColor3,
-            TextSize = optionProps.TextSize,
-            Font = optionProps.Font,
+            TextColor3 = theme.TextPrimary,
+            TextSize = 13,
+            Font = theme.SecondaryFont,
             TextTruncate = Enum.TextTruncate.SplitWord,
             TextXAlignment = Enum.TextXAlignment.Left,
             AutoButtonColor = false,
             ZIndex = 253
         }, optionContainer)
+
         self:createElement("UICorner", {
             CornerRadius = UDim.new(0, 3)
         }, option)
+
         self:createElement("UIPadding", {
             PaddingLeft = UDim.new(0, 14),
             PaddingRight = UDim.new(0, 8)
         }, option)
+
         local indicator = self:createElement("Frame", {
             Size = UDim2.new(0, 4, 0.5, 0),
             Position = UDim2.new(0, 2, 0.5, 0),
@@ -2244,9 +2353,11 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             Visible = false,
             ZIndex = 254
         }, optionContainer)
+
         self:createElement("UICorner", {
             CornerRadius = UDim.new(1, 0)
         }, indicator)
+
         if multiSelect then
             local function updateIndicator()
                 indicator.Visible = selectedValues[optionText] or false
@@ -2255,15 +2366,16 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
                 selectedValues[optionText] = not selectedValues[optionText]
                 updateIndicator()
                 updateDisplay()
-                if callback then
-                    local selected = {}
-                    for v, enabled in pairs(selectedValues) do
-                        if enabled then
-                            table.insert(selected, optionDataMap[v])
-                        end
+                local selected = {}
+                for v, enabled in pairs(selectedValues) do
+                    if enabled then
+                        table.insert(selected, optionDataMap[v])
                     end
+                end
+                if callback then
                     callback(selected)
                 end
+                changedEvent:Fire(selected)
             end)
             updateIndicator()
         else
@@ -2284,8 +2396,10 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
                 if callback then
                     callback(optionDataMap[optionText])
                 end
+                changedEvent:Fire(optionDataMap[optionText])
             end)
         end
+
         if not mobile then
             option.MouseEnter:Connect(function()
                 option.BackgroundColor3 = theme.TertiaryColorHover
@@ -2301,14 +2415,18 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             end)
         end
     end
+
     for i, option in ipairs(normalizedOptions) do
         createOption(option, i)
     end
+
     searchBox:GetPropertyChangedSignal("Text"):Connect(function()
         filterOptions(searchBox.Text)
     end)
+
     updateDisplay()
     updateDisplayColor()
+
     display.Activated:Connect(function()
         if isToggling then
             return
@@ -2335,10 +2453,10 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             displayState = "Active"
             updateDisplayColor()
             updateListPosition()
-            listContainer.Size = UDim2.new(0, displayProps.Size.X.Offset, 0, 0)
+            listContainer.Size = UDim2.new(0, 160, 0, 0)
             listContainer.Visible = true
             tweenService:Create(listContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, displayProps.Size.X.Offset, 0, targetHeight)
+                Size = UDim2.new(0, 160, 0, targetHeight)
             }):Play()
             task.wait()
             inputConnection = userInputService.InputBegan:Connect(function(input)
@@ -2364,8 +2482,9 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         task.wait(0.1)
         isToggling = false
     end)
+
     return {
-        container = container,
+        container = zones.container,
         getValue = function()
             if multiSelect then
                 local selected = {}
@@ -2413,6 +2532,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
                 end
             end
             updateDisplay()
+            changedEvent:Fire(val)
             if callback then
                 if multiSelect then
                     local selected = {}
@@ -2465,26 +2585,39 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             updateDisplay()
         end,
         setDescription = function(t)
-            if not description and t then
-                description = self:createElement("TextLabel", {
-                    Size = UDim2.new(1, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    Text = t,
-                    TextColor3 = theme.TextSecondary,
-                    TextSize = 14,
-                    Font = labelProps.Font,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextWrapped = true,
-                    AutomaticSize = Enum.AutomaticSize.Y,
-                    LayoutOrder = 2,
-                    ZIndex = 5
-                }, textContainer)
-            elseif description then
-                description.Text = t or ""
-                description.Visible = (t ~= nil and t ~= "")
+            local hadDescription = description ~= nil and description.Visible
+            local hasDescription = t and t ~= ""
+
+            if description and t then
+                description.Text = t
+                description.Visible = true
+            elseif description and not t then
+                description.Visible = false
+            elseif not description and t then
+                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+            end
+
+            if hadDescription ~= hasDescription then
+                local padding = zones.container:FindFirstChildOfClass("UIPadding")
+                if padding then
+                    if hasDescription then
+                        padding.PaddingTop = UDim.new(0, 10)
+                        padding.PaddingBottom = UDim.new(0, 10)
+                        zones.layout.Padding = UDim.new(0, 2)
+                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
+                    else
+                        padding.PaddingTop = UDim.new(0, 0)
+                        padding.PaddingBottom = UDim.new(0, 0)
+                        zones.layout.Padding = UDim.new(0, 0)
+                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
+                    end
+                end
             end
         end,
-        close = closeDropdown
+        close = closeDropdown,
+        Changed = changedEvent.Event
     }
 end
 
@@ -2494,125 +2627,109 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
     end
     options = options or {}
     local theme = self:getTheme(page)
-    local data = self:merge(self.DefaultElements.Slider, options)
     local increment = options.Increment or 1
-    local containerProps = self:applyTheme(data.Properties, data.Theme, theme)
-    containerProps.AutomaticSize = Enum.AutomaticSize.Y
-    local container = self:createElement(data.Class, containerProps, page)
-    if data.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = data.Corner.CornerRadius
-        }, container)
-    end
-    local descriptionText = options.Description or options.description
-    local hasDescription = descriptionText and descriptionText ~= ""
-    local textContainer = self:createElement("Frame", {
-        Size = UDim2.new(1, -20, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false,
-        ZIndex = 5
-    }, container)
-    if hasDescription then
-        self:createElement("UIPadding", {
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8)
-        }, textContainer)
-    end
-    local layout = self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    }, textContainer)
+    local hasDescription = options.Description and options.Description ~= ""
+
+    local zones = self:createComponentContainer({
+        parent = page,
+        layout = "stacked",
+        minHeight = 50,
+        padding = hasDescription and {
+            top = 10,
+            bottom = 10,
+            left = 10,
+            right = 10
+        } or {
+            top = 8,
+            bottom = 8,
+            left = 10,
+            right = 10
+        },
+        spacing = hasDescription and 4 or 2,
+        hasDescription = hasDescription,
+        corner = 4,
+        colorTier = "SecondaryColor"
+    }, theme)
+
     local labelContainer = self:createElement("Frame", {
         Size = UDim2.new(1, 0, 0, 20),
         BackgroundTransparency = 1,
         LayoutOrder = 1,
         ZIndex = 5
-    }, textContainer)
-    local labelProps = self:applyTheme({
-        Size = UDim2.new(1, -60, 1, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextSize = data.Label.TextSize,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        ZIndex = 5
-    }, data.Label.Theme, theme)
-    local label = self:createElement("TextLabel", labelProps, labelContainer)
-    local valueProps = self:applyTheme({
+    }, zones.textZone)
+
+    local label = self:createLabel(labelContainer, text, theme, {
+        colorTier = "TextPrimary",
+        size = 14,
+        widthOffset = -60
+    })
+
+    local valueLabel = self:createElement("TextLabel", {
         Size = UDim2.new(0, 50, 1, 0),
         Position = UDim2.new(1, 0, 0, 0),
         AnchorPoint = Vector2.new(1, 0),
         BackgroundTransparency = 1,
         Text = tostring(defaultValue or min),
-        TextSize = data.Value.TextSize,
+        TextColor3 = theme.TextSecondary,
+        TextSize = 13,
+        Font = theme.SecondaryFont,
         TextXAlignment = Enum.TextXAlignment.Right,
         ZIndex = 5
-    }, data.Value.Theme, theme)
-    local valueLabel = self:createElement("TextLabel", valueProps, labelContainer)
-    local description
-    if hasDescription then
-        description = self:createElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = descriptionText,
-            TextColor3 = theme.TextSecondary,
-            TextSize = 14,
-            Font = labelProps.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            LayoutOrder = 2,
-            ZIndex = 5
-        }, textContainer)
-    end
-    local function updateContainerSize()
-        container.Size =
-            UDim2.new(container.Size.X.Scale, container.Size.X.Offset, 0, layout.AbsoluteContentSize.Y + 38)
-    end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateContainerSize)
-    task.defer(updateContainerSize)
-    local trackProps = self:applyTheme(data.Track, data.Track.Theme, theme)
+    }, labelContainer)
+
+    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+
+    local trackContainer = self:createElement("Frame", {
+        Size = UDim2.new(1, 0, 0, 24),
+        BackgroundTransparency = 1,
+        LayoutOrder = 3,
+        ZIndex = 5
+    }, zones.textZone)
+
     local track = self:createElement("Frame", {
-        Size = UDim2.new(1, -20, 0, 4),
-        Position = UDim2.new(0, 10, 1, -12),
-        BackgroundColor3 = trackProps.BackgroundColor3,
+        Size = UDim2.new(1, 0, 0, 4),
+        Position = UDim2.new(0, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundColor3 = theme.TertiaryColorMouse1Down,
         BorderSizePixel = 0,
         ZIndex = 5
-    }, container)
+    }, trackContainer)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, track)
-    local fillProps = self:applyTheme(data.Fill, data.Fill.Theme, theme)
+
     local fill = self:createElement("Frame", {
         Size = UDim2.new(0, 0, 1, 0),
-        BackgroundColor3 = fillProps.BackgroundColor3,
+        BackgroundColor3 = theme.AccentColor,
         BorderSizePixel = 0,
         ZIndex = 6
     }, track)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, fill)
-    local thumbProps = self:applyTheme(data.Thumb, data.Thumb.Theme, theme)
+
     local thumb = self:createElement("Frame", {
-        Size = thumbProps.Size,
+        Size = UDim2.new(0, 14, 0, 14),
         Position = UDim2.new(0, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = thumbProps.BackgroundColor3,
+        BackgroundColor3 = theme.TextActive,
         BorderSizePixel = 0,
         ZIndex = 7
     }, track)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, thumb)
+
     local dragging = false
     local value = defaultValue or min
+
     local function round(num)
         return math.floor(num / increment + 0.5) * increment
     end
+
     local function updateSlider(val)
         value = math.clamp(round(val), min, max)
         local percent = (value - min) / (max - min)
@@ -2623,6 +2740,7 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
             callback(value)
         end
     end
+
     local function onInput(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
@@ -2630,8 +2748,10 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
             updateSlider(min + (max - min) * percent)
         end
     end
+
     track.InputBegan:Connect(onInput)
     thumb.InputBegan:Connect(onInput)
+
     local uis = self:getService("UserInputService")
     uis.InputChanged:Connect(function(input)
         if dragging and
@@ -2640,14 +2760,17 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
             updateSlider(min + (max - min) * percent)
         end
     end)
+
     uis.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
+
     updateSlider(value)
+
     return {
-        container = container,
+        container = zones.container,
         getValue = function()
             return value
         end,
@@ -2663,23 +2786,31 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
             updateSlider(value)
         end,
         setDescription = function(t)
-            if not description and t then
-                description = self:createElement("TextLabel", {
-                    Size = UDim2.new(1, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    Text = t,
-                    TextColor3 = theme.TextSecondary,
-                    TextSize = 14,
-                    Font = labelProps.Font,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextWrapped = true,
-                    AutomaticSize = Enum.AutomaticSize.Y,
-                    LayoutOrder = 2,
-                    ZIndex = 5
-                }, textContainer)
-            elseif description then
-                description.Text = t or ""
-                description.Visible = (t ~= nil and t ~= "")
+            local hadDescription = description ~= nil and description.Visible
+            local hasDescription = t and t ~= ""
+
+            if description and t then
+                description.Text = t
+                description.Visible = true
+            elseif description and not t then
+                description.Visible = false
+            elseif not description and t then
+                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+            end
+
+            if hadDescription ~= hasDescription then
+                local padding = zones.container:FindFirstChildOfClass("UIPadding")
+                if padding then
+                    if hasDescription then
+                        padding.PaddingTop = UDim.new(0, 10)
+                        padding.PaddingBottom = UDim.new(0, 10)
+                        zones.layout.Padding = UDim.new(0, 4)
+                    else
+                        padding.PaddingTop = UDim.new(0, 8)
+                        padding.PaddingBottom = UDim.new(0, 8)
+                        zones.layout.Padding = UDim.new(0, 2)
+                    end
+                end
             end
         end
     }
@@ -2691,117 +2822,88 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
-    local data = self:merge(self.DefaultElements.TextInput, options)
     local mobile = self:isMobile()
-    local containerProps = self:applyTheme(data.Properties, data.Theme, theme)
-    containerProps.AutomaticSize = Enum.AutomaticSize.Y
-    local container = self:createElement(data.Class, containerProps, page)
-    if data.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = data.Corner.CornerRadius
-        }, container)
-    end
-    local descriptionText = options.Description or options.description
-    local hasDescription = descriptionText and descriptionText ~= ""
-    local textContainer = self:createElement("Frame", {
-        Size = UDim2.new(0.6, -10, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        AnchorPoint = Vector2.new(0, 0),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false,
-        ZIndex = 5
-    }, container)
-    if hasDescription then
-        self:createElement("UIPadding", {
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8)
-        }, textContainer)
-    end
-    local layout = self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    }, textContainer)
-    local labelProps = self:applyTheme({
-        Size = UDim2.new(1, 0, 0, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextSize = data.Label.TextSize,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        LayoutOrder = 1,
-        ZIndex = 5
-    }, data.Label.Theme, theme)
-    local label = self:createElement("TextLabel", labelProps, textContainer)
-    local description
-    if hasDescription then
-        description = self:createElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = descriptionText,
-            TextColor3 = theme.TextSecondary,
-            TextSize = 14,
-            Font = labelProps.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            LayoutOrder = 2,
-            ZIndex = 5
-        }, textContainer)
-    end
-    local function updateContainerSize()
-        container.Size = UDim2.new(container.Size.X.Scale, container.Size.X.Offset, 0,
-            layout.AbsoluteContentSize.Y + (hasDescription and 16 or 24))
-    end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateContainerSize)
-    task.defer(updateContainerSize)
-    local inputProps = self:applyTheme(data.Input, data.Input.Theme, theme)
+    local hasDescription = options.Description and options.Description ~= ""
+
+    local zones = self:createComponentContainer({
+        parent = page,
+        layout = "textLeft",
+        textWidth = 0.6,
+        minHeight = 35,
+        padding = hasDescription and {
+            top = 10,
+            bottom = 10,
+            left = 10,
+            right = 0
+        } or {
+            top = 0,
+            bottom = 0,
+            left = 10,
+            right = 0
+        },
+        spacing = hasDescription and 2 or 0,
+        hasDescription = hasDescription,
+        corner = 4,
+        colorTier = "SecondaryColor"
+    }, theme)
+
+    local label = self:createLabel(zones.textZone, text, theme, {
+        colorTier = "TextPrimary",
+        size = 14,
+        order = 1
+    })
+
+    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+
     local inputBox = self:createElement("TextBox", {
-        Size = inputProps.Size,
-        Position = inputProps.Position,
-        AnchorPoint = inputProps.AnchorPoint,
-        BackgroundColor3 = inputProps.BackgroundColor3,
+        Size = UDim2.new(0.35, 0, 0, 30),
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = theme.TertiaryColor,
         BorderSizePixel = 0,
         TextTruncate = Enum.TextTruncate.AtEnd,
         Text = defaultValue or "",
-        PlaceholderText = inputProps.PlaceholderText,
-        TextColor3 = inputProps.TextColor3,
-        PlaceholderColor3 = inputProps.PlaceholderColor3,
-        TextSize = inputProps.TextSize,
-        Font = inputProps.Font,
+        PlaceholderText = "Enter text...",
+        TextColor3 = theme.TextPrimary,
+        PlaceholderColor3 = theme.TextSecondary,
+        TextSize = 13,
+        Font = theme.SecondaryFont,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false,
         ZIndex = 5
-    }, container)
+    }, zones.container)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(0, 4)
     }, inputBox)
+
     self:createElement("UIPadding", {
         PaddingLeft = UDim.new(0, 8),
         PaddingRight = UDim.new(0, 8)
     }, inputBox)
-    local underlineProps = self:applyTheme(data.Underline, data.Underline.Theme, theme)
+
     local underline = self:createElement("Frame", {
-        Size = underlineProps.Size,
-        Position = underlineProps.Position,
-        BackgroundColor3 = underlineProps.BackgroundColor3,
+        Size = UDim2.new(1, 0, 0, 2),
+        Position = UDim2.new(0, 0, 1, -2),
+        BackgroundColor3 = theme.TertiaryColor,
         BorderSizePixel = 0,
         ZIndex = 6
     }, inputBox)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, underline)
+
     local isFocused = false
     local tween = self:getService("TweenService")
+
     inputBox.Focused:Connect(function()
         isFocused = true
         tween:Create(underline, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
             BackgroundColor3 = theme.AccentColor
         }):Play()
     end)
+
     inputBox.FocusLost:Connect(function()
         isFocused = false
         tween:Create(underline, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
@@ -2811,6 +2913,7 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
             callback(inputBox.Text)
         end
     end)
+
     if not mobile then
         inputBox.MouseEnter:Connect(function()
             if not isFocused then
@@ -2823,8 +2926,9 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
             end
         end)
     end
+
     return {
-        container = container,
+        container = zones.container,
         getValue = function()
             return inputBox.Text
         end,
@@ -2838,23 +2942,35 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
             inputBox.Text = ""
         end,
         setDescription = function(t)
-            if not description and t then
-                description = self:createElement("TextLabel", {
-                    Size = UDim2.new(1, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    Text = t,
-                    TextColor3 = theme.TextSecondary,
-                    TextSize = 14,
-                    Font = labelProps.Font,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextWrapped = true,
-                    AutomaticSize = Enum.AutomaticSize.Y,
-                    LayoutOrder = 2,
-                    ZIndex = 5
-                }, textContainer)
-            elseif description then
-                description.Text = t or ""
-                description.Visible = (t ~= nil and t ~= "")
+            local hadDescription = description ~= nil and description.Visible
+            local hasDescription = t and t ~= ""
+
+            if description and t then
+                description.Text = t
+                description.Visible = true
+            elseif description and not t then
+                description.Visible = false
+            elseif not description and t then
+                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+            end
+
+            if hadDescription ~= hasDescription then
+                local padding = zones.container:FindFirstChildOfClass("UIPadding")
+                if padding then
+                    if hasDescription then
+                        padding.PaddingTop = UDim.new(0, 10)
+                        padding.PaddingBottom = UDim.new(0, 10)
+                        zones.layout.Padding = UDim.new(0, 2)
+                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
+                    else
+                        padding.PaddingTop = UDim.new(0, 0)
+                        padding.PaddingBottom = UDim.new(0, 0)
+                        zones.layout.Padding = UDim.new(0, 0)
+                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
+                    end
+                end
             end
         end
     }
@@ -2866,109 +2982,76 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
-    local data = self:merge(self.DefaultElements.Keybind, options)
     local mobile = self:isMobile()
-    local containerProps = self:applyTheme(data.Properties, data.Theme, theme)
-    containerProps.AutomaticSize = Enum.AutomaticSize.Y
-    local container = self:createElement(data.Class, containerProps, page)
-    if data.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = data.Corner.CornerRadius
-        }, container)
-    end
-    local descriptionText = options.Description or options.description
-    local hasDescription = descriptionText and descriptionText ~= ""
-    local textContainer = self:createElement("Frame", {
-        Size = UDim2.new(0.75, -10, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        AnchorPoint = Vector2.new(0, 0),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false,
-        ZIndex = 5
-    }, container)
-    if hasDescription then
-        self:createElement("UIPadding", {
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8)
-        }, textContainer)
-    end
-    local layout = self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    }, textContainer)
-    local labelProps = self:applyTheme({
-        Size = UDim2.new(1, 0, 0, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextSize = data.Label.TextSize,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        LayoutOrder = 1,
-        ZIndex = 5
-    }, data.Label.Theme, theme)
-    local label = self:createElement("TextLabel", labelProps, textContainer)
-    local description
-    if hasDescription then
-        description = self:createElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = descriptionText,
-            TextColor3 = theme.TextSecondary,
-            TextSize = 14,
-            Font = labelProps.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            LayoutOrder = 2,
-            ZIndex = 5
-        }, textContainer)
-    end
-    local function updateContainerSize()
-        container.Size = UDim2.new(container.Size.X.Scale, container.Size.X.Offset, 0,
-            layout.AbsoluteContentSize.Y + (hasDescription and 16 or 24))
-    end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateContainerSize)
-    task.defer(updateContainerSize)
-    local displayProps = self:applyTheme(data.Display, data.Display.Theme, theme)
+    local hasDescription = options.Description and options.Description ~= ""
+
+    local zones = self:createComponentContainer({
+        parent = page,
+        layout = "textLeft",
+        textWidth = 0.65,
+        minHeight = 35,
+        padding = hasDescription and {
+            top = 10,
+            bottom = 10,
+            left = 10,
+            right = 0
+        } or {
+            top = 0,
+            bottom = 0,
+            left = 10,
+            right = 0
+        },
+        spacing = hasDescription and 2 or 0,
+        hasDescription = hasDescription,
+        corner = 4,
+        colorTier = "SecondaryColor"
+    }, theme)
+
+    local label = self:createLabel(zones.textZone, text, theme, {
+        colorTier = "TextPrimary",
+        size = 14,
+        order = 1
+    })
+
+    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+
     local display = self:createElement("TextButton", {
-        Size = displayProps.Size,
-        Position = displayProps.Position,
-        AnchorPoint = displayProps.AnchorPoint,
-        BackgroundColor3 = displayProps.BackgroundColor3,
+        Size = UDim2.new(0.3, 0, 0, 30),
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = theme.TertiaryColor,
         BorderSizePixel = 0,
         Text = "",
-        TextColor3 = displayProps.TextColor3,
-        TextSize = displayProps.TextSize,
-        Font = displayProps.Font,
         AutoButtonColor = false,
         ZIndex = 5
-    }, container)
+    }, zones.container)
+
     self:createElement("UICorner", {
         CornerRadius = UDim.new(0, 4)
     }, display)
+
     self:createElement("UIPadding", {
         PaddingLeft = UDim.new(0, 8),
         PaddingRight = UDim.new(0, 8)
     }, display)
+
     local displayLabel = self:createElement("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "",
-        TextColor3 = displayProps.TextColor3,
-        TextSize = displayProps.TextSize,
-        Font = displayProps.Font,
+        TextColor3 = theme.TextPrimary,
+        TextSize = 13,
+        Font = theme.SecondaryFont,
         TextXAlignment = Enum.TextXAlignment.Center,
         ZIndex = 6
     }, display)
+
     local currentKey = defaultKey
     local listening = false
     local uis = self:getService("UserInputService")
     local bindConnection
     local inputConnection
+
     local function updateDisplay()
         if listening then
             displayLabel.Text = "Press a key.."
@@ -2978,6 +3061,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
             display.BackgroundColor3 = theme.TertiaryColor
         end
     end
+
     local function setupBind()
         if bindConnection then
             bindConnection:Disconnect()
@@ -2990,6 +3074,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
             end)
         end
     end
+
     display.Activated:Connect(function()
         if listening then
             return
@@ -3009,6 +3094,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
             end
         end)
     end)
+
     if not mobile then
         display.MouseEnter:Connect(function()
             if not listening then
@@ -3021,10 +3107,12 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
             end
         end)
     end
+
     updateDisplay()
     setupBind()
+
     return {
-        container = container,
+        container = zones.container,
         getKey = function()
             return currentKey
         end,
@@ -3042,23 +3130,35 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
             end
         end,
         setDescription = function(t)
-            if not description and t then
-                description = self:createElement("TextLabel", {
-                    Size = UDim2.new(1, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    Text = t,
-                    TextColor3 = theme.TextSecondary,
-                    TextSize = 14,
-                    Font = labelProps.Font,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextWrapped = true,
-                    AutomaticSize = Enum.AutomaticSize.Y,
-                    LayoutOrder = 2,
-                    ZIndex = 5
-                }, textContainer)
-            elseif description then
-                description.Text = t or ""
-                description.Visible = (t ~= nil and t ~= "")
+            local hadDescription = description ~= nil and description.Visible
+            local hasDescription = t and t ~= ""
+
+            if description and t then
+                description.Text = t
+                description.Visible = true
+            elseif description and not t then
+                description.Visible = false
+            elseif not description and t then
+                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+            end
+
+            if hadDescription ~= hasDescription then
+                local padding = zones.container:FindFirstChildOfClass("UIPadding")
+                if padding then
+                    if hasDescription then
+                        padding.PaddingTop = UDim.new(0, 10)
+                        padding.PaddingBottom = UDim.new(0, 10)
+                        zones.layout.Padding = UDim.new(0, 2)
+                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
+                    else
+                        padding.PaddingTop = UDim.new(0, 0)
+                        padding.PaddingBottom = UDim.new(0, 0)
+                        zones.layout.Padding = UDim.new(0, 0)
+                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
+                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
+                    end
+                end
             end
         end
     }
@@ -3070,67 +3170,83 @@ function SimpleUI:createParagraph(page, title, fields, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
-    local data = self:merge(self.DefaultElements.Paragraph, options)
-    local containerProps = self:applyTheme(data.Properties, data.Theme, theme)
-    containerProps.AutomaticSize = Enum.AutomaticSize.Y
-    local container = self:createElement(data.Class, containerProps, page)
-    if data.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = data.Corner.CornerRadius
-        }, container)
-    end
-    local contentContainer = self:createElement("Frame", {
-        Size = UDim2.new(1, -20, 0, 0),
-        Position = UDim2.new(0, 10, 0, 8),
-        BackgroundTransparency = 1,
+
+    local container = self:createElement("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = theme.SecondaryColor,
+        BackgroundTransparency = theme.SecondaryTransparency,
+        BorderSizePixel = 0,
+        ZIndex = 4
+    }, page)
+
+    local constraint = Instance.new("UISizeConstraint")
+    constraint.MinSize = Vector2.new(0, 50)
+    constraint.Parent = container
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = container
+
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 10)
+    padding.PaddingBottom = UDim.new(0, 10)
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.Parent = container
+
+    local contentFrame = self:createElement("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
         ZIndex = 5
     }, container)
-    local layout = self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical,
-        HorizontalAlignment = Enum.HorizontalAlignment.Left,
-        VerticalAlignment = Enum.VerticalAlignment.Top,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4)
-    }, contentContainer)
-    local titleProps = self:applyTheme({
+
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Vertical
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    layout.VerticalAlignment = Enum.VerticalAlignment.Top
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 4)
+    layout.Parent = contentFrame
+
+    local titleLabel = self:createElement("TextLabel", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundTransparency = 1,
         Text = title or "Paragraph",
-        TextSize = data.Title.TextSize,
+        TextSize = 16,
+        TextColor3 = theme.TextActive,
+        Font = theme.PrimaryFont,
         TextXAlignment = Enum.TextXAlignment.Left,
         AutomaticSize = Enum.AutomaticSize.Y,
         TextWrapped = true,
         LayoutOrder = 0,
         ZIndex = 5
-    }, data.Title.Theme, theme)
-    local titleLabel = self:createElement("TextLabel", titleProps, contentContainer)
-    local function updateContainerSize()
-        container.Size =
-            UDim2.new(container.Size.X.Scale, container.Size.X.Offset, 0, layout.AbsoluteContentSize.Y + 16)
-    end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateContainerSize)
-    task.defer(updateContainerSize)
+    }, contentFrame)
+
     local fieldElements = {}
     local fieldCounter = 0
+
     local function createField(fieldData, layoutOrder)
         fieldCounter = fieldCounter + 1
         local fieldId = "field_" .. fieldCounter
         local isSubField = fieldData.isSubField or false
-        local fieldConfig = isSubField and data.SubField or data.Field
-        local fieldProps = self:applyTheme({
+
+        local field = self:createElement("TextLabel", {
             Size = UDim2.new(1, isSubField and -20 or 0, 0, 0),
             Position = isSubField and UDim2.new(0, 20, 0, 0) or UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
             Text = fieldData.text or "",
-            TextSize = fieldConfig.TextSize,
+            TextSize = isSubField and 13 or 14,
+            TextColor3 = isSubField and theme.TextSecondary or theme.TextPrimary,
+            Font = theme.SecondaryFont,
             TextXAlignment = Enum.TextXAlignment.Left,
             AutomaticSize = Enum.AutomaticSize.Y,
             TextWrapped = true,
             LayoutOrder = layoutOrder or (fieldCounter + 1),
             ZIndex = 5
-        }, fieldConfig.Theme, theme)
-        local field = self:createElement("TextLabel", fieldProps, contentContainer)
+        }, contentFrame)
+
         fieldElements[fieldId] = {
             element = field,
             data = fieldData,
@@ -3138,6 +3254,7 @@ function SimpleUI:createParagraph(page, title, fields, options)
         }
         return fieldId, field
     end
+
     if fields and type(fields) == "table" then
         for i, fieldData in ipairs(fields) do
             createField(type(fieldData) == "string" and {
@@ -3145,6 +3262,7 @@ function SimpleUI:createParagraph(page, title, fields, options)
             } or fieldData, i)
         end
     end
+
     return {
         container = container,
         addField = function(text, isSubField, position)
@@ -3608,7 +3726,6 @@ function SimpleUI:dismissNotification(notification)
     local TweenService = self:getService("TweenService")
     local fadeInfo = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
     local shadow = notification:FindFirstChild("Shadow")
-    -- local content = notification:FindFirstChild("Content")
     local tweens = {}
     table.insert(tweens, TweenService:Create(notification, fadeInfo, {
         BackgroundTransparency = 1
@@ -3887,7 +4004,8 @@ local window = SimpleUI:createWindow({
             Text = "Prospecting!"
         }
     },
-    Subtitle = "by SimpleScripts"
+    Subtitle = "by SimpleScripts",
+    defaultScale = SimpleUI:isMobile() and 0.5 or 1
 })
 -- ========================= STATES / VARS =========================
 
@@ -4181,7 +4299,7 @@ local function getPanStatus()
 end
 
 local function CollectInvokeServer(collect)
-    collect:InvokeServer(1)
+    collect:InvokeServer(1, true)
 end
 
 local function getRegion(HumanoidRootPart)
@@ -7537,7 +7655,7 @@ SimpleUI:createParagraph(CraftingPage, "Information", {"You have to be near the 
 
 SimpleUI:createSection(ShopPage, "Buy items LIKE A BOSS")
 
-SimpleUI:createButton(ShopPage, "Open amazong", function ()
+SimpleUI:createButton(ShopPage, "Open amazong", function()
     amazong:Toggle()
 end)
 
@@ -8358,32 +8476,8 @@ local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Fi
     end))
 end)
 
-SimpleUI:createSlider(OthersPage, "UI Scale", 0.5, 2, 1, function(value)
-    local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then
-        return
-    end
-
-    local boostsUI = playerGui:FindFirstChild("MainUI") and playerGui.MainUI:FindFirstChild("Boosts")
-    local bottomRight = playerGui:FindFirstChild("MainUI") and playerGui.MainUI:FindFirstChild("BottomRight")
-
-    if boostsUI then
-        local uiScale = boostsUI:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
-        uiScale.Parent = boostsUI
-        SimpleUI:getService("TweenService"):Create(uiScale,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Scale = value
-            }):Play()
-    end
-
-    if bottomRight then
-        local uiScaleBR = bottomRight:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
-        uiScaleBR.Parent = bottomRight
-        SimpleUI:getService("TweenService"):Create(uiScaleBR,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Scale = value
-            }):Play()
-    end
+SimpleUI:createSlider(OthersPage, "UI Scale", window.getScale(), 2, 1, function(value)
+    window.setScale(value, true)
 end, {
     Increment = 0.001
 })
