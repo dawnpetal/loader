@@ -183,7 +183,7 @@ end
 
 function ShoppingMartClass:UpdateScrollCanvas(scrollFrame, layout)
     local contentSize = layout.AbsoluteContentSize
-    scrollFrame.CanvasSize = UDim2.new(0, contentSize.X / self.uiScale, 0, contentSize.Y + 15 / self.uiScale)
+    scrollFrame.CanvasSize = UDim2.new(0, contentSize.X / self.uiScale, 0, contentSize.Y / self.uiScale)
 end
 
 function ShoppingMartClass:AddToCart(itemData)
