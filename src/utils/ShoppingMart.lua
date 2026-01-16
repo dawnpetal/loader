@@ -1,9 +1,25 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
-local Players = game:GetService("Players")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local function getSafeContainer()
+    if gethui then
+        local success, result = pcall(gethui)
+        if success and result then
+            return result
+        end
+    end
+
+    local success, coreGui = pcall(function()
+        return self:getService("CoreGui")
+    end)
+    if success and coreGui then
+        return coreGui
+    end
+
+    return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local playerGui = getSafeContainer()
 
 local Theme = {
     Background = Color3.fromRGB(14, 14, 16),
