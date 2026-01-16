@@ -4005,7 +4005,7 @@ local window = SimpleUI:createWindow({
         }
     },
     Subtitle = "by SimpleScripts",
-    defaultScale = SimpleUI:isMobile() and 0.5 or 1
+    defaultScale = SimpleUI:isMobile() and 0.750 or 1
 })
 -- ========================= STATES / VARS =========================
 
@@ -8476,7 +8476,7 @@ local FilterPanelToggle = SimpleUI:createToggle(OthersPage, "Enable Inventory Fi
     end))
 end)
 
-SimpleUI:createSlider(OthersPage, "UI Scale", window.getScale(), 2, 1, function(value)
+SimpleUI:createSlider(OthersPage, "UI Scale", 0.5, 2, window.getScale(), function(value)
     window.setScale(value, true)
 end, {
     Increment = 0.001

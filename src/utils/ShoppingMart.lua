@@ -187,9 +187,8 @@ function ShoppingMartClass:UpdateScrollCanvas(scrollFrame, layout)
     local padTop = padding and padding.PaddingTop.Offset or 0
     local padBottom = padding and padding.PaddingBottom.Offset or 0
     local buffer = 20
-    scrollFrame.CanvasSize = UDim2.fromOffset(0, contentSize.Y + padTop + padBottom + buffer)
+    scrollFrame.CanvasSize = UDim2.fromOffset(0, (contentSize.Y / self.uiScale) + padTop + padBottom + buffer)
 end
-
 function ShoppingMartClass:AddToCart(itemData)
     for _, cartItem in ipairs(self.shoppingCart) do
         if cartItem.name == itemData.name then
@@ -374,6 +373,38 @@ function ShoppingMartClass:CreateTopBar(parent)
 
     closeButton.MouseButton1Click:Connect(function()
         self.gui.Enabled = false
+    end)
+
+    local UserInputService = game:GetService("UserInputService")
+
+    local dragging, dragStart, startPos = false, nil, nil
+
+    topBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = parent.Position
+            input:GetPropertyChangedSignal("UserInputState"):Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and
+            (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            parent.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y)
+        end
     end)
 end
 
