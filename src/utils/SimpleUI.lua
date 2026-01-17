@@ -3,54 +3,441 @@ local SimpleUI = {}
 SimpleUI.Services = {}
 
 SimpleUI.Themes = {
-    Default = {
-        PrimaryColor = Color3.fromRGB(20, 20, 20),
-        SecondaryColor = Color3.fromRGB(80, 80, 80),
-        SecondaryColorHover = Color3.fromRGB(100, 100, 100),
-        SecondaryColorActive = Color3.fromRGB(120, 120, 120),
-        SecondaryColorMouse1Down = Color3.fromRGB(50, 50, 50),
-        TertiaryColor = Color3.fromRGB(60, 60, 60),
-        TertiaryColorHover = Color3.fromRGB(80, 80, 80),
-        TertiaryColorActive = Color3.fromRGB(100, 100, 100),
-        TertiaryColorMouse1Down = Color3.fromRGB(50, 50, 50),
-        TextInactive = Color3.fromRGB(230, 230, 230),
-        TextActive = Color3.fromRGB(255, 255, 255),
-        TextPrimary = Color3.fromRGB(255, 255, 255),
-        TextSecondary = Color3.fromRGB(180, 180, 180),
-        AccentColor = Color3.fromRGB(180, 180, 180),
+    Obsidian = {
+        PrimaryColor = Color3.fromRGB(8, 8, 10),
+        SecondaryColor = Color3.fromRGB(18, 18, 22),
+        SecondaryColorHover = Color3.fromRGB(28, 28, 34),
+        SecondaryColorActive = Color3.fromRGB(38, 38, 46),
+        SecondaryColorMouse1Down = Color3.fromRGB(12, 12, 16),
+        TertiaryColor = Color3.fromRGB(24, 24, 30),
+        TertiaryColorHover = Color3.fromRGB(34, 34, 42),
+        TertiaryColorActive = Color3.fromRGB(44, 44, 54),
+        TertiaryColorMouse1Down = Color3.fromRGB(16, 16, 20),
+        TextInactive = Color3.fromRGB(160, 160, 165),
+        TextActive = Color3.fromRGB(245, 245, 250),
+        TextPrimary = Color3.fromRGB(225, 225, 230),
+        TextSecondary = Color3.fromRGB(140, 140, 145),
+        AccentColor = Color3.fromRGB(138, 180, 248),
         PrimaryFont = Enum.Font.GothamBold,
         PrimaryFontSize = 18,
         SecondaryFont = Enum.Font.GothamMedium,
         SecondaryFontSize = 16,
-        PrimaryTransparency = 0.05,
-        SecondaryTransparency = 0.8
+        PrimaryTransparency = 0.01,
+        SecondaryTransparency = 0.45
     },
-    Secondary = {
-        PrimaryColor = Color3.fromRGB(13, 14, 17),
-        SecondaryColor = Color3.fromRGB(24, 26, 30),
-        SecondaryColorHover = Color3.fromRGB(36, 38, 44),
-        SecondaryColorActive = Color3.fromRGB(54, 57, 64),
-        SecondaryColorMouse1Down = Color3.fromRGB(38, 40, 43),
 
-        TertiaryColor = Color3.fromRGB(30, 32, 38),
-        TertiaryColorHover = Color3.fromRGB(46, 49, 56),
-        TertiaryColorActive = Color3.fromRGB(68, 72, 82),
-        TertiaryColorMouse1Down = Color3.fromRGB(22, 24, 28),
-
-        TextPrimary = Color3.fromRGB(232, 231, 228),
-        TextActive = Color3.fromRGB(205, 203, 198),
-        TextInactive = Color3.fromRGB(162, 160, 155),
-        TextSecondary = Color3.fromRGB(128, 126, 122),
-
-        AccentColor = Color3.fromRGB(190, 140, 255),
-
+    MidnightPurple = {
+        PrimaryColor = Color3.fromRGB(18, 15, 25),
+        SecondaryColor = Color3.fromRGB(28, 24, 38),
+        SecondaryColorHover = Color3.fromRGB(38, 32, 50),
+        SecondaryColorActive = Color3.fromRGB(50, 42, 65),
+        SecondaryColorMouse1Down = Color3.fromRGB(22, 18, 30),
+        TertiaryColor = Color3.fromRGB(35, 30, 46),
+        TertiaryColorHover = Color3.fromRGB(46, 39, 60),
+        TertiaryColorActive = Color3.fromRGB(60, 51, 78),
+        TertiaryColorMouse1Down = Color3.fromRGB(26, 22, 34),
+        TextInactive = Color3.fromRGB(165, 155, 180),
+        TextActive = Color3.fromRGB(240, 235, 255),
+        TextPrimary = Color3.fromRGB(220, 212, 238),
+        TextSecondary = Color3.fromRGB(140, 130, 160),
+        AccentColor = Color3.fromRGB(180, 140, 255),
         PrimaryFont = Enum.Font.GothamBold,
         PrimaryFontSize = 18,
         SecondaryFont = Enum.Font.GothamMedium,
         SecondaryFontSize = 16,
-
-        PrimaryTransparency = 0.015,
+        PrimaryTransparency = 0.02,
         SecondaryTransparency = 0.50
+    },
+
+    DeepRose = {
+        PrimaryColor = Color3.fromRGB(22, 15, 18),
+        SecondaryColor = Color3.fromRGB(35, 26, 30),
+        SecondaryColorHover = Color3.fromRGB(48, 36, 42),
+        SecondaryColorActive = Color3.fromRGB(62, 48, 55),
+        SecondaryColorMouse1Down = Color3.fromRGB(28, 20, 24),
+        TertiaryColor = Color3.fromRGB(42, 32, 38),
+        TertiaryColorHover = Color3.fromRGB(56, 44, 50),
+        TertiaryColorActive = Color3.fromRGB(72, 58, 65),
+        TertiaryColorMouse1Down = Color3.fromRGB(32, 24, 28),
+        TextInactive = Color3.fromRGB(180, 160, 170),
+        TextActive = Color3.fromRGB(255, 240, 248),
+        TextPrimary = Color3.fromRGB(235, 220, 228),
+        TextSecondary = Color3.fromRGB(155, 135, 145),
+        AccentColor = Color3.fromRGB(255, 150, 200),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
+    },
+
+    OceanDepth = {
+        PrimaryColor = Color3.fromRGB(12, 18, 24),
+        SecondaryColor = Color3.fromRGB(20, 30, 42),
+        SecondaryColorHover = Color3.fromRGB(28, 42, 58),
+        SecondaryColorActive = Color3.fromRGB(38, 56, 76),
+        SecondaryColorMouse1Down = Color3.fromRGB(16, 24, 34),
+        TertiaryColor = Color3.fromRGB(25, 38, 52),
+        TertiaryColorHover = Color3.fromRGB(35, 52, 70),
+        TertiaryColorActive = Color3.fromRGB(47, 68, 90),
+        TertiaryColorMouse1Down = Color3.fromRGB(18, 28, 40),
+        TextInactive = Color3.fromRGB(160, 175, 195),
+        TextActive = Color3.fromRGB(240, 248, 255),
+        TextPrimary = Color3.fromRGB(220, 235, 250),
+        TextSecondary = Color3.fromRGB(135, 155, 175),
+        AccentColor = Color3.fromRGB(110, 200, 255),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.50
+    },
+
+    ForestNight = {
+        PrimaryColor = Color3.fromRGB(15, 20, 17),
+        SecondaryColor = Color3.fromRGB(24, 32, 28),
+        SecondaryColorHover = Color3.fromRGB(34, 45, 38),
+        SecondaryColorActive = Color3.fromRGB(46, 60, 51),
+        SecondaryColorMouse1Down = Color3.fromRGB(18, 24, 21),
+        TertiaryColor = Color3.fromRGB(30, 40, 34),
+        TertiaryColorHover = Color3.fromRGB(42, 55, 47),
+        TertiaryColorActive = Color3.fromRGB(56, 72, 62),
+        TertiaryColorMouse1Down = Color3.fromRGB(22, 28, 25),
+        TextInactive = Color3.fromRGB(165, 180, 172),
+        TextActive = Color3.fromRGB(245, 255, 250),
+        TextPrimary = Color3.fromRGB(225, 240, 232),
+        TextSecondary = Color3.fromRGB(140, 160, 148),
+        AccentColor = Color3.fromRGB(120, 220, 170),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.50
+    },
+
+    VelvetRed = {
+        PrimaryColor = Color3.fromRGB(24, 12, 14),
+        SecondaryColor = Color3.fromRGB(38, 20, 24),
+        SecondaryColorHover = Color3.fromRGB(52, 28, 34),
+        SecondaryColorActive = Color3.fromRGB(68, 38, 46),
+        SecondaryColorMouse1Down = Color3.fromRGB(30, 16, 20),
+        TertiaryColor = Color3.fromRGB(46, 26, 32),
+        TertiaryColorHover = Color3.fromRGB(62, 36, 44),
+        TertiaryColorActive = Color3.fromRGB(80, 48, 58),
+        TertiaryColorMouse1Down = Color3.fromRGB(34, 20, 26),
+        TextInactive = Color3.fromRGB(185, 160, 168),
+        TextActive = Color3.fromRGB(255, 240, 245),
+        TextPrimary = Color3.fromRGB(238, 220, 228),
+        TextSecondary = Color3.fromRGB(160, 135, 145),
+        AccentColor = Color3.fromRGB(255, 110, 145),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
+    },
+
+    Slate = {
+        PrimaryColor = Color3.fromRGB(22, 24, 28),
+        SecondaryColor = Color3.fromRGB(34, 37, 42),
+        SecondaryColorHover = Color3.fromRGB(46, 50, 56),
+        SecondaryColorActive = Color3.fromRGB(60, 65, 72),
+        SecondaryColorMouse1Down = Color3.fromRGB(28, 30, 34),
+        TertiaryColor = Color3.fromRGB(42, 46, 52),
+        TertiaryColorHover = Color3.fromRGB(56, 61, 68),
+        TertiaryColorActive = Color3.fromRGB(72, 78, 86),
+        TertiaryColorMouse1Down = Color3.fromRGB(32, 34, 38),
+        TextInactive = Color3.fromRGB(160, 165, 172),
+        TextActive = Color3.fromRGB(245, 248, 252),
+        TextPrimary = Color3.fromRGB(225, 230, 236),
+        TextSecondary = Color3.fromRGB(135, 142, 150),
+        AccentColor = Color3.fromRGB(130, 180, 245),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.48
+    },
+
+    WarmCocoa = {
+        PrimaryColor = Color3.fromRGB(26, 22, 18),
+        SecondaryColor = Color3.fromRGB(40, 34, 28),
+        SecondaryColorHover = Color3.fromRGB(54, 46, 38),
+        SecondaryColorActive = Color3.fromRGB(70, 60, 50),
+        SecondaryColorMouse1Down = Color3.fromRGB(32, 26, 22),
+        TertiaryColor = Color3.fromRGB(48, 42, 34),
+        TertiaryColorHover = Color3.fromRGB(64, 56, 46),
+        TertiaryColorActive = Color3.fromRGB(82, 72, 60),
+        TertiaryColorMouse1Down = Color3.fromRGB(36, 30, 24),
+        TextInactive = Color3.fromRGB(180, 165, 150),
+        TextActive = Color3.fromRGB(255, 248, 240),
+        TextPrimary = Color3.fromRGB(235, 225, 212),
+        TextSecondary = Color3.fromRGB(155, 140, 125),
+        AccentColor = Color3.fromRGB(225, 165, 115),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
+    },
+
+    SakuraDream = {
+        PrimaryColor = Color3.fromRGB(215, 200, 205),
+        SecondaryColor = Color3.fromRGB(200, 185, 190),
+        SecondaryColorHover = Color3.fromRGB(190, 175, 180),
+        SecondaryColorActive = Color3.fromRGB(178, 163, 168),
+        SecondaryColorMouse1Down = Color3.fromRGB(168, 153, 158),
+        TertiaryColor = Color3.fromRGB(185, 170, 175),
+        TertiaryColorHover = Color3.fromRGB(173, 158, 163),
+        TertiaryColorActive = Color3.fromRGB(160, 145, 150),
+        TertiaryColorMouse1Down = Color3.fromRGB(150, 135, 140),
+        TextInactive = Color3.fromRGB(95, 80, 85),
+        TextActive = Color3.fromRGB(50, 35, 40),
+        TextPrimary = Color3.fromRGB(65, 50, 55),
+        TextSecondary = Color3.fromRGB(110, 95, 100),
+        AccentColor = Color3.fromRGB(235, 130, 170),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0,
+        SecondaryTransparency = 0.15
+    },
+
+    LavenderMist = {
+        PrimaryColor = Color3.fromRGB(210, 205, 220),
+        SecondaryColor = Color3.fromRGB(195, 190, 205),
+        SecondaryColorHover = Color3.fromRGB(185, 180, 195),
+        SecondaryColorActive = Color3.fromRGB(173, 168, 183),
+        SecondaryColorMouse1Down = Color3.fromRGB(163, 158, 173),
+        TertiaryColor = Color3.fromRGB(180, 175, 190),
+        TertiaryColorHover = Color3.fromRGB(168, 163, 178),
+        TertiaryColorActive = Color3.fromRGB(155, 150, 165),
+        TertiaryColorMouse1Down = Color3.fromRGB(145, 140, 155),
+        TextInactive = Color3.fromRGB(85, 80, 95),
+        TextActive = Color3.fromRGB(40, 35, 50),
+        TextPrimary = Color3.fromRGB(55, 50, 65),
+        TextSecondary = Color3.fromRGB(100, 95, 110),
+        AccentColor = Color3.fromRGB(155, 120, 210),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0,
+        SecondaryTransparency = 0.12
+    },
+
+    MintCream = {
+        PrimaryColor = Color3.fromRGB(205, 218, 215),
+        SecondaryColor = Color3.fromRGB(190, 203, 200),
+        SecondaryColorHover = Color3.fromRGB(180, 193, 190),
+        SecondaryColorActive = Color3.fromRGB(168, 181, 178),
+        SecondaryColorMouse1Down = Color3.fromRGB(158, 171, 168),
+        TertiaryColor = Color3.fromRGB(175, 188, 185),
+        TertiaryColorHover = Color3.fromRGB(163, 176, 173),
+        TertiaryColorActive = Color3.fromRGB(150, 163, 160),
+        TertiaryColorMouse1Down = Color3.fromRGB(140, 153, 150),
+        TextInactive = Color3.fromRGB(75, 90, 85),
+        TextActive = Color3.fromRGB(30, 45, 40),
+        TextPrimary = Color3.fromRGB(45, 60, 55),
+        TextSecondary = Color3.fromRGB(95, 110, 105),
+        AccentColor = Color3.fromRGB(90, 180, 150),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0,
+        SecondaryTransparency = 0.14
+    },
+
+    PeachSorbet = {
+        PrimaryColor = Color3.fromRGB(220, 205, 200),
+        SecondaryColor = Color3.fromRGB(205, 190, 185),
+        SecondaryColorHover = Color3.fromRGB(195, 180, 175),
+        SecondaryColorActive = Color3.fromRGB(183, 168, 163),
+        SecondaryColorMouse1Down = Color3.fromRGB(173, 158, 153),
+        TertiaryColor = Color3.fromRGB(190, 175, 170),
+        TertiaryColorHover = Color3.fromRGB(178, 163, 158),
+        TertiaryColorActive = Color3.fromRGB(165, 150, 145),
+        TertiaryColorMouse1Down = Color3.fromRGB(155, 140, 135),
+        TextInactive = Color3.fromRGB(90, 75, 70),
+        TextActive = Color3.fromRGB(45, 30, 25),
+        TextPrimary = Color3.fromRGB(60, 45, 40),
+        TextSecondary = Color3.fromRGB(105, 90, 85),
+        AccentColor = Color3.fromRGB(235, 145, 120),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0,
+        SecondaryTransparency = 0.13
+    },
+
+    SkyBloom = {
+        PrimaryColor = Color3.fromRGB(205, 215, 225),
+        SecondaryColor = Color3.fromRGB(190, 200, 210),
+        SecondaryColorHover = Color3.fromRGB(180, 190, 200),
+        SecondaryColorActive = Color3.fromRGB(168, 178, 188),
+        SecondaryColorMouse1Down = Color3.fromRGB(158, 168, 178),
+        TertiaryColor = Color3.fromRGB(175, 185, 195),
+        TertiaryColorHover = Color3.fromRGB(163, 173, 183),
+        TertiaryColorActive = Color3.fromRGB(150, 160, 170),
+        TertiaryColorMouse1Down = Color3.fromRGB(140, 150, 160),
+        TextInactive = Color3.fromRGB(75, 85, 95),
+        TextActive = Color3.fromRGB(30, 40, 50),
+        TextPrimary = Color3.fromRGB(45, 55, 65),
+        TextSecondary = Color3.fromRGB(95, 105, 115),
+        AccentColor = Color3.fromRGB(115, 165, 220),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0,
+        SecondaryTransparency = 0.12
+    },
+
+    AmberGlow = {
+        PrimaryColor = Color3.fromRGB(24, 18, 10),
+        SecondaryColor = Color3.fromRGB(38, 30, 18),
+        SecondaryColorHover = Color3.fromRGB(52, 42, 26),
+        SecondaryColorActive = Color3.fromRGB(68, 56, 36),
+        SecondaryColorMouse1Down = Color3.fromRGB(30, 22, 14),
+        TertiaryColor = Color3.fromRGB(46, 38, 22),
+        TertiaryColorHover = Color3.fromRGB(62, 52, 32),
+        TertiaryColorActive = Color3.fromRGB(80, 68, 44),
+        TertiaryColorMouse1Down = Color3.fromRGB(34, 26, 16),
+        TextInactive = Color3.fromRGB(185, 170, 145),
+        TextActive = Color3.fromRGB(255, 248, 235),
+        TextPrimary = Color3.fromRGB(238, 228, 210),
+        TextSecondary = Color3.fromRGB(160, 145, 120),
+        AccentColor = Color3.fromRGB(255, 190, 100),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
+    },
+
+    EmeraldNight = {
+        PrimaryColor = Color3.fromRGB(10, 18, 14),
+        SecondaryColor = Color3.fromRGB(18, 30, 24),
+        SecondaryColorHover = Color3.fromRGB(26, 42, 34),
+        SecondaryColorActive = Color3.fromRGB(36, 56, 46),
+        SecondaryColorMouse1Down = Color3.fromRGB(14, 22, 18),
+        TertiaryColor = Color3.fromRGB(22, 36, 28),
+        TertiaryColorHover = Color3.fromRGB(32, 50, 40),
+        TertiaryColorActive = Color3.fromRGB(44, 66, 54),
+        TertiaryColorMouse1Down = Color3.fromRGB(16, 26, 20),
+        TextInactive = Color3.fromRGB(165, 190, 175),
+        TextActive = Color3.fromRGB(245, 255, 248),
+        TextPrimary = Color3.fromRGB(225, 245, 235),
+        TextSecondary = Color3.fromRGB(140, 165, 150),
+        AccentColor = Color3.fromRGB(110, 245, 180),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
+    },
+
+    RubyDepth = {
+        PrimaryColor = Color3.fromRGB(20, 10, 12),
+        SecondaryColor = Color3.fromRGB(34, 18, 22),
+        SecondaryColorHover = Color3.fromRGB(48, 26, 32),
+        SecondaryColorActive = Color3.fromRGB(64, 36, 44),
+        SecondaryColorMouse1Down = Color3.fromRGB(26, 14, 18),
+        TertiaryColor = Color3.fromRGB(42, 22, 28),
+        TertiaryColorHover = Color3.fromRGB(58, 32, 40),
+        TertiaryColorActive = Color3.fromRGB(76, 44, 54),
+        TertiaryColorMouse1Down = Color3.fromRGB(30, 16, 22),
+        TextInactive = Color3.fromRGB(190, 160, 170),
+        TextActive = Color3.fromRGB(255, 245, 248),
+        TextPrimary = Color3.fromRGB(245, 230, 235),
+        TextSecondary = Color3.fromRGB(165, 135, 145),
+        AccentColor = Color3.fromRGB(255, 95, 135),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
+    },
+
+    TwilightIndigo = {
+        PrimaryColor = Color3.fromRGB(16, 18, 28),
+        SecondaryColor = Color3.fromRGB(26, 30, 45),
+        SecondaryColorHover = Color3.fromRGB(36, 42, 60),
+        SecondaryColorActive = Color3.fromRGB(48, 56, 78),
+        SecondaryColorMouse1Down = Color3.fromRGB(20, 22, 34),
+        TertiaryColor = Color3.fromRGB(32, 38, 54),
+        TertiaryColorHover = Color3.fromRGB(44, 52, 72),
+        TertiaryColorActive = Color3.fromRGB(58, 68, 92),
+        TertiaryColorMouse1Down = Color3.fromRGB(24, 28, 40),
+        TextInactive = Color3.fromRGB(165, 170, 190),
+        TextActive = Color3.fromRGB(245, 248, 255),
+        TextPrimary = Color3.fromRGB(225, 230, 248),
+        TextSecondary = Color3.fromRGB(140, 145, 165),
+        AccentColor = Color3.fromRGB(145, 165, 255),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.50
+    },
+
+    ElectricTeal = {
+        PrimaryColor = Color3.fromRGB(10, 18, 20),
+        SecondaryColor = Color3.fromRGB(18, 30, 34),
+        SecondaryColorHover = Color3.fromRGB(26, 42, 48),
+        SecondaryColorActive = Color3.fromRGB(36, 56, 64),
+        SecondaryColorMouse1Down = Color3.fromRGB(14, 22, 26),
+        TertiaryColor = Color3.fromRGB(22, 36, 42),
+        TertiaryColorHover = Color3.fromRGB(32, 50, 58),
+        TertiaryColorActive = Color3.fromRGB(44, 66, 76),
+        TertiaryColorMouse1Down = Color3.fromRGB(16, 26, 30),
+        TextInactive = Color3.fromRGB(160, 185, 190),
+        TextActive = Color3.fromRGB(240, 255, 252),
+        TextPrimary = Color3.fromRGB(220, 242, 245),
+        TextSecondary = Color3.fromRGB(135, 160, 165),
+        AccentColor = Color3.fromRGB(100, 230, 210),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
+    },
+
+    NeonViolet = {
+        PrimaryColor = Color3.fromRGB(20, 12, 24),
+        SecondaryColor = Color3.fromRGB(34, 22, 40),
+        SecondaryColorHover = Color3.fromRGB(48, 32, 56),
+        SecondaryColorActive = Color3.fromRGB(64, 44, 74),
+        SecondaryColorMouse1Down = Color3.fromRGB(26, 16, 30),
+        TertiaryColor = Color3.fromRGB(42, 28, 50),
+        TertiaryColorHover = Color3.fromRGB(58, 40, 68),
+        TertiaryColorActive = Color3.fromRGB(76, 54, 88),
+        TertiaryColorMouse1Down = Color3.fromRGB(30, 20, 36),
+        TextInactive = Color3.fromRGB(185, 165, 195),
+        TextActive = Color3.fromRGB(255, 245, 255),
+        TextPrimary = Color3.fromRGB(240, 228, 250),
+        TextSecondary = Color3.fromRGB(160, 140, 170),
+        AccentColor = Color3.fromRGB(200, 120, 255),
+        PrimaryFont = Enum.Font.GothamBold,
+        PrimaryFontSize = 18,
+        SecondaryFont = Enum.Font.GothamMedium,
+        SecondaryFontSize = 16,
+        PrimaryTransparency = 0.02,
+        SecondaryTransparency = 0.52
     }
 }
 
@@ -636,38 +1023,63 @@ function SimpleUI:getService(name)
         local service = game:GetService(name)
         if cloneref then
             local success, cloned = pcall(cloneref, service)
-            if success then
+            if success and cloned then
                 service = cloned
             end
         end
-
         self.Services[name] = service
     end
     return self.Services[name]
 end
 
 function SimpleUI:_getSafeContainer()
-    if gethui then
-        local success, result = pcall(gethui)
-        if success and result then
-            return result
+    local function thing(bruh)
+        local ok, dead = pcall(bruh)
+        if ok and dead then
+            local fr = Instance.new("Frame")
+            return pcall(function()
+                fr.Parent = dead
+                fr:Destroy()
+            end) and dead or nil
         end
     end
 
-    local success, coreGui = pcall(function()
-        return self:getService("CoreGui")
-    end)
-    if success and coreGui then
-        return coreGui
+    if typeof(gethui) == "function" and thing(gethui) then
+        return thing(gethui)
     end
 
+    local based = set_thread_identity or setthreadidentity or setidentity
+    if based then
+        pcall(based, 8)
+    end
+
+    local core = game:GetService("CoreGui")
+    for _, method in ipairs({function()
+        return cloneref and cloneref(core)
+    end, function()
+        return core
+    end, function()
+        local kore
+        task.defer(function()
+            kore = core
+        end)
+        return kore
+    end}) do
+        if thing(method) then
+            return thing(method)
+        end
+    end
+
+    warn("CoreGui restricted, using player gui (detectable) your executor isn't sigma")
     return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 end
 
 function SimpleUI:_generateIdentifier(prefix)
     local chars = "ACEGIKMOQSUWYZbdfhjlnprtvxz!@#$%^&*()_+-=[];',.123456789"
     local result = prefix or ""
-    for i = 1, 16 do
+    local seed = tick() * math.random(1, 1000000)
+    math.randomseed(seed)
+    for i = 1, math.random(16, 24) do
         local rand = math.random(1, #chars)
         result = result .. chars:sub(rand, rand)
     end
@@ -764,23 +1176,154 @@ function SimpleUI:getTheme(element)
     return self.Themes.Default
 end
 
+function SimpleUI:initializeThemeRegistry(window)
+    window._themeRegistry = {
+        elements = {},
+        currentTheme = window.Theme or self.Themes.Obsidian
+    }
+end
+
+function SimpleUI:getCurrentTheme(window)
+    if window and window._themeRegistry then
+        return window._themeRegistry.currentTheme
+    end
+    return self.Themes.Obsidian
+end
+
+function SimpleUI:registerThemeElement(window, element, bindings)
+    if not window or not window._themeRegistry then
+        return
+    end
+
+    if not element or not bindings then
+        return
+    end
+
+    for property, themeKey in pairs(bindings) do
+        table.insert(window._themeRegistry.elements, {
+            element = element,
+            property = property,
+            themeKey = themeKey
+        })
+    end
+end
+
+function SimpleUI:registerMultipleThemeElements(window, elements)
+    if not window then
+        return
+    end
+    for element, bindings in pairs(elements) do
+        self:registerThemeElement(window, element, bindings)
+    end
+end
+
+function SimpleUI:applyThemeToElement(element, property, themeKey, theme, animate)
+    if not element or not element.Parent then
+        return
+    end
+
+    if type(themeKey) == "function" then
+        return
+    end
+
+    local value = theme[themeKey]
+    if value == nil then
+        return
+    end
+
+    if animate and (property:find("Color") or property:find("Transparency")) then
+        local tweenService = self:getService("TweenService")
+        tweenService:Create(element, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+            [property] = value
+        }):Play()
+    else
+        element[property] = value
+    end
+end
+
+function SimpleUI:setWindowTheme(window, themeName, animate)
+    if not window or not window._themeRegistry then
+        return
+    end
+
+    local newTheme = self.Themes[themeName]
+    if not newTheme then
+        return
+    end
+
+    window._themeRegistry.currentTheme = newTheme
+    window.Theme = newTheme
+
+    local seen = {}
+    local validElements = {}
+
+    for _, entry in ipairs(window._themeRegistry.elements) do
+        local el = entry.element
+        local prop = entry.property
+
+        if el and el.Parent then
+            seen[el] = seen[el] or {}
+
+            if not seen[el][prop] then
+                seen[el][prop] = true
+
+                if type(entry.themeKey) == "function" then
+                    entry.themeKey(el, newTheme)
+                else
+                    self:applyThemeToElement(el, prop, entry.themeKey, newTheme, animate)
+                end
+
+                table.insert(validElements, entry)
+            end
+        end
+    end
+
+    window._themeRegistry.elements = validElements
+end
+
+function SimpleUI:getWindowTheme(window)
+    if not window or not window._themeRegistry then
+        return "Secondary"
+    end
+
+    for name, theme in pairs(self.Themes) do
+        if theme == window._themeRegistry.currentTheme then
+            return name
+        end
+    end
+
+    return "Secondary"
+end
+
+function SimpleUI:getWindowFromElement(element)
+    local current = element
+    while current do
+        if current:IsA("ScreenGui") then
+            return self.Windows and self.Windows[current]
+        end
+        current = current.Parent
+    end
+    return nil
+end
+
 function SimpleUI:applyTheme(properties, themeMap, theme)
     local result = {}
+    local bindings = {}
+
     for k, v in pairs(properties) do
         result[k] = v
     end
+
     if themeMap then
         for propName, themeKey in pairs(themeMap) do
             if theme[themeKey] then
                 result[propName] = theme[themeKey]
+                bindings[propName] = themeKey
             end
         end
     end
-    return result
-end
 
-function SimpleUI:setTheme(window, themeName)
-    -- **construction noises**
+    return result, bindings
 end
 
 function SimpleUI:updateScrollingContainer(container)
@@ -1042,7 +1585,7 @@ end
 
 function SimpleUI:createWindow(options)
     options = options or {}
-    local theme = options.Theme or self.Themes.Secondary
+    local theme = options.Theme or self.Themes.Obsidian
 
     local gui = self:createElement("ScreenGui", {
         Name = options.Name or self:_generateIdentifier(),
@@ -1201,8 +1744,8 @@ function SimpleUI:createWindow(options)
     titleLabelData.Properties.Size = UDim2.new(0, 0, 1, 0)
     titleLabelData.Properties.BackgroundTransparency = 1
 
-    local titleProps = self:applyTheme(titleLabelData.Properties, titleLabelData.Theme, theme)
-    self:createElement(titleLabelData.Class, titleProps, titleContainer)
+    local titleProps, titleBindings = self:applyTheme(titleLabelData.Properties, titleLabelData.Theme, theme)
+    local titleLabel = self:createElement(titleLabelData.Class, titleProps, titleContainer)
 
     if hasSubtitle then
         self:createElement("TextLabel", {
@@ -1295,6 +1838,10 @@ function SimpleUI:createWindow(options)
             Tabs = {},
             Pages = {}
         },
+        ActiveTab = nil,
+        ActivePage = nil,
+        TabUpdates = {},
+        SimpleGUI = gui,
         _uiScale = uiScale,
         getScale = function()
             return uiScale.Scale
@@ -1312,10 +1859,12 @@ function SimpleUI:createWindow(options)
                 uiScale.Scale = value
             end
         end,
-        ActiveTab = nil,
-        ActivePage = nil,
-        TabUpdates = {},
-        SimpleGUI = gui,
+        setTheme = function(self, themeName, animate)
+            SimpleUI:setWindowTheme(self, themeName, animate ~= false)
+        end,
+        getTheme = function(self)
+            return SimpleUI:getWindowTheme(self)
+        end,
         hide = function()
             frame.Visible = false
         end,
@@ -1335,6 +1884,23 @@ function SimpleUI:createWindow(options)
 
     SimpleUI.Windows = SimpleUI.Windows or {}
     SimpleUI.Windows[gui] = windowInstance
+
+    SimpleUI:initializeThemeRegistry(windowInstance)
+
+    if titleBindings then
+        self:registerThemeElement(windowInstance, titleLabel, titleBindings)
+    end
+
+    local topBarProps, topBarBindings = self:applyTheme(topBarData.Properties, topBarData.Theme, theme)
+    if topBarBindings then
+        self:registerThemeElement(windowInstance, topBar, topBarBindings)
+    end
+
+    local mainContainerProps, mainContainerBindings = self:applyTheme(mainContainerData.Properties,
+        mainContainerData.Theme, theme)
+    if mainContainerBindings then
+        self:registerThemeElement(windowInstance, mainContainer, mainContainerBindings)
+    end
 
     task.defer(function()
         local function updateContainers()
@@ -1455,8 +2021,12 @@ function SimpleUI:createTab(window, name, options)
     tabData.Properties.Name = name
     tabData.Properties.Text = name
     tabData.Properties.LayoutOrder = #window.Elements.Tabs
-    local tabProps = self:applyTheme(tabData.Properties, tabData.Theme, theme)
+    local tabProps, tabBindings = self:applyTheme(tabData.Properties, tabData.Theme, theme)
     local tab = self:createElement(tabData.Class, tabProps, window.Elements.TabsContainer)
+
+    if tabBindings then
+        self:registerThemeElement(window, tab, tabBindings)
+    end
     if tabData.Corner then
         self:createElement("UICorner", {
             CornerRadius = tabData.Corner.CornerRadius
@@ -1492,18 +2062,19 @@ function SimpleUI:createTab(window, name, options)
     local page = self:createPage(window, name)
     local isActive, isHovering, isPressed = false, false, false
     local function update()
+        local currentTheme = SimpleUI:getCurrentTheme(window)
         if isActive then
-            tab.BackgroundColor3 = theme.SecondaryColorActive
-            tab.TextColor3 = theme.TextActive
+            tab.BackgroundColor3 = currentTheme.SecondaryColorActive
+            tab.TextColor3 = currentTheme.TextActive
         elseif isPressed then
-            tab.BackgroundColor3 = theme.SecondaryColorMouse1Down
-            tab.TextColor3 = theme.TextInactive
+            tab.BackgroundColor3 = currentTheme.SecondaryColorMouse1Down
+            tab.TextColor3 = currentTheme.TextInactive
         elseif isHovering then
-            tab.BackgroundColor3 = theme.SecondaryColorHover
-            tab.TextColor3 = theme.TextInactive
+            tab.BackgroundColor3 = currentTheme.SecondaryColorHover
+            tab.TextColor3 = currentTheme.TextInactive
         else
-            tab.BackgroundColor3 = theme.SecondaryColor
-            tab.TextColor3 = theme.TextInactive
+            tab.BackgroundColor3 = currentTheme.SecondaryColor
+            tab.TextColor3 = currentTheme.TextInactive
         end
     end
     if not mobile then
@@ -1709,6 +2280,7 @@ function SimpleUI:createSection(page, text, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
+    local window = self:getWindowFromElement(page)
     local data = self:merge(self.DefaultElements.Section, options)
     local props = self:applyTheme(data.Properties, data.Theme, theme)
     props.Name = "Section"
@@ -1727,6 +2299,19 @@ function SimpleUI:createSection(page, text, options)
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, underline)
+
+    local themeRegistry = {
+        [label] = {
+            TextColor3 = "TextActive",
+            Font = "PrimaryFont"
+        },
+        [underline] = {
+            BackgroundColor3 = "AccentColor"
+        }
+    }
+
+    self:registerMultipleThemeElements(window, themeRegistry)
+
     local api = {}
     function api:setText(t)
         label.Text = t
@@ -1757,6 +2342,7 @@ function SimpleUI:createButton(page, text, callback, options)
     options = options or {}
     local theme = self:getTheme(page)
     local mobile = self:isMobile()
+    local window = self:getWindowFromElement(page)
 
     local hasDescription = options.Description and options.Description ~= ""
 
@@ -1788,7 +2374,7 @@ function SimpleUI:createButton(page, text, callback, options)
         widthOffset = -30
     })
 
-    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
 
     local arrow = self:createElement("ImageLabel", {
         Size = UDim2.new(0, 16, 0, 16),
@@ -1802,15 +2388,39 @@ function SimpleUI:createButton(page, text, callback, options)
         ZIndex = 5
     }, zones.container)
 
+    local themeRegistry = {
+        [zones.container] = {
+            BackgroundColor3 = "SecondaryColor",
+            BackgroundTransparency = "SecondaryTransparency"
+        },
+        [title] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        },
+        [arrow] = {
+            ImageColor3 = "TextPrimary"
+        }
+    }
+
+    if description then
+        themeRegistry[description] = {
+            TextColor3 = "TextSecondary",
+            Font = "SecondaryFont"
+        }
+    end
+
+    self:registerMultipleThemeElements(window, themeRegistry)
+
     local state, held = "Base", false
 
     local function setColor(s)
+        local currentTheme = window and self:getCurrentTheme(window) or theme
         if s == "Base" then
-            zones.container.BackgroundColor3 = theme.SecondaryColor
+            zones.container.BackgroundColor3 = currentTheme.SecondaryColor
         elseif s == "Hover" then
-            zones.container.BackgroundColor3 = theme.SecondaryColorHover
+            zones.container.BackgroundColor3 = currentTheme.SecondaryColorHover
         elseif s == "Button1Down" then
-            zones.container.BackgroundColor3 = theme.SecondaryColorMouse1Down
+            zones.container.BackgroundColor3 = currentTheme.SecondaryColorMouse1Down
         end
     end
 
@@ -1883,7 +2493,13 @@ function SimpleUI:createButton(page, text, callback, options)
         elseif description and not t then
             description.Visible = false
         elseif not description and t then
-            description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+            description = self:createDescription(zones.textZone, t, theme, 2)
+            if window then
+                self:registerThemeElement(window, description, {
+                    TextColor3 = "TextSecondary",
+                    Font = "SecondaryFont"
+                })
+            end
         end
 
         if hadDescription ~= hasDescription then
@@ -1936,6 +2552,7 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
+    local window = self:getWindowFromElement(page)
     local hasDescription = options.Description and options.Description ~= ""
 
     local zones = self:createComponentContainer({
@@ -1966,7 +2583,7 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
         order = 1
     })
 
-    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
 
     local switch = self:createElement("TextButton", {
         Size = UDim2.new(0, 40, 0, 20),
@@ -2002,9 +2619,10 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
     local tweenService = self:getService("TweenService")
 
     local function updateToggle(animate)
+        local currentTheme = window and self:getCurrentTheme(window) or theme
         local posGoal = state and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
-        local colorGoal = state and theme.AccentColor or theme.SecondaryColorMouse1Down
-        local indicatorColorGoal = state and theme.TextActive or theme.TextInactive
+        local colorGoal = state and currentTheme.AccentColor or currentTheme.SecondaryColorMouse1Down
+        local indicatorColorGoal = state and currentTheme.TextActive or currentTheme.TextInactive
 
         if animate then
             tweenService:Create(indicator, TweenInfo.new(0.2), {
@@ -2022,6 +2640,36 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
             indicator.BackgroundColor3 = indicatorColorGoal
         end
     end
+
+    local themeRegistry = {
+        [zones.container] = {
+            BackgroundColor3 = "SecondaryColor",
+            BackgroundTransparency = "SecondaryTransparency"
+        },
+        [label] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        },
+        [switch] = {
+            BackgroundColor3 = function()
+                updateToggle(false)
+            end
+        },
+        [indicator] = {
+            BackgroundColor3 = function()
+                updateToggle(false)
+            end
+        }
+    }
+
+    if description then
+        themeRegistry[description] = {
+            TextColor3 = "TextSecondary",
+            Font = "SecondaryFont"
+        }
+    end
+
+    self:registerMultipleThemeElements(window, themeRegistry)
 
     updateToggle(false)
 
@@ -2062,6 +2710,12 @@ function SimpleUI:createToggle(page, text, defaultValue, callback, options)
                 description.Visible = false
             elseif not description and t then
                 description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+                if window then
+                    SimpleUI:registerThemeElement(window, description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "SecondaryFont"
+                    })
+                end
             end
 
             if hadDescription ~= hasDescription then
@@ -2093,6 +2747,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
     dropdownOptions = dropdownOptions or {}
     local theme = self:getTheme(page)
     local mobile = self:isMobile()
+    local window = self:getWindowFromElement(page)
     local multiSelect = dropdownOptions.MultiSelect or false
     local changedEvent = Instance.new("BindableEvent")
     local hasDescription = dropdownOptions.Description and dropdownOptions.Description ~= ""
@@ -2125,7 +2780,8 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         order = 1
     })
 
-    local description = self:createDescription(zones.textZone, dropdownOptions.Description, theme, 2)
+    local description =
+        hasDescription and self:createDescription(zones.textZone, dropdownOptions.Description, theme, 2) or nil
 
     local display = self:createElement("TextButton", {
         Size = UDim2.new(0, 160, 0, 30),
@@ -2165,18 +2821,50 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         ZIndex = 6
     }, display)
 
+    local themeRegistry = {
+        [zones.container] = {
+            BackgroundColor3 = "SecondaryColor",
+            BackgroundTransparency = "SecondaryTransparency"
+        },
+        [label] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        },
+        [display] = {
+            BackgroundColor3 = "TertiaryColor"
+        },
+
+        [displayLabel] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        },
+        [arrow] = {
+            ImageColor3 = "TextPrimary"
+        }
+    }
+
+    if description then
+        themeRegistry[description] = {
+            TextColor3 = "TextSecondary",
+            Font = "SecondaryFont"
+        }
+    end
+
+    self:registerMultipleThemeElements(window, themeRegistry)
+
     local displayState = "Base"
     local isOpen = false
 
     local function updateDisplayColor()
+        local currentTheme = window and self:getCurrentTheme(window) or theme
         if displayState == "Base" then
-            display.BackgroundColor3 = theme.TertiaryColor
+            display.BackgroundColor3 = currentTheme.TertiaryColor
         elseif displayState == "Hover" then
-            display.BackgroundColor3 = theme.TertiaryColorHover
+            display.BackgroundColor3 = currentTheme.TertiaryColorHover
         elseif displayState == "Active" then
-            display.BackgroundColor3 = theme.TertiaryColorActive
+            display.BackgroundColor3 = currentTheme.TertiaryColorActive
         elseif displayState == "Mouse1Down" then
-            display.BackgroundColor3 = theme.TertiaryColorMouse1Down
+            display.BackgroundColor3 = currentTheme.TertiaryColorMouse1Down
         end
     end
 
@@ -2248,6 +2936,22 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         PaddingLeft = UDim.new(0, 8),
         PaddingRight = UDim.new(0, 8)
     }, searchBox)
+
+    if window then
+        self:registerMultipleThemeElements(window, {
+            [listContainer] = {
+                BackgroundColor3 = "TertiaryColor",
+                BackgroundTransparency = "PrimaryTransparency"
+            },
+
+            [searchBox] = {
+                BackgroundColor3 = "TertiaryColor",
+                TextColor3 = "TextPrimary",
+                PlaceholderColor3 = "TextSecondary",
+                Font = "SecondaryFont"
+            }
+        })
+    end
 
     local scrollList = self:createElement("ScrollingFrame", {
         Size = UDim2.new(1, 0, 1, -36),
@@ -2392,6 +3096,8 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
     end
 
     local function createOption(optionText, index)
+        local currentTheme = window and self:getCurrentTheme(window) or theme
+
         local optionContainer = self:createElement("Frame", {
             Size = UDim2.new(1, -8, 0, 28),
             BackgroundTransparency = 1,
@@ -2402,12 +3108,12 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         local option = self:createElement("TextButton", {
             Size = UDim2.new(1, 0, 1, 0),
             Position = UDim2.new(0, 0, 0, 0),
-            BackgroundColor3 = theme.TertiaryColor,
+            BackgroundColor3 = currentTheme.TertiaryColor,
             BorderSizePixel = 0,
             Text = optionText,
-            TextColor3 = theme.TextPrimary,
+            TextColor3 = currentTheme.TextPrimary,
             TextSize = 13,
-            Font = theme.SecondaryFont,
+            Font = currentTheme.SecondaryFont,
             TextTruncate = Enum.TextTruncate.SplitWord,
             TextXAlignment = Enum.TextXAlignment.Left,
             AutoButtonColor = false,
@@ -2427,7 +3133,7 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
             Size = UDim2.new(0, 4, 0.5, 0),
             Position = UDim2.new(0, 2, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundColor3 = theme.AccentColor,
+            BackgroundColor3 = currentTheme.AccentColor,
             BorderSizePixel = 0,
             Visible = false,
             ZIndex = 254
@@ -2436,6 +3142,17 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
         self:createElement("UICorner", {
             CornerRadius = UDim.new(1, 0)
         }, indicator)
+
+        if window then
+            self:registerThemeElement(window, option, {
+                BackgroundColor3 = "TertiaryColor",
+                TextColor3 = "TextPrimary",
+                Font = "SecondaryFont"
+            })
+            self:registerThemeElement(window, indicator, {
+                BackgroundColor3 = "AccentColor"
+            })
+        end
 
         if multiSelect then
             local function updateIndicator()
@@ -2481,16 +3198,20 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
 
         if not mobile then
             option.MouseEnter:Connect(function()
-                option.BackgroundColor3 = theme.TertiaryColorHover
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                option.BackgroundColor3 = currentTheme.TertiaryColorHover
             end)
             option.MouseLeave:Connect(function()
-                option.BackgroundColor3 = theme.TertiaryColor
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                option.BackgroundColor3 = currentTheme.TertiaryColor
             end)
             option.MouseButton1Down:Connect(function()
-                option.BackgroundColor3 = theme.TertiaryColorMouse1Down
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                option.BackgroundColor3 = currentTheme.TertiaryColorMouse1Down
             end)
             option.MouseButton1Up:Connect(function()
-                option.BackgroundColor3 = theme.TertiaryColorHover
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                option.BackgroundColor3 = currentTheme.TertiaryColorHover
             end)
         end
     end
@@ -2674,6 +3395,12 @@ function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dr
                 description.Visible = false
             elseif not description and t then
                 description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+                if window then
+                    SimpleUI:registerThemeElement(window, description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "SecondaryFont"
+                    })
+                end
             end
 
             if hadDescription ~= hasDescription then
@@ -2706,6 +3433,7 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
     end
     options = options or {}
     local theme = self:getTheme(page)
+    local window = self:getWindowFromElement(page)
     local increment = options.Increment or 1
     local hasDescription = options.Description and options.Description ~= ""
 
@@ -2756,7 +3484,7 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
         ZIndex = 5
     }, labelContainer)
 
-    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
 
     local trackContainer = self:createElement("Frame", {
         Size = UDim2.new(1, 0, 0, 24),
@@ -2801,6 +3529,39 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
     self:createElement("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, thumb)
+
+    local themeRegistry = {
+        [zones.container] = {
+            BackgroundColor3 = "SecondaryColor",
+            BackgroundTransparency = "SecondaryTransparency"
+        },
+        [label] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        },
+        [valueLabel] = {
+            TextColor3 = "TextSecondary",
+            Font = "SecondaryFont"
+        },
+        [track] = {
+            BackgroundColor3 = "TertiaryColorMouse1Down"
+        },
+        [fill] = {
+            BackgroundColor3 = "AccentColor"
+        },
+        [thumb] = {
+            BackgroundColor3 = "TextActive"
+        }
+    }
+
+    if description then
+        themeRegistry[description] = {
+            TextColor3 = "TextSecondary",
+            Font = "SecondaryFont"
+        }
+    end
+
+    self:registerMultipleThemeElements(window, themeRegistry)
 
     local dragging = false
     local value = defaultValue or min
@@ -2875,6 +3636,12 @@ function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, opt
                 description.Visible = false
             elseif not description and t then
                 description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+                if window then
+                    SimpleUI:registerThemeElement(window, description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "SecondaryFont"
+                    })
+                end
             end
 
             if hadDescription ~= hasDescription then
@@ -2902,6 +3669,7 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
     options = options or {}
     local theme = self:getTheme(page)
     local mobile = self:isMobile()
+    local window = self:getWindowFromElement(page)
     local hasDescription = options.Description and options.Description ~= ""
 
     local zones = self:createComponentContainer({
@@ -2932,7 +3700,7 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
         order = 1
     })
 
-    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
 
     local inputBox = self:createElement("TextBox", {
         Size = UDim2.new(0.35, 0, 0, 30),
@@ -2973,20 +3741,51 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
         CornerRadius = UDim.new(1, 0)
     }, underline)
 
+    local themeRegistry = {
+        [zones.container] = {
+            BackgroundColor3 = "SecondaryColor",
+            BackgroundTransparency = "SecondaryTransparency"
+        },
+        [label] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        },
+        [inputBox] = {
+            TextColor3 = "TextPrimary",
+            PlaceholderColor3 = "TextSecondary",
+            BackgroundColor3 = "TertiaryColor",
+            Font = "SecondaryFont"
+        },
+        [underline] = {
+            BackgroundColor3 = "TertiaryColor"
+        }
+    }
+
+    if description then
+        themeRegistry[description] = {
+            TextColor3 = "TextSecondary",
+            Font = "SecondaryFont"
+        }
+    end
+
+    self:registerMultipleThemeElements(window, themeRegistry)
+
     local isFocused = false
     local tween = self:getService("TweenService")
 
     inputBox.Focused:Connect(function()
         isFocused = true
+        local currentTheme = window and self:getCurrentTheme(window) or theme
         tween:Create(underline, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundColor3 = theme.AccentColor
+            BackgroundColor3 = currentTheme.AccentColor
         }):Play()
     end)
 
     inputBox.FocusLost:Connect(function()
         isFocused = false
+        local currentTheme = window and self:getCurrentTheme(window) or theme
         tween:Create(underline, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundColor3 = theme.TertiaryColorMouse1Down
+            BackgroundColor3 = currentTheme.TertiaryColorMouse1Down
         }):Play()
         if callback then
             callback(inputBox.Text)
@@ -2996,12 +3795,14 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
     if not mobile then
         inputBox.MouseEnter:Connect(function()
             if not isFocused then
-                inputBox.BackgroundColor3 = theme.TertiaryColorHover
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                inputBox.BackgroundColor3 = currentTheme.TertiaryColorHover
             end
         end)
         inputBox.MouseLeave:Connect(function()
             if not isFocused then
-                inputBox.BackgroundColor3 = theme.TertiaryColor
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                inputBox.BackgroundColor3 = currentTheme.TertiaryColor
             end
         end)
     end
@@ -3031,6 +3832,12 @@ function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
                 description.Visible = false
             elseif not description and t then
                 description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+                if window then
+                    SimpleUI:registerThemeElement(window, description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "SecondaryFont"
+                    })
+                end
             end
 
             if hadDescription ~= hasDescription then
@@ -3062,6 +3869,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
     options = options or {}
     local theme = self:getTheme(page)
     local mobile = self:isMobile()
+    local window = self:getWindowFromElement(page)
     local hasDescription = options.Description and options.Description ~= ""
 
     local zones = self:createComponentContainer({
@@ -3092,7 +3900,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
         order = 1
     })
 
-    local description = self:createDescription(zones.textZone, options.Description, theme, 2)
+    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
 
     local display = self:createElement("TextButton", {
         Size = UDim2.new(0.3, 0, 0, 30),
@@ -3125,6 +3933,30 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
         ZIndex = 6
     }, display)
 
+    local themeRegistry = {
+        [zones.container] = {
+            BackgroundColor3 = "SecondaryColor",
+            BackgroundTransparency = "SecondaryTransparency"
+        },
+        [label] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        },
+        [displayLabel] = {
+            TextColor3 = "TextPrimary",
+            Font = "SecondaryFont"
+        }
+    }
+
+    if description then
+        themeRegistry[description] = {
+            TextColor3 = "TextSecondary",
+            Font = "SecondaryFont"
+        }
+    end
+
+    self:registerMultipleThemeElements(window, themeRegistry)
+
     local currentKey = defaultKey
     local listening = false
     local uis = self:getService("UserInputService")
@@ -3132,12 +3964,13 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
     local inputConnection
 
     local function updateDisplay()
+        local currentTheme = window and self:getCurrentTheme(window) or theme
         if listening then
             displayLabel.Text = "Press a key.."
-            display.BackgroundColor3 = theme.AccentColor
+            display.BackgroundColor3 = currentTheme.AccentColor
         else
             displayLabel.Text = "Key: " .. (currentKey and currentKey.Name or "Select Keybind...")
-            display.BackgroundColor3 = theme.TertiaryColor
+            display.BackgroundColor3 = currentTheme.TertiaryColor
         end
     end
 
@@ -3177,18 +4010,26 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
     if not mobile then
         display.MouseEnter:Connect(function()
             if not listening then
-                display.BackgroundColor3 = theme.TertiaryColorHover
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                display.BackgroundColor3 = currentTheme.TertiaryColorHover
             end
         end)
         display.MouseLeave:Connect(function()
             if not listening then
-                display.BackgroundColor3 = theme.TertiaryColor
+                local currentTheme = window and self:getCurrentTheme(window) or theme
+                display.BackgroundColor3 = currentTheme.TertiaryColor
             end
         end)
     end
 
     updateDisplay()
     setupBind()
+
+    self:registerThemeElement(window, display, {
+        BackgroundColor3 = function(el, theme)
+            el.BackgroundColor3 = listening and theme.AccentColor or theme.TertiaryColor
+        end
+    })
 
     return {
         container = zones.container,
@@ -3219,6 +4060,12 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
                 description.Visible = false
             elseif not description and t then
                 description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
+                if window then
+                    SimpleUI:registerThemeElement(window, description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "SecondaryFont"
+                    })
+                end
             end
 
             if hadDescription ~= hasDescription then
@@ -3241,6 +4088,7 @@ function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
             end
         end
     }
+
 end
 
 function SimpleUI:createParagraph(page, title, fields, options)
@@ -3249,6 +4097,7 @@ function SimpleUI:createParagraph(page, title, fields, options)
     end
     options = options or {}
     local theme = self:getTheme(page)
+    local window = self:getWindowFromElement(page)
 
     local container = self:createElement("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
@@ -3299,6 +4148,19 @@ function SimpleUI:createParagraph(page, title, fields, options)
         ZIndex = 5
     }, contentFrame)
 
+    local themeRegistry = {
+        [container] = {
+            BackgroundColor3 = "SecondaryColor",
+            BackgroundTransparency = "SecondaryTransparency"
+        },
+        [titleLabel] = {
+            TextColor3 = "TextActive",
+            Font = "PrimaryFont"
+        }
+    }
+
+    self:registerMultipleThemeElements(window, themeRegistry)
+
     local fieldElements = {}
     local fieldCounter = 0
 
@@ -3321,6 +4183,13 @@ function SimpleUI:createParagraph(page, title, fields, options)
             LayoutOrder = layoutOrder or (fieldCounter + 1),
             ZIndex = 5
         }, contentFrame)
+
+        if window then
+            SimpleUI:registerThemeElement(window, field, {
+                TextColor3 = isSubField and "TextSecondary" or "TextPrimary",
+                Font = "SecondaryFont"
+            })
+        end
 
         fieldElements[fieldId] = {
             element = field,
@@ -3450,7 +4319,7 @@ function SimpleUI:createNotification(options)
     options = options or {}
     local containerName = "SimpleUI_NotificationContainer"
     local isMobile = self:isMobile()
-    local parent = self:_getSafeContainer()
+    local parent = self._getSafeContainer()
 
     local container = parent:FindFirstChild(containerName)
     if not container then
