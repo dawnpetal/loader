@@ -3524,6 +3524,10 @@ SimpleUI:createParagraph(CraftingPage, "Information", {"You have to be near the 
 
 SimpleUI:createSection(ShopPage, "Buy items LIKE A BOSS")
 
+SimpleUI:createButton(ShopPage, "Open amazong", function()
+    amazong:Toggle()
+end)
+
 SimpleUI:createSection(PlayerPage, "Humanoid")
 
 local jumpPower = Humanoid.JumpPower or 50
