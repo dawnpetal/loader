@@ -18,7 +18,6 @@
   ],
   "prerequisites": {
     "TaskManager": "utils/TaskManager.lua",
-    "ShoppingMart": "utils/ShoppingMart.lua",
-    "SimpleUI": "utils/SimpleUI.lua"
+    "ShoppingMart": "utils/ShoppingMart.lua"
   }
 }
