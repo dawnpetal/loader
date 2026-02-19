@@ -1,2347 +1,4999 @@
+local gethui = gethui or function()
+    return game:GetService("CoreGui")
+end
+local protectgui = protectgui or function()
+end
+local cloneref = cloneref or clonereference or function(instance)
+    return instance
+end
+local newcclosure = newcclosure or function(func)
+    return func
+end
+local getcustomasset = getcustomasset or function(path)
+    return ""
+end
+
 local SimpleUI = {}
 
-SimpleUI.Services = {}
+SimpleUI.Version = "2.2.4"
+SimpleUI.Loaded = SimpleUI.Loaded or {}
+SimpleUI.Windows = SimpleUI.Windows or {}
 
-SimpleUI.Themes = {
-    Obsidian = {
-        PrimaryColor = Color3.fromRGB(8, 8, 10),
-        SecondaryColor = Color3.fromRGB(18, 18, 22),
-        SecondaryColorHover = Color3.fromRGB(28, 28, 34),
-        SecondaryColorActive = Color3.fromRGB(38, 38, 46),
-        SecondaryColorMouse1Down = Color3.fromRGB(12, 12, 16),
-        TertiaryColor = Color3.fromRGB(24, 24, 30),
-        TertiaryColorHover = Color3.fromRGB(34, 34, 42),
-        TertiaryColorActive = Color3.fromRGB(44, 44, 54),
-        TertiaryColorMouse1Down = Color3.fromRGB(16, 16, 20),
-        TextInactive = Color3.fromRGB(160, 160, 165),
-        TextActive = Color3.fromRGB(245, 245, 250),
-        TextPrimary = Color3.fromRGB(225, 225, 230),
-        TextSecondary = Color3.fromRGB(140, 140, 145),
-        AccentColor = Color3.fromRGB(138, 180, 248),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.01,
-        SecondaryTransparency = 0.45
+local CoreGui = cloneref(game:GetService("CoreGui"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local TweenService = cloneref(game:GetService("TweenService"))
+local Lighting = cloneref(game:GetService("Lighting"))
+local Players = cloneref(game:GetService("Players"))
+local RunService = cloneref(game:GetService("RunService"))
+
+local LocalPlayer = Players.LocalPlayer
+
+SimpleUI.Constants = {
+    Window = {
+        MinSize = Vector2.new(600, 400),
+        MaxSize = Vector2.new(1400, 900),
+        DefaultAspectRatio = 1.6,
+        TopBarHeight = 48,
+        FooterHeight = 24,
+        TabsWidthOpen = 0.22,
+        ContentWidthOpen = 0.78,
+        TabsWidthClosed = 55,
+        ContentLeftOffsetClosed = 60,
+        ContentWidthScaleClosed = 1,
+        HorizontalPadding = 10,
+        VerticalPadding = 10,
+        DefaultScale = 1,
+        MinScale = 0.5,
+        MaxScale = 2,
+        TabModes = {
+            Fixed = "Fixed",
+            Dynamic = "Dynamic",
+            Closed = "Closed"
+        },
+        TabDynamicThreshold = 2,
+        TabIconSizeExpanded = 20,
+        TabIconSizeCollapsed = 28,
+        ClosedTabHorizontalPadding = 1,
+        TabSeparatorGap = 1
     },
-
-    MidnightPurple = {
-        PrimaryColor = Color3.fromRGB(18, 15, 25),
-        SecondaryColor = Color3.fromRGB(28, 24, 38),
-        SecondaryColorHover = Color3.fromRGB(38, 32, 50),
-        SecondaryColorActive = Color3.fromRGB(50, 42, 65),
-        SecondaryColorMouse1Down = Color3.fromRGB(22, 18, 30),
-        TertiaryColor = Color3.fromRGB(35, 30, 46),
-        TertiaryColorHover = Color3.fromRGB(46, 39, 60),
-        TertiaryColorActive = Color3.fromRGB(60, 51, 78),
-        TertiaryColorMouse1Down = Color3.fromRGB(26, 22, 34),
-        TextInactive = Color3.fromRGB(165, 155, 180),
-        TextActive = Color3.fromRGB(240, 235, 255),
-        TextPrimary = Color3.fromRGB(220, 212, 238),
-        TextSecondary = Color3.fromRGB(140, 130, 160),
-        AccentColor = Color3.fromRGB(180, 140, 255),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.50
+    Padding = {
+        Small = 4,
+        Medium = 8,
+        Large = 10,
+        ExtraLarge = 12
     },
-
-    DeepRose = {
-        PrimaryColor = Color3.fromRGB(22, 15, 18),
-        SecondaryColor = Color3.fromRGB(35, 26, 30),
-        SecondaryColorHover = Color3.fromRGB(48, 36, 42),
-        SecondaryColorActive = Color3.fromRGB(62, 48, 55),
-        SecondaryColorMouse1Down = Color3.fromRGB(28, 20, 24),
-        TertiaryColor = Color3.fromRGB(42, 32, 38),
-        TertiaryColorHover = Color3.fromRGB(56, 44, 50),
-        TertiaryColorActive = Color3.fromRGB(72, 58, 65),
-        TertiaryColorMouse1Down = Color3.fromRGB(32, 24, 28),
-        TextInactive = Color3.fromRGB(180, 160, 170),
-        TextActive = Color3.fromRGB(255, 240, 248),
-        TextPrimary = Color3.fromRGB(235, 220, 228),
-        TextSecondary = Color3.fromRGB(155, 135, 145),
-        AccentColor = Color3.fromRGB(255, 150, 200),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
+    Spacing = {
+        Tight = 2,
+        Normal = 4,
+        Relaxed = 6,
+        Loose = 8
     },
-
-    OceanDepth = {
-        PrimaryColor = Color3.fromRGB(12, 18, 24),
-        SecondaryColor = Color3.fromRGB(20, 30, 42),
-        SecondaryColorHover = Color3.fromRGB(28, 42, 58),
-        SecondaryColorActive = Color3.fromRGB(38, 56, 76),
-        SecondaryColorMouse1Down = Color3.fromRGB(16, 24, 34),
-        TertiaryColor = Color3.fromRGB(25, 38, 52),
-        TertiaryColorHover = Color3.fromRGB(35, 52, 70),
-        TertiaryColorActive = Color3.fromRGB(47, 68, 90),
-        TertiaryColorMouse1Down = Color3.fromRGB(18, 28, 40),
-        TextInactive = Color3.fromRGB(160, 175, 195),
-        TextActive = Color3.fromRGB(240, 248, 255),
-        TextPrimary = Color3.fromRGB(220, 235, 250),
-        TextSecondary = Color3.fromRGB(135, 155, 175),
-        AccentColor = Color3.fromRGB(110, 200, 255),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.50
+    Corner = {
+        None = 0,
+        Small = 3,
+        Medium = 4,
+        Large = 6,
+        HolyFuckingShit = 12,
+        Round = 1
     },
-
-    ForestNight = {
-        PrimaryColor = Color3.fromRGB(15, 20, 17),
-        SecondaryColor = Color3.fromRGB(24, 32, 28),
-        SecondaryColorHover = Color3.fromRGB(34, 45, 38),
-        SecondaryColorActive = Color3.fromRGB(46, 60, 51),
-        SecondaryColorMouse1Down = Color3.fromRGB(18, 24, 21),
-        TertiaryColor = Color3.fromRGB(30, 40, 34),
-        TertiaryColorHover = Color3.fromRGB(42, 55, 47),
-        TertiaryColorActive = Color3.fromRGB(56, 72, 62),
-        TertiaryColorMouse1Down = Color3.fromRGB(22, 28, 25),
-        TextInactive = Color3.fromRGB(165, 180, 172),
-        TextActive = Color3.fromRGB(245, 255, 250),
-        TextPrimary = Color3.fromRGB(225, 240, 232),
-        TextSecondary = Color3.fromRGB(140, 160, 148),
-        AccentColor = Color3.fromRGB(120, 220, 170),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.50
+    Animation = {
+        Fast = 0.15,
+        Normal = 0.2,
+        Slow = 0.35,
+        VerySlow = 0.4,
+        Smooth = 0.25
     },
-
-    VelvetRed = {
-        PrimaryColor = Color3.fromRGB(24, 12, 14),
-        SecondaryColor = Color3.fromRGB(38, 20, 24),
-        SecondaryColorHover = Color3.fromRGB(52, 28, 34),
-        SecondaryColorActive = Color3.fromRGB(68, 38, 46),
-        SecondaryColorMouse1Down = Color3.fromRGB(30, 16, 20),
-        TertiaryColor = Color3.fromRGB(46, 26, 32),
-        TertiaryColorHover = Color3.fromRGB(62, 36, 44),
-        TertiaryColorActive = Color3.fromRGB(80, 48, 58),
-        TertiaryColorMouse1Down = Color3.fromRGB(34, 20, 26),
-        TextInactive = Color3.fromRGB(185, 160, 168),
-        TextActive = Color3.fromRGB(255, 240, 245),
-        TextPrimary = Color3.fromRGB(238, 220, 228),
-        TextSecondary = Color3.fromRGB(160, 135, 145),
-        AccentColor = Color3.fromRGB(255, 110, 145),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
-    },
-
-    Slate = {
-        PrimaryColor = Color3.fromRGB(22, 24, 28),
-        SecondaryColor = Color3.fromRGB(34, 37, 42),
-        SecondaryColorHover = Color3.fromRGB(46, 50, 56),
-        SecondaryColorActive = Color3.fromRGB(60, 65, 72),
-        SecondaryColorMouse1Down = Color3.fromRGB(28, 30, 34),
-        TertiaryColor = Color3.fromRGB(42, 46, 52),
-        TertiaryColorHover = Color3.fromRGB(56, 61, 68),
-        TertiaryColorActive = Color3.fromRGB(72, 78, 86),
-        TertiaryColorMouse1Down = Color3.fromRGB(32, 34, 38),
-        TextInactive = Color3.fromRGB(160, 165, 172),
-        TextActive = Color3.fromRGB(245, 248, 252),
-        TextPrimary = Color3.fromRGB(225, 230, 236),
-        TextSecondary = Color3.fromRGB(135, 142, 150),
-        AccentColor = Color3.fromRGB(130, 180, 245),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.48
-    },
-
-    WarmCocoa = {
-        PrimaryColor = Color3.fromRGB(26, 22, 18),
-        SecondaryColor = Color3.fromRGB(40, 34, 28),
-        SecondaryColorHover = Color3.fromRGB(54, 46, 38),
-        SecondaryColorActive = Color3.fromRGB(70, 60, 50),
-        SecondaryColorMouse1Down = Color3.fromRGB(32, 26, 22),
-        TertiaryColor = Color3.fromRGB(48, 42, 34),
-        TertiaryColorHover = Color3.fromRGB(64, 56, 46),
-        TertiaryColorActive = Color3.fromRGB(82, 72, 60),
-        TertiaryColorMouse1Down = Color3.fromRGB(36, 30, 24),
-        TextInactive = Color3.fromRGB(180, 165, 150),
-        TextActive = Color3.fromRGB(255, 248, 240),
-        TextPrimary = Color3.fromRGB(235, 225, 212),
-        TextSecondary = Color3.fromRGB(155, 140, 125),
-        AccentColor = Color3.fromRGB(225, 165, 115),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
-    },
-
-    SakuraDream = {
-        PrimaryColor = Color3.fromRGB(215, 200, 205),
-        SecondaryColor = Color3.fromRGB(200, 185, 190),
-        SecondaryColorHover = Color3.fromRGB(190, 175, 180),
-        SecondaryColorActive = Color3.fromRGB(178, 163, 168),
-        SecondaryColorMouse1Down = Color3.fromRGB(168, 153, 158),
-        TertiaryColor = Color3.fromRGB(185, 170, 175),
-        TertiaryColorHover = Color3.fromRGB(173, 158, 163),
-        TertiaryColorActive = Color3.fromRGB(160, 145, 150),
-        TertiaryColorMouse1Down = Color3.fromRGB(150, 135, 140),
-        TextInactive = Color3.fromRGB(95, 80, 85),
-        TextActive = Color3.fromRGB(50, 35, 40),
-        TextPrimary = Color3.fromRGB(65, 50, 55),
-        TextSecondary = Color3.fromRGB(110, 95, 100),
-        AccentColor = Color3.fromRGB(235, 130, 170),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0,
-        SecondaryTransparency = 0.15
-    },
-
-    LavenderMist = {
-        PrimaryColor = Color3.fromRGB(210, 205, 220),
-        SecondaryColor = Color3.fromRGB(195, 190, 205),
-        SecondaryColorHover = Color3.fromRGB(185, 180, 195),
-        SecondaryColorActive = Color3.fromRGB(173, 168, 183),
-        SecondaryColorMouse1Down = Color3.fromRGB(163, 158, 173),
-        TertiaryColor = Color3.fromRGB(180, 175, 190),
-        TertiaryColorHover = Color3.fromRGB(168, 163, 178),
-        TertiaryColorActive = Color3.fromRGB(155, 150, 165),
-        TertiaryColorMouse1Down = Color3.fromRGB(145, 140, 155),
-        TextInactive = Color3.fromRGB(85, 80, 95),
-        TextActive = Color3.fromRGB(40, 35, 50),
-        TextPrimary = Color3.fromRGB(55, 50, 65),
-        TextSecondary = Color3.fromRGB(100, 95, 110),
-        AccentColor = Color3.fromRGB(155, 120, 210),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0,
-        SecondaryTransparency = 0.12
-    },
-
-    MintCream = {
-        PrimaryColor = Color3.fromRGB(205, 218, 215),
-        SecondaryColor = Color3.fromRGB(190, 203, 200),
-        SecondaryColorHover = Color3.fromRGB(180, 193, 190),
-        SecondaryColorActive = Color3.fromRGB(168, 181, 178),
-        SecondaryColorMouse1Down = Color3.fromRGB(158, 171, 168),
-        TertiaryColor = Color3.fromRGB(175, 188, 185),
-        TertiaryColorHover = Color3.fromRGB(163, 176, 173),
-        TertiaryColorActive = Color3.fromRGB(150, 163, 160),
-        TertiaryColorMouse1Down = Color3.fromRGB(140, 153, 150),
-        TextInactive = Color3.fromRGB(75, 90, 85),
-        TextActive = Color3.fromRGB(30, 45, 40),
-        TextPrimary = Color3.fromRGB(45, 60, 55),
-        TextSecondary = Color3.fromRGB(95, 110, 105),
-        AccentColor = Color3.fromRGB(90, 180, 150),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0,
-        SecondaryTransparency = 0.14
-    },
-
-    PeachSorbet = {
-        PrimaryColor = Color3.fromRGB(220, 205, 200),
-        SecondaryColor = Color3.fromRGB(205, 190, 185),
-        SecondaryColorHover = Color3.fromRGB(195, 180, 175),
-        SecondaryColorActive = Color3.fromRGB(183, 168, 163),
-        SecondaryColorMouse1Down = Color3.fromRGB(173, 158, 153),
-        TertiaryColor = Color3.fromRGB(190, 175, 170),
-        TertiaryColorHover = Color3.fromRGB(178, 163, 158),
-        TertiaryColorActive = Color3.fromRGB(165, 150, 145),
-        TertiaryColorMouse1Down = Color3.fromRGB(155, 140, 135),
-        TextInactive = Color3.fromRGB(90, 75, 70),
-        TextActive = Color3.fromRGB(45, 30, 25),
-        TextPrimary = Color3.fromRGB(60, 45, 40),
-        TextSecondary = Color3.fromRGB(105, 90, 85),
-        AccentColor = Color3.fromRGB(235, 145, 120),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0,
-        SecondaryTransparency = 0.13
-    },
-
-    SkyBloom = {
-        PrimaryColor = Color3.fromRGB(205, 215, 225),
-        SecondaryColor = Color3.fromRGB(190, 200, 210),
-        SecondaryColorHover = Color3.fromRGB(180, 190, 200),
-        SecondaryColorActive = Color3.fromRGB(168, 178, 188),
-        SecondaryColorMouse1Down = Color3.fromRGB(158, 168, 178),
-        TertiaryColor = Color3.fromRGB(175, 185, 195),
-        TertiaryColorHover = Color3.fromRGB(163, 173, 183),
-        TertiaryColorActive = Color3.fromRGB(150, 160, 170),
-        TertiaryColorMouse1Down = Color3.fromRGB(140, 150, 160),
-        TextInactive = Color3.fromRGB(75, 85, 95),
-        TextActive = Color3.fromRGB(30, 40, 50),
-        TextPrimary = Color3.fromRGB(45, 55, 65),
-        TextSecondary = Color3.fromRGB(95, 105, 115),
-        AccentColor = Color3.fromRGB(115, 165, 220),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0,
-        SecondaryTransparency = 0.12
-    },
-
-    AmberGlow = {
-        PrimaryColor = Color3.fromRGB(24, 18, 10),
-        SecondaryColor = Color3.fromRGB(38, 30, 18),
-        SecondaryColorHover = Color3.fromRGB(52, 42, 26),
-        SecondaryColorActive = Color3.fromRGB(68, 56, 36),
-        SecondaryColorMouse1Down = Color3.fromRGB(30, 22, 14),
-        TertiaryColor = Color3.fromRGB(46, 38, 22),
-        TertiaryColorHover = Color3.fromRGB(62, 52, 32),
-        TertiaryColorActive = Color3.fromRGB(80, 68, 44),
-        TertiaryColorMouse1Down = Color3.fromRGB(34, 26, 16),
-        TextInactive = Color3.fromRGB(185, 170, 145),
-        TextActive = Color3.fromRGB(255, 248, 235),
-        TextPrimary = Color3.fromRGB(238, 228, 210),
-        TextSecondary = Color3.fromRGB(160, 145, 120),
-        AccentColor = Color3.fromRGB(255, 190, 100),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
-    },
-
-    EmeraldNight = {
-        PrimaryColor = Color3.fromRGB(10, 18, 14),
-        SecondaryColor = Color3.fromRGB(18, 30, 24),
-        SecondaryColorHover = Color3.fromRGB(26, 42, 34),
-        SecondaryColorActive = Color3.fromRGB(36, 56, 46),
-        SecondaryColorMouse1Down = Color3.fromRGB(14, 22, 18),
-        TertiaryColor = Color3.fromRGB(22, 36, 28),
-        TertiaryColorHover = Color3.fromRGB(32, 50, 40),
-        TertiaryColorActive = Color3.fromRGB(44, 66, 54),
-        TertiaryColorMouse1Down = Color3.fromRGB(16, 26, 20),
-        TextInactive = Color3.fromRGB(165, 190, 175),
-        TextActive = Color3.fromRGB(245, 255, 248),
-        TextPrimary = Color3.fromRGB(225, 245, 235),
-        TextSecondary = Color3.fromRGB(140, 165, 150),
-        AccentColor = Color3.fromRGB(110, 245, 180),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
-    },
-
-    RubyDepth = {
-        PrimaryColor = Color3.fromRGB(20, 10, 12),
-        SecondaryColor = Color3.fromRGB(34, 18, 22),
-        SecondaryColorHover = Color3.fromRGB(48, 26, 32),
-        SecondaryColorActive = Color3.fromRGB(64, 36, 44),
-        SecondaryColorMouse1Down = Color3.fromRGB(26, 14, 18),
-        TertiaryColor = Color3.fromRGB(42, 22, 28),
-        TertiaryColorHover = Color3.fromRGB(58, 32, 40),
-        TertiaryColorActive = Color3.fromRGB(76, 44, 54),
-        TertiaryColorMouse1Down = Color3.fromRGB(30, 16, 22),
-        TextInactive = Color3.fromRGB(190, 160, 170),
-        TextActive = Color3.fromRGB(255, 245, 248),
-        TextPrimary = Color3.fromRGB(245, 230, 235),
-        TextSecondary = Color3.fromRGB(165, 135, 145),
-        AccentColor = Color3.fromRGB(255, 95, 135),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
-    },
-
-    TwilightIndigo = {
-        PrimaryColor = Color3.fromRGB(16, 18, 28),
-        SecondaryColor = Color3.fromRGB(26, 30, 45),
-        SecondaryColorHover = Color3.fromRGB(36, 42, 60),
-        SecondaryColorActive = Color3.fromRGB(48, 56, 78),
-        SecondaryColorMouse1Down = Color3.fromRGB(20, 22, 34),
-        TertiaryColor = Color3.fromRGB(32, 38, 54),
-        TertiaryColorHover = Color3.fromRGB(44, 52, 72),
-        TertiaryColorActive = Color3.fromRGB(58, 68, 92),
-        TertiaryColorMouse1Down = Color3.fromRGB(24, 28, 40),
-        TextInactive = Color3.fromRGB(165, 170, 190),
-        TextActive = Color3.fromRGB(245, 248, 255),
-        TextPrimary = Color3.fromRGB(225, 230, 248),
-        TextSecondary = Color3.fromRGB(140, 145, 165),
-        AccentColor = Color3.fromRGB(145, 165, 255),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.50
-    },
-
-    ElectricTeal = {
-        PrimaryColor = Color3.fromRGB(10, 18, 20),
-        SecondaryColor = Color3.fromRGB(18, 30, 34),
-        SecondaryColorHover = Color3.fromRGB(26, 42, 48),
-        SecondaryColorActive = Color3.fromRGB(36, 56, 64),
-        SecondaryColorMouse1Down = Color3.fromRGB(14, 22, 26),
-        TertiaryColor = Color3.fromRGB(22, 36, 42),
-        TertiaryColorHover = Color3.fromRGB(32, 50, 58),
-        TertiaryColorActive = Color3.fromRGB(44, 66, 76),
-        TertiaryColorMouse1Down = Color3.fromRGB(16, 26, 30),
-        TextInactive = Color3.fromRGB(160, 185, 190),
-        TextActive = Color3.fromRGB(240, 255, 252),
-        TextPrimary = Color3.fromRGB(220, 242, 245),
-        TextSecondary = Color3.fromRGB(135, 160, 165),
-        AccentColor = Color3.fromRGB(100, 230, 210),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
-    },
-
-    NeonViolet = {
-        PrimaryColor = Color3.fromRGB(20, 12, 24),
-        SecondaryColor = Color3.fromRGB(34, 22, 40),
-        SecondaryColorHover = Color3.fromRGB(48, 32, 56),
-        SecondaryColorActive = Color3.fromRGB(64, 44, 74),
-        SecondaryColorMouse1Down = Color3.fromRGB(26, 16, 30),
-        TertiaryColor = Color3.fromRGB(42, 28, 50),
-        TertiaryColorHover = Color3.fromRGB(58, 40, 68),
-        TertiaryColorActive = Color3.fromRGB(76, 54, 88),
-        TertiaryColorMouse1Down = Color3.fromRGB(30, 20, 36),
-        TextInactive = Color3.fromRGB(185, 165, 195),
-        TextActive = Color3.fromRGB(255, 245, 255),
-        TextPrimary = Color3.fromRGB(240, 228, 250),
-        TextSecondary = Color3.fromRGB(160, 140, 170),
-        AccentColor = Color3.fromRGB(200, 120, 255),
-        PrimaryFont = Enum.Font.GothamBold,
-        PrimaryFontSize = 18,
-        SecondaryFont = Enum.Font.GothamMedium,
-        SecondaryFontSize = 16,
-        PrimaryTransparency = 0.02,
-        SecondaryTransparency = 0.52
+    ZIndex = {
+        Background = 1,
+        Base = 2,
+        Content = 3,
+        Control = 4,
+        Overlay = 5,
+        Modal = 250,
+        Notification = 999
     }
 }
 
-SimpleUI.DefaultElements = {
-    MainFrame = {
-        Class = "Frame",
-        Properties = {
-            Name = "MainFrame",
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            Size = UDim2.new(0.85, 0, 0.60, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ClipsDescendants = false
-        },
-        Children = {{
-            Class = "UISizeConstraint",
-            Properties = {
-                MinSize = Vector2.new(500, 335),
-                MaxSize = Vector2.new(800, 600)
-            }
-        }, {
-            Class = "UIAspectRatioConstraint",
-            Properties = {
-                AspectRatio = 1.6,
-                AspectType = Enum.AspectType.FitWithinMaxSize,
-                DominantAxis = Enum.DominantAxis.Width
-            }
-        }}
-    },
-    TopBar = {
-        Class = "Frame",
-        Properties = {
-            Name = "TopBar",
-            Size = UDim2.new(1, 0, 0, 40),
-            BorderSizePixel = 0,
-            ZIndex = 1,
-            ClipsDescendants = false,
-            Active = true
-        },
-        Theme = {
-            BackgroundColor3 = "PrimaryColor",
-            BackgroundTransparency = "PrimaryTransparency"
-        }
-    },
-    TitleContainer = {
-        Class = "Frame",
-        Properties = {
-            Name = "TitleContainer",
-            Size = UDim2.new(0.7, -10, 0.7, 0),
-            BackgroundTransparency = 1,
-            ZIndex = 2,
-            ClipsDescendants = false
-        }
-    },
-    TitleLabel = {
-        Class = "TextLabel",
-        Properties = {
-            Name = "TitleLabel",
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            Text = "SimpleUI",
-            TextColor3 = Color3.fromRGB(255, 255, 255),
-            TextSize = 20,
-            TextYAlignment = Enum.TextYAlignment.Center,
-            ZIndex = 2
-        },
-        Theme = {
-            Font = "PrimaryFont"
-        }
-    },
-    ControlsContainer = {
-        Class = "Frame",
-        Properties = {
-            Name = "ControlsContainer",
-            Size = UDim2.new(0.3, -10, 0.7, 0),
-            BackgroundTransparency = 1,
-            ZIndex = 2,
-            ClipsDescendants = false
-        }
-    },
-    MainContainer = {
-        Class = "Frame",
-        Properties = {
-            Name = "MainContainer",
-            Position = UDim2.new(0, 0, 0, 40),
-            Size = UDim2.new(1, 0, 1, -50),
-            BorderSizePixel = 0,
-            ZIndex = 1,
-            ClipsDescendants = true
-        },
-        Theme = {
-            BackgroundColor3 = "PrimaryColor",
-            BackgroundTransparency = "PrimaryTransparency"
-        }
-    },
-    TabsContainer = {
-        Class = "Frame",
-        Properties = {
-            Name = "TabsContainer",
-            Position = UDim2.new(0, 10, 0, 10),
-            Size = UDim2.new(0.25, -20, 1, -20),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ZIndex = 2,
-            ClipsDescendants = false
-        },
-        Padding = {
-            Horizontal = 0,
-            Vertical = 10
-        },
-        ListLayout = {
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center
-        }
-    },
-    ContentsContainer = {
-        Class = "Frame",
-        Properties = {
-            Name = "ContentsContainer",
-            Position = UDim2.new(0.22, 10, 0, 10),
-            Size = UDim2.new(0.77, -20, 1, -20),
-            BorderSizePixel = 0,
-            BackgroundTransparency = 1,
-            ZIndex = 2,
-            ClipsDescendants = true
-        },
-        Padding = {
-            Horizontal = 10,
-            Vertical = 10
-        }
-    },
-    Tab = {
-        Class = "TextButton",
-        Properties = {
-            Size = UDim2.new(1, -10, 0, 30),
-            BorderSizePixel = 0,
-            Text = "Tab",
-            TextSize = 15,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Center,
-            AutoButtonColor = false,
-            ZIndex = 3
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency",
-            Font = "SecondaryFont",
-            TextColor3 = "TextInactive"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        }
-    },
-    Page = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Visible = false,
-            ZIndex = 3,
-            ClipsDescendants = false
-        },
-        Padding = {
-            Horizontal = 0,
-            Vertical = 8
-        },
-        ListLayout = {
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 8)
-        }
-    },
-    Section = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 30),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Label = {
-            Properties = {
-                Size = UDim2.new(1, 0, 0, 26),
-                Position = UDim2.new(0, 0, 0, 0),
-                Text = "Section",
-                TextSize = 19,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                BackgroundTransparency = 1,
-                ZIndex = 5
-            },
-            Theme = {
-                Font = "PrimaryFont",
-                TextColor3 = "TextActive"
-            }
-        },
-        Underline = {
-            Properties = {
-                Size = UDim2.new(1, 0, 0, 1),
-                Position = UDim2.new(0, 0, 1, -1),
-                BorderSizePixel = 0,
-                ZIndex = 5
-            },
-            Theme = {
-                BackgroundColor3 = "AccentColor"
-            }
-        }
-    },
-    Button = {
-        Class = "TextButton",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 35),
-            Text = "",
-            AutoButtonColor = false,
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency",
-            Font = "SecondaryFont"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        },
-        Title = {
-            Properties = {
-                Size = UDim2.new(1, -40, 1, 0),
-                Position = UDim2.new(0, 10, 0.5, 0),
-                AnchorPoint = Vector2.new(0, 0.5),
-                BackgroundTransparency = 1,
-                Text = "Button",
-                TextSize = 15,
-                TextXAlignment = Enum.TextXAlignment.Left
-            },
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary"
-            }
-        },
-        Arrow = {
-            Properties = {
-                Size = UDim2.new(0, 16, 0, 16),
-                Position = UDim2.new(1, -10, 0.5, 0),
-                AnchorPoint = Vector2.new(1, 0.5),
-                BackgroundTransparency = 1,
-                Image = "rbxassetid://113826256227095",
-                ImageRectOffset = Vector2.new(448, 192),
-                ImageRectSize = Vector2.new(64, 64)
-            },
-            Theme = {
-                ImageColor3 = "TextPrimary"
-            }
-        }
-    },
-    Toggle = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 35),
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        },
-        Label = {
-            Size = UDim2.new(0.7, -10, 1, 0),
-            Position = UDim2.new(0, 10, 0, 0),
-            Text = "Toggle",
-            TextSize = 14,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary"
-            }
-        },
-        Switch = {
-            Size = UDim2.new(0, 40, 0, 20),
-            Position = UDim2.new(1, -50, 0.5, 0),
-            AnchorPoint = Vector2.new(0, 0.5),
-            BorderSizePixel = 0,
-            Theme = {
-                BackgroundColor3 = "SecondaryColorMouse1Down"
-            }
-        },
-        Indicator = {
-            Size = UDim2.new(0, 16, 0, 16),
-            Position = UDim2.new(0, 2, 0.5, 0),
-            AnchorPoint = Vector2.new(0, 0.5),
-            BorderSizePixel = 0,
-            Theme = {
-                BackgroundColor3 = "TextInactive"
-            }
-        }
-    },
-    Dropdown = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 35),
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        },
-        Label = {
-            Size = UDim2.new(0.5, -10, 1, 0),
-            Position = UDim2.new(0, 10, 0, 0),
-            Text = "Dropdown",
-            TextSize = 14,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary"
-            }
-        },
-        Display = {
-            Size = UDim2.new(0, 160, 0, 30),
-            Position = UDim2.new(1, -10, 0.5, 0),
-            AnchorPoint = Vector2.new(1, 0.5),
-            TextSize = 13,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary",
-                BackgroundColor3 = "TertiaryColor"
-            }
-        },
-        Container = {
-            Theme = {
-                BackgroundColor3 = "TertiaryColor",
-                BackgroundTransparency = "PrimaryTransparency"
-            }
-        },
-        Option = {
-            Size = UDim2.new(1, 0, 0, 28),
-            TextSize = 13,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary",
-                BackgroundColor3 = "TertiaryColor"
-            }
-        }
-    },
-    Slider = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 50),
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        },
-        Label = {
-            Size = UDim2.new(1, -60, 0, 20),
-            Position = UDim2.new(0, 10, 0, 8),
-            Text = "Slider",
-            TextSize = 14,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary"
-            }
-        },
-        Value = {
-            Size = UDim2.new(0, 50, 0, 20),
-            Position = UDim2.new(1, -10, 0, 8),
-            AnchorPoint = Vector2.new(1, 0),
-            TextSize = 13,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextSecondary"
-            }
-        },
-        Track = {
-            Size = UDim2.new(1, -20, 0, 4),
-            Position = UDim2.new(0, 10, 1, -12),
-            Theme = {
-                BackgroundColor3 = "TertiaryColorMouse1Down"
-            }
-        },
-        Fill = {
-            Size = UDim2.new(0.5, 0, 1, 0),
-            Theme = {
-                BackgroundColor3 = "AccentColor"
-            }
-        },
-        Thumb = {
-            Size = UDim2.new(0, 14, 0, 14),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Theme = {
-                BackgroundColor3 = "TextActive"
-            }
-        }
-    },
-    TextInput = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 35),
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        },
-        Label = {
-            Size = UDim2.new(0.35, -10, 1, 0),
-            Position = UDim2.new(0, 10, 0, 0),
-            Text = "Input",
-            TextSize = 14,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary"
-            }
-        },
-        Input = {
-            Size = UDim2.new(0.35, 0, 0, 30),
-            Position = UDim2.new(1, -10, 0.5, 0),
-            AnchorPoint = Vector2.new(1, 0.5),
-            TextSize = 13,
-            PlaceholderText = "Enter text...",
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary",
-                BackgroundColor3 = "TertiaryColor",
-                PlaceholderColor3 = "TextSecondary"
-            }
-        },
-        Underline = {
-            Size = UDim2.new(1, 0, 0, 2),
-            Position = UDim2.new(0, 0, 1, -2),
-            Theme = {
-                BackgroundColor3 = "TertiaryColor"
-            }
-        }
-    },
-    Keybind = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 35),
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        },
-        Label = {
-            Size = UDim2.new(0.35, -10, 1, 0),
-            Position = UDim2.new(0, 10, 0, 0),
-            Text = "Keybind",
-            TextSize = 14,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary"
-            }
-        },
-        Display = {
-            Size = UDim2.new(0.3, 0, 0, 30),
-            Position = UDim2.new(1, -10, 0.5, 0),
-            AnchorPoint = Vector2.new(1, 0.5),
-            TextSize = 13,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary",
-                BackgroundColor3 = "TertiaryColor"
-            }
-        }
-    },
-    Paragraph = {
-        Class = "Frame",
-        Properties = {
-            Size = UDim2.new(1, 0, 0, 50),
-            BorderSizePixel = 0,
-            ZIndex = 4
-        },
-        Theme = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        Corner = {
-            CornerRadius = UDim.new(0, 4)
-        },
-        Title = {
-            Size = UDim2.new(1, -20, 0, 20),
-            Position = UDim2.new(0, 10, 0, 8),
-            Text = "Paragraph",
-            TextSize = 16,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Theme = {
-                Font = "PrimaryFont",
-                TextColor3 = "TextActive"
-            }
-        },
-        Field = {
-            Size = UDim2.new(1, 0, 0, 18),
-            TextSize = 14,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextPrimary"
-            }
-        },
-        SubField = {
-            Size = UDim2.new(1, 0, 0, 16),
-            TextSize = 13,
-            Theme = {
-                Font = "SecondaryFont",
-                TextColor3 = "TextSecondary"
-            }
-        }
-    }
-}
-
-SimpleUI.WindowControlStyles = {
+SimpleUI.WindowControls = {
     MacOS = {
-        Size = UDim2.new(0, 12, 0, 12),
-        Spacing = 8,
-        UseText = false,
+        ButtonSize = UDim2.new(0, 12, 0, 12),
+        ButtonSpacing = 8,
+        UseImages = false,
         Alignment = "Left",
         Colors = {
             Close = Color3.fromRGB(255, 95, 86),
-            Minimize = Color3.fromRGB(255, 189, 46),
             Maximize = Color3.fromRGB(40, 201, 64)
         }
     },
     Windows = {
-        Size = UDim2.new(0, 32, 1, 0),
-        Spacing = 0,
-        Gap = 0,
-        UseImage = true,
+        ButtonSize = UDim2.new(0, 32, 1, 0),
+        ButtonSpacing = 0,
+        UseImages = true,
         Alignment = "Right",
         Transparency = 1,
         Icons = {
-            Minimize = {
-                Image = "rbxassetid://10734896206",
-                ImageColor = Color3.fromRGB(255, 255, 255),
-                ImageSize = UDim2.new(0, 16, 0, 16),
-                HoverColor = Color3.fromRGB(60, 60, 60),
-                ClickColor = Color3.fromRGB(80, 80, 80)
-            },
             Maximize = {
                 Image = "rbxassetid://9886659001",
-                ImageColor = Color3.fromRGB(255, 255, 255),
-                ImageSize = UDim2.new(0, 16, 0, 16),
+                ColorKey = "TextPrimary",
+                Size = UDim2.new(0, 16, 0, 16),
                 HoverColor = Color3.fromRGB(60, 60, 60),
-                ClickColor = Color3.fromRGB(80, 80, 80)
+                PressedColor = Color3.fromRGB(80, 80, 80)
             },
             Close = {
                 Image = "rbxassetid://10747384394",
-                ImageColor = Color3.fromRGB(255, 255, 255),
-                ImageSize = UDim2.new(0, 16, 0, 16),
+                ColorKey = "TextPrimary",
+                Size = UDim2.new(0, 16, 0, 16),
                 HoverColor = Color3.fromRGB(232, 17, 35),
-                ClickColor = Color3.fromRGB(180, 10, 25)
+                PressedColor = Color3.fromRGB(180, 10, 25)
             }
         }
     }
 }
 
-function SimpleUI:getService(name)
-    if not self.Services[name] then
-        local service = game:GetService(name)
-        if cloneref then
-            local success, cloned = pcall(cloneref, service)
-            if success and cloned then
-                service = cloned
+SimpleUI.Themes = {
+    Obsidian = {
+        Primary = Color3.fromRGB(14, 15, 18),
+        Secondary = Color3.fromRGB(24, 25, 30),
+        SecondaryHover = Color3.fromRGB(34, 36, 42),
+        SecondaryActive = Color3.fromRGB(48, 50, 58),
+        SecondaryPressed = Color3.fromRGB(20, 21, 26),
+        Tertiary = Color3.fromRGB(30, 32, 38),
+        TertiaryHover = Color3.fromRGB(42, 44, 52),
+        TertiaryActive = Color3.fromRGB(56, 58, 68),
+        TertiaryPressed = Color3.fromRGB(26, 28, 34),
+        Quaternary = Color3.fromRGB(18, 19, 24),
+        QuaternaryHover = Color3.fromRGB(28, 29, 36),
+        Separator = Color3.fromRGB(48, 50, 58),
+        SeparatorTransparency = 0.15,
+        BoxBackground = Color3.fromRGB(12, 13, 16),
+        TextPrimary = Color3.fromRGB(240, 241, 245),
+        TextSecondary = Color3.fromRGB(170, 173, 180),
+        TextInactive = Color3.fromRGB(115, 117, 125),
+        TextActive = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(168, 85, 247),
+        TabAccent = Color3.fromRGB(192, 132, 252),
+        TabIconActive = Color3.fromRGB(192, 132, 252),
+        TabIconHover = Color3.fromRGB(220, 220, 230),
+        TabIconInactive = Color3.fromRGB(115, 117, 125),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.75,
+        TransparencyTertiary = 0.45
+    },
+
+    CatppuccinMocha = {
+        Primary = Color3.fromRGB(30, 30, 46),
+        Secondary = Color3.fromRGB(49, 50, 68),
+        SecondaryHover = Color3.fromRGB(69, 71, 90),
+        SecondaryActive = Color3.fromRGB(88, 91, 112),
+        SecondaryPressed = Color3.fromRGB(40, 41, 58),
+        Tertiary = Color3.fromRGB(59, 61, 81),
+        TertiaryHover = Color3.fromRGB(79, 82, 107),
+        TertiaryActive = Color3.fromRGB(98, 102, 133),
+        TertiaryPressed = Color3.fromRGB(50, 52, 71),
+        Quaternary = Color3.fromRGB(36, 37, 52),
+        QuaternaryHover = Color3.fromRGB(54, 56, 76),
+        Separator = Color3.fromRGB(88, 91, 112),
+        SeparatorTransparency = 0.25,
+        BoxBackground = Color3.fromRGB(28, 28, 44),
+        TextPrimary = Color3.fromRGB(205, 214, 244),
+        TextSecondary = Color3.fromRGB(166, 173, 200),
+        TextInactive = Color3.fromRGB(127, 132, 156),
+        TextActive = Color3.fromRGB(220, 228, 255),
+        Accent = Color3.fromRGB(203, 166, 247),
+        TabAccent = Color3.fromRGB(221, 189, 252),
+        TabIconActive = Color3.fromRGB(221, 189, 252),
+        TabIconHover = Color3.fromRGB(186, 194, 222),
+        TabIconInactive = Color3.fromRGB(127, 132, 156),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.01,
+        TransparencySecondary = 0.70,
+        TransparencyTertiary = 0.45
+    },
+
+    TokyoNight = {
+        Primary = Color3.fromRGB(26, 27, 38),
+        Secondary = Color3.fromRGB(41, 46, 66),
+        SecondaryHover = Color3.fromRGB(58, 64, 90),
+        SecondaryActive = Color3.fromRGB(73, 81, 118),
+        SecondaryPressed = Color3.fromRGB(35, 39, 56),
+        Tertiary = Color3.fromRGB(52, 57, 79),
+        TertiaryHover = Color3.fromRGB(70, 77, 111),
+        TertiaryActive = Color3.fromRGB(86, 94, 140),
+        TertiaryPressed = Color3.fromRGB(44, 48, 67),
+        Quaternary = Color3.fromRGB(32, 36, 54),
+        QuaternaryHover = Color3.fromRGB(48, 54, 78),
+        Separator = Color3.fromRGB(73, 81, 118),
+        SeparatorTransparency = 0.30,
+        BoxBackground = Color3.fromRGB(24, 25, 36),
+        TextPrimary = Color3.fromRGB(192, 202, 245),
+        TextSecondary = Color3.fromRGB(158, 168, 218),
+        TextInactive = Color3.fromRGB(115, 122, 168),
+        TextActive = Color3.fromRGB(207, 216, 255),
+        Accent = Color3.fromRGB(125, 207, 255),
+        TabAccent = Color3.fromRGB(158, 219, 255),
+        TabIconActive = Color3.fromRGB(158, 219, 255),
+        TabIconHover = Color3.fromRGB(167, 177, 211),
+        TabIconInactive = Color3.fromRGB(115, 122, 168),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.01,
+        TransparencySecondary = 0.73,
+        TransparencyTertiary = 0.45
+    },
+
+    Midnight = {
+        Primary = Color3.fromRGB(8, 9, 14),
+        Secondary = Color3.fromRGB(15, 17, 26),
+        SecondaryHover = Color3.fromRGB(22, 25, 38),
+        SecondaryActive = Color3.fromRGB(32, 36, 54),
+        SecondaryPressed = Color3.fromRGB(12, 14, 21),
+        Tertiary = Color3.fromRGB(20, 23, 35),
+        TertiaryHover = Color3.fromRGB(30, 34, 52),
+        TertiaryActive = Color3.fromRGB(42, 48, 72),
+        TertiaryPressed = Color3.fromRGB(16, 18, 29),
+        Quaternary = Color3.fromRGB(10, 12, 18),
+        QuaternaryHover = Color3.fromRGB(18, 21, 32),
+        Separator = Color3.fromRGB(38, 44, 66),
+        SeparatorTransparency = 0.20,
+        BoxBackground = Color3.fromRGB(6, 7, 11),
+        TextPrimary = Color3.fromRGB(220, 225, 245),
+        TextSecondary = Color3.fromRGB(148, 158, 195),
+        TextInactive = Color3.fromRGB(90, 98, 130),
+        TextActive = Color3.fromRGB(240, 244, 255),
+        Accent = Color3.fromRGB(99, 179, 237),
+        TabAccent = Color3.fromRGB(140, 200, 252),
+        TabIconActive = Color3.fromRGB(140, 200, 252),
+        TabIconHover = Color3.fromRGB(180, 195, 230),
+        TabIconInactive = Color3.fromRGB(90, 98, 130),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.78,
+        TransparencyTertiary = 0.50
+    },
+
+    Ember = {
+        Primary = Color3.fromRGB(16, 10, 8),
+        Secondary = Color3.fromRGB(28, 18, 14),
+        SecondaryHover = Color3.fromRGB(40, 26, 20),
+        SecondaryActive = Color3.fromRGB(56, 36, 28),
+        SecondaryPressed = Color3.fromRGB(22, 14, 11),
+        Tertiary = Color3.fromRGB(36, 23, 18),
+        TertiaryHover = Color3.fromRGB(50, 33, 26),
+        TertiaryActive = Color3.fromRGB(66, 44, 34),
+        TertiaryPressed = Color3.fromRGB(30, 19, 15),
+        Quaternary = Color3.fromRGB(20, 13, 10),
+        QuaternaryHover = Color3.fromRGB(32, 21, 16),
+        Separator = Color3.fromRGB(72, 48, 36),
+        SeparatorTransparency = 0.20,
+        BoxBackground = Color3.fromRGB(12, 8, 6),
+        TextPrimary = Color3.fromRGB(245, 232, 220),
+        TextSecondary = Color3.fromRGB(195, 168, 148),
+        TextInactive = Color3.fromRGB(130, 105, 88),
+        TextActive = Color3.fromRGB(255, 248, 240),
+        Accent = Color3.fromRGB(255, 140, 60),
+        TabAccent = Color3.fromRGB(255, 170, 100),
+        TabIconActive = Color3.fromRGB(255, 170, 100),
+        TabIconHover = Color3.fromRGB(220, 190, 165),
+        TabIconInactive = Color3.fromRGB(130, 105, 88),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.72,
+        TransparencyTertiary = 0.45
+    },
+
+    Slate = {
+        Primary = Color3.fromRGB(15, 20, 25),
+        Secondary = Color3.fromRGB(24, 32, 40),
+        SecondaryHover = Color3.fromRGB(34, 44, 55),
+        SecondaryActive = Color3.fromRGB(46, 60, 74),
+        SecondaryPressed = Color3.fromRGB(19, 26, 33),
+        Tertiary = Color3.fromRGB(30, 40, 50),
+        TertiaryHover = Color3.fromRGB(42, 55, 68),
+        TertiaryActive = Color3.fromRGB(56, 72, 88),
+        TertiaryPressed = Color3.fromRGB(25, 33, 42),
+        Quaternary = Color3.fromRGB(18, 24, 30),
+        QuaternaryHover = Color3.fromRGB(28, 37, 46),
+        Separator = Color3.fromRGB(52, 68, 84),
+        SeparatorTransparency = 0.22,
+        BoxBackground = Color3.fromRGB(11, 15, 19),
+        TextPrimary = Color3.fromRGB(220, 232, 242),
+        TextSecondary = Color3.fromRGB(158, 176, 194),
+        TextInactive = Color3.fromRGB(100, 118, 136),
+        TextActive = Color3.fromRGB(240, 248, 255),
+        Accent = Color3.fromRGB(56, 189, 248),
+        TabAccent = Color3.fromRGB(103, 210, 255),
+        TabIconActive = Color3.fromRGB(103, 210, 255),
+        TabIconHover = Color3.fromRGB(170, 200, 224),
+        TabIconInactive = Color3.fromRGB(100, 118, 136),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.74,
+        TransparencyTertiary = 0.46
+    },
+
+    Rosewood = {
+        Primary = Color3.fromRGB(16, 9, 12),
+        Secondary = Color3.fromRGB(28, 16, 22),
+        SecondaryHover = Color3.fromRGB(40, 23, 32),
+        SecondaryActive = Color3.fromRGB(55, 32, 44),
+        SecondaryPressed = Color3.fromRGB(22, 13, 18),
+        Tertiary = Color3.fromRGB(36, 21, 29),
+        TertiaryHover = Color3.fromRGB(50, 30, 42),
+        TertiaryActive = Color3.fromRGB(66, 40, 56),
+        TertiaryPressed = Color3.fromRGB(30, 17, 24),
+        Quaternary = Color3.fromRGB(19, 11, 15),
+        QuaternaryHover = Color3.fromRGB(32, 19, 26),
+        Separator = Color3.fromRGB(70, 42, 58),
+        SeparatorTransparency = 0.20,
+        BoxBackground = Color3.fromRGB(12, 7, 10),
+        TextPrimary = Color3.fromRGB(246, 230, 236),
+        TextSecondary = Color3.fromRGB(198, 168, 180),
+        TextInactive = Color3.fromRGB(134, 106, 118),
+        TextActive = Color3.fromRGB(255, 244, 248),
+        Accent = Color3.fromRGB(251, 113, 133),
+        TabAccent = Color3.fromRGB(255, 150, 168),
+        TabIconActive = Color3.fromRGB(255, 150, 168),
+        TabIconHover = Color3.fromRGB(220, 185, 198),
+        TabIconInactive = Color3.fromRGB(134, 106, 118),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.72,
+        TransparencyTertiary = 0.45
+    },
+
+    Forest = {
+        Primary = Color3.fromRGB(10, 15, 12),
+        Secondary = Color3.fromRGB(18, 27, 22),
+        SecondaryHover = Color3.fromRGB(26, 39, 32),
+        SecondaryActive = Color3.fromRGB(36, 54, 44),
+        SecondaryPressed = Color3.fromRGB(14, 21, 17),
+        Tertiary = Color3.fromRGB(23, 35, 28),
+        TertiaryHover = Color3.fromRGB(33, 50, 40),
+        TertiaryActive = Color3.fromRGB(44, 66, 54),
+        TertiaryPressed = Color3.fromRGB(18, 28, 23),
+        Quaternary = Color3.fromRGB(12, 18, 15),
+        QuaternaryHover = Color3.fromRGB(22, 33, 27),
+        Separator = Color3.fromRGB(44, 66, 54),
+        SeparatorTransparency = 0.22,
+        BoxBackground = Color3.fromRGB(8, 12, 10),
+        TextPrimary = Color3.fromRGB(220, 240, 228),
+        TextSecondary = Color3.fromRGB(158, 192, 170),
+        TextInactive = Color3.fromRGB(98, 130, 112),
+        TextActive = Color3.fromRGB(240, 255, 245),
+        Accent = Color3.fromRGB(110, 231, 183),
+        TabAccent = Color3.fromRGB(150, 246, 205),
+        TabIconActive = Color3.fromRGB(150, 246, 205),
+        TabIconHover = Color3.fromRGB(170, 210, 188),
+        TabIconInactive = Color3.fromRGB(98, 130, 112),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.74,
+        TransparencyTertiary = 0.46
+    },
+
+    Graphite = {
+        Primary = Color3.fromRGB(18, 18, 20),
+        Secondary = Color3.fromRGB(30, 30, 34),
+        SecondaryHover = Color3.fromRGB(42, 42, 48),
+        SecondaryActive = Color3.fromRGB(56, 56, 64),
+        SecondaryPressed = Color3.fromRGB(24, 24, 28),
+        Tertiary = Color3.fromRGB(38, 38, 44),
+        TertiaryHover = Color3.fromRGB(52, 52, 60),
+        TertiaryActive = Color3.fromRGB(68, 68, 78),
+        TertiaryPressed = Color3.fromRGB(32, 32, 37),
+        Quaternary = Color3.fromRGB(22, 22, 26),
+        QuaternaryHover = Color3.fromRGB(34, 34, 40),
+        Separator = Color3.fromRGB(62, 62, 72),
+        SeparatorTransparency = 0.18,
+        BoxBackground = Color3.fromRGB(13, 13, 15),
+        TextPrimary = Color3.fromRGB(238, 238, 242),
+        TextSecondary = Color3.fromRGB(172, 172, 182),
+        TextInactive = Color3.fromRGB(112, 112, 124),
+        TextActive = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(168, 168, 255),
+        TabAccent = Color3.fromRGB(192, 192, 255),
+        TabIconActive = Color3.fromRGB(192, 192, 255),
+        TabIconHover = Color3.fromRGB(210, 210, 230),
+        TabIconInactive = Color3.fromRGB(112, 112, 124),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.76,
+        TransparencyTertiary = 0.46
+    },
+
+    Abyss = {
+        Primary = Color3.fromRGB(5, 5, 10),
+        Secondary = Color3.fromRGB(10, 10, 20),
+        SecondaryHover = Color3.fromRGB(16, 16, 32),
+        SecondaryActive = Color3.fromRGB(24, 24, 46),
+        SecondaryPressed = Color3.fromRGB(8, 8, 16),
+        Tertiary = Color3.fromRGB(14, 14, 28),
+        TertiaryHover = Color3.fromRGB(22, 22, 44),
+        TertiaryActive = Color3.fromRGB(32, 32, 60),
+        TertiaryPressed = Color3.fromRGB(11, 11, 22),
+        Quaternary = Color3.fromRGB(7, 7, 13),
+        QuaternaryHover = Color3.fromRGB(14, 14, 26),
+        Separator = Color3.fromRGB(36, 36, 72),
+        SeparatorTransparency = 0.18,
+        BoxBackground = Color3.fromRGB(3, 3, 7),
+        TextPrimary = Color3.fromRGB(200, 210, 255),
+        TextSecondary = Color3.fromRGB(140, 152, 210),
+        TextInactive = Color3.fromRGB(80, 88, 140),
+        TextActive = Color3.fromRGB(220, 228, 255),
+        Accent = Color3.fromRGB(180, 120, 255),
+        TabAccent = Color3.fromRGB(200, 155, 255),
+        TabIconActive = Color3.fromRGB(200, 155, 255),
+        TabIconHover = Color3.fromRGB(170, 175, 220),
+        TabIconInactive = Color3.fromRGB(80, 88, 140),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.80,
+        TransparencyTertiary = 0.50
+    },
+
+    NordAurora = {
+        Primary = Color3.fromRGB(36, 40, 49),
+        Secondary = Color3.fromRGB(49, 54, 66),
+        SecondaryHover = Color3.fromRGB(62, 68, 83),
+        SecondaryActive = Color3.fromRGB(76, 86, 106),
+        SecondaryPressed = Color3.fromRGB(42, 46, 57),
+        Tertiary = Color3.fromRGB(59, 66, 82),
+        TertiaryHover = Color3.fromRGB(74, 84, 104),
+        TertiaryActive = Color3.fromRGB(91, 103, 128),
+        TertiaryPressed = Color3.fromRGB(50, 56, 70),
+        Quaternary = Color3.fromRGB(42, 47, 58),
+        QuaternaryHover = Color3.fromRGB(56, 63, 78),
+        Separator = Color3.fromRGB(76, 86, 106),
+        SeparatorTransparency = 0.28,
+        BoxBackground = Color3.fromRGB(34, 38, 46),
+        TextPrimary = Color3.fromRGB(236, 239, 244),
+        TextSecondary = Color3.fromRGB(189, 196, 212),
+        TextInactive = Color3.fromRGB(129, 138, 160),
+        TextActive = Color3.fromRGB(250, 252, 255),
+        Accent = Color3.fromRGB(136, 192, 208),
+        TabAccent = Color3.fromRGB(163, 212, 225),
+        TabIconActive = Color3.fromRGB(163, 212, 225),
+        TabIconHover = Color3.fromRGB(199, 208, 222),
+        TabIconInactive = Color3.fromRGB(129, 138, 160),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.01,
+        TransparencySecondary = 0.70,
+        TransparencyTertiary = 0.44
+    },
+
+    Dracula = {
+        Primary = Color3.fromRGB(40, 42, 54),
+        Secondary = Color3.fromRGB(52, 55, 70),
+        SecondaryHover = Color3.fromRGB(66, 70, 90),
+        SecondaryActive = Color3.fromRGB(82, 86, 110),
+        SecondaryPressed = Color3.fromRGB(46, 48, 62),
+        Tertiary = Color3.fromRGB(60, 64, 82),
+        TertiaryHover = Color3.fromRGB(76, 81, 104),
+        TertiaryActive = Color3.fromRGB(94, 100, 128),
+        TertiaryPressed = Color3.fromRGB(52, 56, 72),
+        Quaternary = Color3.fromRGB(46, 48, 62),
+        QuaternaryHover = Color3.fromRGB(60, 64, 82),
+        Separator = Color3.fromRGB(82, 86, 110),
+        SeparatorTransparency = 0.26,
+        BoxBackground = Color3.fromRGB(36, 38, 48),
+        TextPrimary = Color3.fromRGB(248, 248, 242),
+        TextSecondary = Color3.fromRGB(200, 200, 198),
+        TextInactive = Color3.fromRGB(140, 140, 148),
+        TextActive = Color3.fromRGB(255, 255, 250),
+        Accent = Color3.fromRGB(189, 147, 249),
+        TabAccent = Color3.fromRGB(207, 170, 255),
+        TabIconActive = Color3.fromRGB(207, 170, 255),
+        TabIconHover = Color3.fromRGB(210, 205, 225),
+        TabIconInactive = Color3.fromRGB(140, 140, 148),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.01,
+        TransparencySecondary = 0.70,
+        TransparencyTertiary = 0.44
+    },
+
+    GruvboxDark = {
+        Primary = Color3.fromRGB(40, 40, 40),
+        Secondary = Color3.fromRGB(60, 56, 54),
+        SecondaryHover = Color3.fromRGB(80, 73, 69),
+        SecondaryActive = Color3.fromRGB(102, 92, 84),
+        SecondaryPressed = Color3.fromRGB(50, 48, 45),
+        Tertiary = Color3.fromRGB(69, 65, 62),
+        TertiaryHover = Color3.fromRGB(90, 84, 79),
+        TertiaryActive = Color3.fromRGB(112, 104, 97),
+        TertiaryPressed = Color3.fromRGB(58, 55, 52),
+        Quaternary = Color3.fromRGB(50, 48, 45),
+        QuaternaryHover = Color3.fromRGB(68, 64, 60),
+        Separator = Color3.fromRGB(102, 92, 84),
+        SeparatorTransparency = 0.24,
+        BoxBackground = Color3.fromRGB(32, 32, 32),
+        TextPrimary = Color3.fromRGB(235, 219, 178),
+        TextSecondary = Color3.fromRGB(189, 174, 147),
+        TextInactive = Color3.fromRGB(124, 111, 100),
+        TextActive = Color3.fromRGB(251, 241, 199),
+        Accent = Color3.fromRGB(250, 189, 47),
+        TabAccent = Color3.fromRGB(255, 210, 100),
+        TabIconActive = Color3.fromRGB(255, 210, 100),
+        TabIconHover = Color3.fromRGB(210, 195, 160),
+        TabIconInactive = Color3.fromRGB(124, 111, 100),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.01,
+        TransparencySecondary = 0.68,
+        TransparencyTertiary = 0.43
+    },
+
+    Onyx = {
+        Primary = Color3.fromRGB(10, 10, 12),
+        Secondary = Color3.fromRGB(18, 18, 22),
+        SecondaryHover = Color3.fromRGB(26, 27, 33),
+        SecondaryActive = Color3.fromRGB(36, 38, 46),
+        SecondaryPressed = Color3.fromRGB(14, 14, 17),
+        Tertiary = Color3.fromRGB(23, 24, 30),
+        TertiaryHover = Color3.fromRGB(33, 35, 44),
+        TertiaryActive = Color3.fromRGB(45, 48, 60),
+        TertiaryPressed = Color3.fromRGB(19, 20, 25),
+        Quaternary = Color3.fromRGB(13, 13, 16),
+        QuaternaryHover = Color3.fromRGB(23, 24, 29),
+        Separator = Color3.fromRGB(42, 44, 56),
+        SeparatorTransparency = 0.16,
+        BoxBackground = Color3.fromRGB(7, 7, 9),
+        TextPrimary = Color3.fromRGB(230, 232, 240),
+        TextSecondary = Color3.fromRGB(162, 165, 180),
+        TextInactive = Color3.fromRGB(100, 102, 118),
+        TextActive = Color3.fromRGB(248, 250, 255),
+        Accent = Color3.fromRGB(255, 255, 255),
+        TabAccent = Color3.fromRGB(235, 238, 255),
+        TabIconActive = Color3.fromRGB(255, 255, 255),
+        TabIconHover = Color3.fromRGB(195, 200, 220),
+        TabIconInactive = Color3.fromRGB(100, 102, 118),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.80,
+        TransparencyTertiary = 0.50
+    },
+
+    CobaltSteel = {
+        Primary = Color3.fromRGB(10, 16, 28),
+        Secondary = Color3.fromRGB(16, 26, 46),
+        SecondaryHover = Color3.fromRGB(22, 38, 66),
+        SecondaryActive = Color3.fromRGB(30, 52, 90),
+        SecondaryPressed = Color3.fromRGB(13, 21, 38),
+        Tertiary = Color3.fromRGB(20, 33, 58),
+        TertiaryHover = Color3.fromRGB(28, 48, 82),
+        TertiaryActive = Color3.fromRGB(38, 64, 108),
+        TertiaryPressed = Color3.fromRGB(16, 27, 48),
+        Quaternary = Color3.fromRGB(13, 20, 36),
+        QuaternaryHover = Color3.fromRGB(20, 32, 56),
+        Separator = Color3.fromRGB(40, 64, 108),
+        SeparatorTransparency = 0.22,
+        BoxBackground = Color3.fromRGB(8, 12, 22),
+        TextPrimary = Color3.fromRGB(210, 228, 255),
+        TextSecondary = Color3.fromRGB(150, 180, 225),
+        TextInactive = Color3.fromRGB(88, 120, 172),
+        TextActive = Color3.fromRGB(232, 242, 255),
+        Accent = Color3.fromRGB(59, 198, 255),
+        TabAccent = Color3.fromRGB(100, 215, 255),
+        TabIconActive = Color3.fromRGB(100, 215, 255),
+        TabIconHover = Color3.fromRGB(162, 198, 238),
+        TabIconInactive = Color3.fromRGB(88, 120, 172),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.76,
+        TransparencyTertiary = 0.48
+    },
+
+    Sakura = {
+        Primary = Color3.fromRGB(20, 12, 16),
+        Secondary = Color3.fromRGB(34, 20, 28),
+        SecondaryHover = Color3.fromRGB(48, 29, 40),
+        SecondaryActive = Color3.fromRGB(64, 39, 54),
+        SecondaryPressed = Color3.fromRGB(27, 16, 22),
+        Tertiary = Color3.fromRGB(43, 26, 36),
+        TertiaryHover = Color3.fromRGB(59, 36, 50),
+        TertiaryActive = Color3.fromRGB(76, 48, 66),
+        TertiaryPressed = Color3.fromRGB(36, 22, 30),
+        Quaternary = Color3.fromRGB(24, 15, 20),
+        QuaternaryHover = Color3.fromRGB(38, 24, 32),
+        Separator = Color3.fromRGB(90, 54, 74),
+        SeparatorTransparency = 0.22,
+        BoxBackground = Color3.fromRGB(15, 9, 12),
+        TextPrimary = Color3.fromRGB(252, 228, 236),
+        TextSecondary = Color3.fromRGB(210, 172, 188),
+        TextInactive = Color3.fromRGB(148, 108, 126),
+        TextActive = Color3.fromRGB(255, 242, 248),
+        Accent = Color3.fromRGB(255, 145, 175),
+        TabAccent = Color3.fromRGB(255, 178, 200),
+        TabIconActive = Color3.fromRGB(255, 178, 200),
+        TabIconHover = Color3.fromRGB(228, 185, 202),
+        TabIconInactive = Color3.fromRGB(148, 108, 126),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.72,
+        TransparencyTertiary = 0.45
+    },
+
+    Nebula = {
+        Primary = Color3.fromRGB(12, 8, 22),
+        Secondary = Color3.fromRGB(22, 14, 40),
+        SecondaryHover = Color3.fromRGB(32, 21, 58),
+        SecondaryActive = Color3.fromRGB(44, 30, 78),
+        SecondaryPressed = Color3.fromRGB(17, 11, 32),
+        Tertiary = Color3.fromRGB(28, 18, 52),
+        TertiaryHover = Color3.fromRGB(40, 27, 74),
+        TertiaryActive = Color3.fromRGB(54, 37, 98),
+        TertiaryPressed = Color3.fromRGB(23, 15, 43),
+        Quaternary = Color3.fromRGB(15, 10, 28),
+        QuaternaryHover = Color3.fromRGB(26, 18, 48),
+        Separator = Color3.fromRGB(72, 48, 130),
+        SeparatorTransparency = 0.24,
+        BoxBackground = Color3.fromRGB(9, 6, 17),
+        TextPrimary = Color3.fromRGB(222, 210, 255),
+        TextSecondary = Color3.fromRGB(172, 155, 218),
+        TextInactive = Color3.fromRGB(110, 94, 158),
+        TextActive = Color3.fromRGB(240, 232, 255),
+        Accent = Color3.fromRGB(196, 100, 255),
+        TabAccent = Color3.fromRGB(216, 140, 255),
+        TabIconActive = Color3.fromRGB(216, 140, 255),
+        TabIconHover = Color3.fromRGB(185, 162, 228),
+        TabIconInactive = Color3.fromRGB(110, 94, 158),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.74,
+        TransparencyTertiary = 0.47
+    },
+
+    Copper = {
+        Primary = Color3.fromRGB(18, 12, 8),
+        Secondary = Color3.fromRGB(30, 20, 13),
+        SecondaryHover = Color3.fromRGB(44, 30, 19),
+        SecondaryActive = Color3.fromRGB(60, 41, 26),
+        SecondaryPressed = Color3.fromRGB(24, 16, 10),
+        Tertiary = Color3.fromRGB(38, 26, 17),
+        TertiaryHover = Color3.fromRGB(54, 37, 24),
+        TertiaryActive = Color3.fromRGB(70, 49, 32),
+        TertiaryPressed = Color3.fromRGB(32, 21, 14),
+        Quaternary = Color3.fromRGB(21, 14, 9),
+        QuaternaryHover = Color3.fromRGB(34, 23, 15),
+        Separator = Color3.fromRGB(88, 60, 38),
+        SeparatorTransparency = 0.20,
+        BoxBackground = Color3.fromRGB(14, 9, 6),
+        TextPrimary = Color3.fromRGB(248, 230, 210),
+        TextSecondary = Color3.fromRGB(200, 174, 148),
+        TextInactive = Color3.fromRGB(136, 112, 90),
+        TextActive = Color3.fromRGB(255, 245, 230),
+        Accent = Color3.fromRGB(218, 138, 72),
+        TabAccent = Color3.fromRGB(238, 165, 105),
+        TabIconActive = Color3.fromRGB(238, 165, 105),
+        TabIconHover = Color3.fromRGB(210, 178, 148),
+        TabIconInactive = Color3.fromRGB(136, 112, 90),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.72,
+        TransparencyTertiary = 0.45
+    },
+
+    Phantom = {
+        Primary = Color3.fromRGB(6, 6, 8),
+        Secondary = Color3.fromRGB(14, 14, 18),
+        SecondaryHover = Color3.fromRGB(22, 22, 29),
+        SecondaryActive = Color3.fromRGB(32, 32, 42),
+        SecondaryPressed = Color3.fromRGB(10, 10, 13),
+        Tertiary = Color3.fromRGB(19, 19, 26),
+        TertiaryHover = Color3.fromRGB(28, 28, 38),
+        TertiaryActive = Color3.fromRGB(39, 39, 52),
+        TertiaryPressed = Color3.fromRGB(15, 15, 21),
+        Quaternary = Color3.fromRGB(9, 9, 12),
+        QuaternaryHover = Color3.fromRGB(18, 18, 24),
+        Separator = Color3.fromRGB(46, 46, 62),
+        SeparatorTransparency = 0.16,
+        BoxBackground = Color3.fromRGB(4, 4, 6),
+        TextPrimary = Color3.fromRGB(220, 222, 232),
+        TextSecondary = Color3.fromRGB(152, 154, 172),
+        TextInactive = Color3.fromRGB(90, 92, 110),
+        TextActive = Color3.fromRGB(240, 242, 255),
+        Accent = Color3.fromRGB(124, 124, 255),
+        TabAccent = Color3.fromRGB(158, 158, 255),
+        TabIconActive = Color3.fromRGB(158, 158, 255),
+        TabIconHover = Color3.fromRGB(180, 180, 215),
+        TabIconInactive = Color3.fromRGB(90, 92, 110),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.82,
+        TransparencyTertiary = 0.52
+    },
+
+    TurboTeal = {
+        Primary = Color3.fromRGB(8, 18, 20),
+        Secondary = Color3.fromRGB(13, 30, 34),
+        SecondaryHover = Color3.fromRGB(18, 44, 50),
+        SecondaryActive = Color3.fromRGB(26, 60, 68),
+        SecondaryPressed = Color3.fromRGB(10, 24, 27),
+        Tertiary = Color3.fromRGB(16, 38, 44),
+        TertiaryHover = Color3.fromRGB(24, 55, 63),
+        TertiaryActive = Color3.fromRGB(33, 73, 83),
+        TertiaryPressed = Color3.fromRGB(13, 31, 36),
+        Quaternary = Color3.fromRGB(10, 22, 26),
+        QuaternaryHover = Color3.fromRGB(18, 36, 42),
+        Separator = Color3.fromRGB(36, 86, 100),
+        SeparatorTransparency = 0.22,
+        BoxBackground = Color3.fromRGB(6, 14, 16),
+        TextPrimary = Color3.fromRGB(200, 240, 244),
+        TextSecondary = Color3.fromRGB(140, 196, 205),
+        TextInactive = Color3.fromRGB(80, 136, 146),
+        TextActive = Color3.fromRGB(220, 250, 254),
+        Accent = Color3.fromRGB(45, 212, 191),
+        TabAccent = Color3.fromRGB(90, 230, 212),
+        TabIconActive = Color3.fromRGB(90, 230, 212),
+        TabIconHover = Color3.fromRGB(140, 205, 210),
+        TabIconInactive = Color3.fromRGB(80, 136, 146),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.74,
+        TransparencyTertiary = 0.46
+    },
+
+    Arctic = {
+        Primary = Color3.fromRGB(14, 22, 30),
+        Secondary = Color3.fromRGB(22, 36, 50),
+        SecondaryHover = Color3.fromRGB(32, 52, 72),
+        SecondaryActive = Color3.fromRGB(44, 70, 96),
+        SecondaryPressed = Color3.fromRGB(17, 29, 40),
+        Tertiary = Color3.fromRGB(28, 45, 62),
+        TertiaryHover = Color3.fromRGB(40, 64, 88),
+        TertiaryActive = Color3.fromRGB(54, 84, 114),
+        TertiaryPressed = Color3.fromRGB(23, 37, 52),
+        Quaternary = Color3.fromRGB(17, 27, 38),
+        QuaternaryHover = Color3.fromRGB(28, 44, 60),
+        Separator = Color3.fromRGB(56, 86, 118),
+        SeparatorTransparency = 0.24,
+        BoxBackground = Color3.fromRGB(10, 17, 24),
+        TextPrimary = Color3.fromRGB(215, 234, 248),
+        TextSecondary = Color3.fromRGB(156, 188, 218),
+        TextInactive = Color3.fromRGB(94, 130, 164),
+        TextActive = Color3.fromRGB(235, 248, 255),
+        Accent = Color3.fromRGB(148, 210, 255),
+        TabAccent = Color3.fromRGB(178, 225, 255),
+        TabIconActive = Color3.fromRGB(178, 225, 255),
+        TabIconHover = Color3.fromRGB(172, 202, 228),
+        TabIconInactive = Color3.fromRGB(94, 130, 164),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.74,
+        TransparencyTertiary = 0.46
+    },
+
+    Pearl = {
+        Primary = Color3.fromRGB(248, 248, 250),
+        Secondary = Color3.fromRGB(238, 238, 244),
+        SecondaryHover = Color3.fromRGB(228, 228, 236),
+        SecondaryActive = Color3.fromRGB(214, 214, 226),
+        SecondaryPressed = Color3.fromRGB(232, 232, 240),
+        Tertiary = Color3.fromRGB(224, 224, 232),
+        TertiaryHover = Color3.fromRGB(210, 210, 222),
+        TertiaryActive = Color3.fromRGB(196, 196, 212),
+        TertiaryPressed = Color3.fromRGB(218, 218, 228),
+        Quaternary = Color3.fromRGB(242, 242, 246),
+        QuaternaryHover = Color3.fromRGB(232, 232, 238),
+        Separator = Color3.fromRGB(200, 200, 216),
+        SeparatorTransparency = 0.30,
+        BoxBackground = Color3.fromRGB(255, 255, 255),
+        TextPrimary = Color3.fromRGB(28, 28, 40),
+        TextSecondary = Color3.fromRGB(80, 80, 108),
+        TextInactive = Color3.fromRGB(148, 148, 172),
+        TextActive = Color3.fromRGB(12, 12, 22),
+        Accent = Color3.fromRGB(109, 40, 217),
+        TabAccent = Color3.fromRGB(124, 58, 237),
+        TabIconActive = Color3.fromRGB(109, 40, 217),
+        TabIconHover = Color3.fromRGB(60, 60, 100),
+        TabIconInactive = Color3.fromRGB(148, 148, 172),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.40,
+        TransparencyTertiary = 0.20
+    },
+
+    Cloud = {
+        Primary = Color3.fromRGB(244, 246, 252),
+        Secondary = Color3.fromRGB(232, 236, 248),
+        SecondaryHover = Color3.fromRGB(218, 224, 242),
+        SecondaryActive = Color3.fromRGB(200, 210, 236),
+        SecondaryPressed = Color3.fromRGB(226, 230, 244),
+        Tertiary = Color3.fromRGB(214, 220, 240),
+        TertiaryHover = Color3.fromRGB(198, 208, 234),
+        TertiaryActive = Color3.fromRGB(180, 194, 228),
+        TertiaryPressed = Color3.fromRGB(207, 214, 237),
+        Quaternary = Color3.fromRGB(238, 241, 250),
+        QuaternaryHover = Color3.fromRGB(226, 230, 244),
+        Separator = Color3.fromRGB(186, 198, 232),
+        SeparatorTransparency = 0.28,
+        BoxBackground = Color3.fromRGB(252, 252, 255),
+        TextPrimary = Color3.fromRGB(22, 28, 52),
+        TextSecondary = Color3.fromRGB(72, 88, 140),
+        TextInactive = Color3.fromRGB(140, 152, 196),
+        TextActive = Color3.fromRGB(10, 14, 34),
+        Accent = Color3.fromRGB(79, 70, 229),
+        TabAccent = Color3.fromRGB(99, 90, 245),
+        TabIconActive = Color3.fromRGB(79, 70, 229),
+        TabIconHover = Color3.fromRGB(38, 48, 100),
+        TabIconInactive = Color3.fromRGB(140, 152, 196),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.38,
+        TransparencyTertiary = 0.18
+    },
+
+    Linen = {
+        Primary = Color3.fromRGB(250, 246, 240),
+        Secondary = Color3.fromRGB(240, 234, 224),
+        SecondaryHover = Color3.fromRGB(228, 220, 208),
+        SecondaryActive = Color3.fromRGB(212, 202, 188),
+        SecondaryPressed = Color3.fromRGB(235, 228, 218),
+        Tertiary = Color3.fromRGB(222, 214, 202),
+        TertiaryHover = Color3.fromRGB(208, 198, 184),
+        TertiaryActive = Color3.fromRGB(192, 180, 164),
+        TertiaryPressed = Color3.fromRGB(215, 207, 195),
+        Quaternary = Color3.fromRGB(246, 242, 236),
+        QuaternaryHover = Color3.fromRGB(235, 229, 221),
+        Separator = Color3.fromRGB(196, 182, 164),
+        SeparatorTransparency = 0.26,
+        BoxBackground = Color3.fromRGB(255, 252, 248),
+        TextPrimary = Color3.fromRGB(40, 30, 20),
+        TextSecondary = Color3.fromRGB(100, 80, 60),
+        TextInactive = Color3.fromRGB(160, 140, 120),
+        TextActive = Color3.fromRGB(20, 14, 8),
+        Accent = Color3.fromRGB(180, 80, 40),
+        TabAccent = Color3.fromRGB(204, 100, 56),
+        TabIconActive = Color3.fromRGB(180, 80, 40),
+        TabIconHover = Color3.fromRGB(70, 50, 30),
+        TabIconInactive = Color3.fromRGB(160, 140, 120),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.35,
+        TransparencyTertiary = 0.16
+    },
+
+    Parchment = {
+        Primary = Color3.fromRGB(248, 240, 224),
+        Secondary = Color3.fromRGB(236, 226, 208),
+        SecondaryHover = Color3.fromRGB(222, 210, 190),
+        SecondaryActive = Color3.fromRGB(206, 192, 170),
+        SecondaryPressed = Color3.fromRGB(230, 219, 200),
+        Tertiary = Color3.fromRGB(216, 204, 183),
+        TertiaryHover = Color3.fromRGB(200, 186, 163),
+        TertiaryActive = Color3.fromRGB(182, 166, 143),
+        TertiaryPressed = Color3.fromRGB(208, 196, 176),
+        Quaternary = Color3.fromRGB(242, 234, 218),
+        QuaternaryHover = Color3.fromRGB(230, 220, 202),
+        Separator = Color3.fromRGB(186, 168, 144),
+        SeparatorTransparency = 0.24,
+        BoxBackground = Color3.fromRGB(254, 248, 234),
+        TextPrimary = Color3.fromRGB(44, 32, 14),
+        TextSecondary = Color3.fromRGB(100, 78, 48),
+        TextInactive = Color3.fromRGB(160, 136, 104),
+        TextActive = Color3.fromRGB(26, 18, 6),
+        Accent = Color3.fromRGB(140, 80, 20),
+        TabAccent = Color3.fromRGB(168, 102, 36),
+        TabIconActive = Color3.fromRGB(140, 80, 20),
+        TabIconHover = Color3.fromRGB(60, 40, 12),
+        TabIconInactive = Color3.fromRGB(160, 136, 104),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.32,
+        TransparencyTertiary = 0.15
+    },
+
+    Frost = {
+        Primary = Color3.fromRGB(240, 246, 252),
+        Secondary = Color3.fromRGB(226, 236, 248),
+        SecondaryHover = Color3.fromRGB(210, 224, 244),
+        SecondaryActive = Color3.fromRGB(192, 210, 238),
+        SecondaryPressed = Color3.fromRGB(220, 231, 246),
+        Tertiary = Color3.fromRGB(206, 220, 242),
+        TertiaryHover = Color3.fromRGB(188, 207, 238),
+        TertiaryActive = Color3.fromRGB(168, 192, 232),
+        TertiaryPressed = Color3.fromRGB(198, 214, 240),
+        Quaternary = Color3.fromRGB(234, 242, 250),
+        QuaternaryHover = Color3.fromRGB(220, 232, 246),
+        Separator = Color3.fromRGB(172, 198, 228),
+        SeparatorTransparency = 0.26,
+        BoxBackground = Color3.fromRGB(250, 254, 255),
+        TextPrimary = Color3.fromRGB(16, 34, 58),
+        TextSecondary = Color3.fromRGB(60, 96, 142),
+        TextInactive = Color3.fromRGB(120, 154, 196),
+        TextActive = Color3.fromRGB(6, 20, 38),
+        Accent = Color3.fromRGB(14, 116, 208),
+        TabAccent = Color3.fromRGB(30, 140, 240),
+        TabIconActive = Color3.fromRGB(14, 116, 208),
+        TabIconHover = Color3.fromRGB(20, 52, 100),
+        TabIconInactive = Color3.fromRGB(120, 154, 196),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.36,
+        TransparencyTertiary = 0.17
+    },
+
+    Porcelain = {
+        Primary = Color3.fromRGB(252, 252, 254),
+        Secondary = Color3.fromRGB(242, 242, 248),
+        SecondaryHover = Color3.fromRGB(230, 230, 240),
+        SecondaryActive = Color3.fromRGB(214, 214, 230),
+        SecondaryPressed = Color3.fromRGB(238, 238, 245),
+        Tertiary = Color3.fromRGB(226, 226, 236),
+        TertiaryHover = Color3.fromRGB(212, 212, 226),
+        TertiaryActive = Color3.fromRGB(196, 196, 214),
+        TertiaryPressed = Color3.fromRGB(220, 220, 232),
+        Quaternary = Color3.fromRGB(248, 248, 252),
+        QuaternaryHover = Color3.fromRGB(236, 236, 244),
+        Separator = Color3.fromRGB(196, 196, 218),
+        SeparatorTransparency = 0.32,
+        BoxBackground = Color3.fromRGB(255, 255, 255),
+        TextPrimary = Color3.fromRGB(24, 24, 36),
+        TextSecondary = Color3.fromRGB(80, 80, 110),
+        TextInactive = Color3.fromRGB(148, 148, 174),
+        TextActive = Color3.fromRGB(8, 8, 16),
+        Accent = Color3.fromRGB(99, 55, 200),
+        TabAccent = Color3.fromRGB(118, 72, 220),
+        TabIconActive = Color3.fromRGB(99, 55, 200),
+        TabIconHover = Color3.fromRGB(40, 30, 80),
+        TabIconInactive = Color3.fromRGB(148, 148, 174),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.38,
+        TransparencyTertiary = 0.18
+    },
+
+    Sage = {
+        Primary = Color3.fromRGB(238, 244, 240),
+        Secondary = Color3.fromRGB(224, 234, 228),
+        SecondaryHover = Color3.fromRGB(208, 222, 214),
+        SecondaryActive = Color3.fromRGB(190, 208, 198),
+        SecondaryPressed = Color3.fromRGB(218, 229, 222),
+        Tertiary = Color3.fromRGB(206, 220, 212),
+        TertiaryHover = Color3.fromRGB(188, 206, 196),
+        TertiaryActive = Color3.fromRGB(168, 190, 178),
+        TertiaryPressed = Color3.fromRGB(198, 214, 206),
+        Quaternary = Color3.fromRGB(232, 240, 235),
+        QuaternaryHover = Color3.fromRGB(218, 229, 222),
+        Separator = Color3.fromRGB(164, 194, 176),
+        SeparatorTransparency = 0.26,
+        BoxBackground = Color3.fromRGB(248, 252, 250),
+        TextPrimary = Color3.fromRGB(20, 40, 30),
+        TextSecondary = Color3.fromRGB(60, 100, 80),
+        TextInactive = Color3.fromRGB(120, 156, 140),
+        TextActive = Color3.fromRGB(8, 22, 15),
+        Accent = Color3.fromRGB(30, 130, 90),
+        TabAccent = Color3.fromRGB(44, 158, 112),
+        TabIconActive = Color3.fromRGB(30, 130, 90),
+        TabIconHover = Color3.fromRGB(20, 60, 42),
+        TabIconInactive = Color3.fromRGB(120, 156, 140),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.34,
+        TransparencyTertiary = 0.16
+    },
+
+    Ivory = {
+        Primary = Color3.fromRGB(254, 252, 244),
+        Secondary = Color3.fromRGB(244, 240, 228),
+        SecondaryHover = Color3.fromRGB(232, 226, 212),
+        SecondaryActive = Color3.fromRGB(218, 210, 194),
+        SecondaryPressed = Color3.fromRGB(240, 235, 222),
+        Tertiary = Color3.fromRGB(228, 222, 206),
+        TertiaryHover = Color3.fromRGB(213, 205, 187),
+        TertiaryActive = Color3.fromRGB(196, 186, 166),
+        TertiaryPressed = Color3.fromRGB(222, 216, 200),
+        Quaternary = Color3.fromRGB(250, 247, 238),
+        QuaternaryHover = Color3.fromRGB(238, 234, 220),
+        Separator = Color3.fromRGB(196, 184, 160),
+        SeparatorTransparency = 0.25,
+        BoxBackground = Color3.fromRGB(255, 255, 250),
+        TextPrimary = Color3.fromRGB(34, 28, 14),
+        TextSecondary = Color3.fromRGB(96, 82, 52),
+        TextInactive = Color3.fromRGB(158, 142, 112),
+        TextActive = Color3.fromRGB(16, 12, 4),
+        Accent = Color3.fromRGB(168, 72, 0),
+        TabAccent = Color3.fromRGB(196, 92, 14),
+        TabIconActive = Color3.fromRGB(168, 72, 0),
+        TabIconHover = Color3.fromRGB(58, 38, 8),
+        TabIconInactive = Color3.fromRGB(158, 142, 112),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.34,
+        TransparencyTertiary = 0.16
+    }
+}
+
+-- Helper frameworks
+do
+    SimpleUI.ErrorHandler = {}
+    do
+        local ErrorLevels = {
+            SILENT = 0,
+            WARN = 1,
+            ERROR = 2,
+            CRITICAL = 3
+        }
+        SimpleUI.ErrorHandler.Level = ErrorLevels.WARN
+        SimpleUI.ErrorHandler.Levels = ErrorLevels
+        local Colors = {
+            [ErrorLevels.WARN] = "255,255,0",
+            [ErrorLevels.ERROR] = "255,100,100",
+            [ErrorLevels.CRITICAL] = "255,0,0"
+        }
+        RunService.Heartbeat:Connect(function()
+            local Console = CoreGui:FindFirstChild("DevConsoleMaster")
+            if Console then
+                for _, v in pairs(Console:GetDescendants()) do
+                    if v:IsA("TextLabel") then
+                        v.RichText = true
+                    end
+                end
+            end
+        end)
+        local function RichPrint(Color, Text)
+            local RGB = Colors[Color] or "255,255,255"
+            print('<font color="rgb(' .. RGB .. ')">' .. tostring(Text) .. '</font>')
+        end
+        local function FormatError(Context, Message, Level)
+            local Prefix = ({
+                [ErrorLevels.WARN] = "[SimpleUI:WARN]",
+                [ErrorLevels.ERROR] = "[SimpleUI:ERROR]",
+                [ErrorLevels.CRITICAL] = "[SimpleUI:CRITICAL]"
+            })[Level] or "[SimpleUI]"
+            return Prefix .. " " .. Context .. ": " .. Message
+        end
+        local function LogError(Context, Message, Level)
+            if Level == ErrorLevels.SILENT then
+                return
+            end
+            if Level < SimpleUI.ErrorHandler.Level then
+                return
+            end
+            RichPrint(Level, FormatError(Context, Message, Level))
+        end
+        function SimpleUI.ErrorHandler:Wrap(Func, Context, DefaultReturn)
+            return function(...)
+                local Success, Result = pcall(Func, ...)
+                if not Success then
+                    LogError(Context, tostring(Result), ErrorLevels.ERROR)
+                    return DefaultReturn
+                end
+                return Result
             end
         end
-        self.Services[name] = service
+
+        function SimpleUI.ErrorHandler:Guard(Condition, Context, Message, Level)
+            if not Condition then
+                LogError(Context, Message, Level or ErrorLevels.WARN)
+                return false
+            end
+            return true
+        end
+
+        function SimpleUI.ErrorHandler:ValidateType(Value, ExpectedType, ParamName, Context)
+            local ActualType = typeof(Value)
+            if ActualType ~= ExpectedType then
+                LogError(Context,
+                    "Invalid type for '" .. ParamName .. "': expected " .. ExpectedType .. ", got " .. ActualType,
+                    ErrorLevels.WARN)
+                return false
+            end
+            return true
+        end
+
+        function SimpleUI.ErrorHandler:ValidateRange(Value, Min, Max, ParamName, Context)
+            if Value < Min or Value > Max then
+                LogError(Context,
+                    "'" .. ParamName .. "' out of range: " .. tostring(Value) .. " not in [" .. tostring(Min) .. ", " ..
+                        tostring(Max) .. "]", ErrorLevels.WARN)
+                return false
+            end
+            return true
+        end
+
+        function SimpleUI.ErrorHandler:ValidateInstance(Instance, ExpectedClass, Context)
+            if not Instance then
+                LogError(Context, "Instance is nil", ErrorLevels.WARN)
+                return false
+            end
+            if not Instance:IsA(ExpectedClass) then
+                LogError(Context, "Invalid instance type: expected " .. ExpectedClass .. ", got " .. Instance.ClassName,
+                    ErrorLevels.WARN)
+                return false
+            end
+            return true
+        end
+
+        function SimpleUI.ErrorHandler:ValidateOptions(Options, Required, Optional, Context)
+            Options = Options or {}
+            for _, Key in ipairs(Required or {}) do
+                if Options[Key] == nil then
+                    LogError(Context, "Missing required option: '" .. Key .. "'", ErrorLevels.WARN)
+                    return false
+                end
+            end
+            local Allowed = {}
+            for _, Key in ipairs(Required or {}) do
+                Allowed[Key] = true
+            end
+            for _, Key in ipairs(Optional or {}) do
+                Allowed[Key] = true
+            end
+            for Key in pairs(Options) do
+                if not Allowed[Key] then
+                    LogError(Context, "Unknown option: '" .. Key .. "'", ErrorLevels.WARN)
+                end
+            end
+            return true
+        end
+
+        function SimpleUI.ErrorHandler:Try(Func, Fallback)
+            local Success, Result = pcall(Func)
+            if not Success or not Result then
+                return Fallback and Fallback() or nil
+            end
+            return Result
+        end
+
+        function SimpleUI.ErrorHandler:SetLevel(Level)
+            self.Level = Level
+        end
     end
-    return self.Services[name]
-end
 
-function SimpleUI:ParentUI(UI)
-    pcall(protectgui, UI)
-    UI.Parent = self:getService("Players").LocalPlayer:WaitForChild("PlayerGui", math.huge)
-end
+    SimpleUI.Security = {}
+    do
+        local ProtectedFunctions = {}
+        local HookedMetatables = {}
+        function SimpleUI.Security:WrapFunction(Func)
+            if not Func or type(Func) ~= "function" then
+                return Func
+            end
+            if ProtectedFunctions[Func] then
+                return ProtectedFunctions[Func]
+            end
+            local Protected = newcclosure(function(...)
+                return Func(...)
+            end)
+            ProtectedFunctions[Func] = Protected
+            return Protected
+        end
 
-function SimpleUI:_generateIdentifier(prefix)
-    local chars = "ACEGIKMOQSUWYZbdfhjlnprtvxz!@#$%^&*()_+-=[];',.123456789"
-    local result = prefix or ""
-    local seed = tick() * math.random(1, 1000000)
-    math.randomseed(seed)
-    for i = 1, math.random(16, 24) do
-        local rand = math.random(1, #chars)
-        result = result .. chars:sub(rand, rand)
+        function SimpleUI.Security:SafeCallback(Callback, ...)
+            if not (Callback and typeof(Callback) == "function") then
+                return nil
+            end
+            local _, Result = xpcall(Callback, function(Error)
+                if SimpleUI.ErrorHandler.Level >= SimpleUI.ErrorHandler.Levels.ERROR then
+                    SimpleUI.ErrorHandler:Guard(false, "SafeCallback", tostring(Error),
+                        SimpleUI.ErrorHandler.Levels.ERROR)
+                end
+                return Error
+            end, ...)
+            return Result
+        end
+
+        function SimpleUI.Security:ProtectMetatable(Object)
+            if not Object or HookedMetatables[Object] then
+                return false
+            end
+            local Success = pcall(function()
+                local MT = getmetatable(Object)
+                if not MT then
+                    return
+                end
+                local OriginalIndex = MT.__index
+                local OriginalNewIndex = MT.__newindex
+                local OriginalNamecall = MT.__namecall
+                if OriginalIndex then
+                    MT.__index = newcclosure(function(self, Key)
+                        if type(OriginalIndex) == "function" then
+                            return OriginalIndex(self, Key)
+                        else
+                            return OriginalIndex[Key]
+                        end
+                    end)
+                end
+                if OriginalNewIndex then
+                    MT.__newindex = newcclosure(function(self, Key, Value)
+                        if type(OriginalNewIndex) == "function" then
+                            return OriginalNewIndex(self, Key, Value)
+                        else
+                            OriginalNewIndex[Key] = Value
+                        end
+                    end)
+                end
+                if OriginalNamecall then
+                    MT.__namecall = newcclosure(function(self, ...)
+                        return OriginalNamecall(self, ...)
+                    end)
+                end
+                HookedMetatables[Object] = {
+                    OriginalIndex = OriginalIndex,
+                    OriginalNewIndex = OriginalNewIndex,
+                    OriginalNamecall = OriginalNamecall
+                }
+            end)
+            return Success
+        end
     end
-    return result
-end
 
-function SimpleUI:_lockMetatable(tbl)
-    if not setreadonly or not getrawmetatable then
-        return tbl
+    SimpleUI.EventProtection = {} -- Deprecated
+    do
+        local ProtectedEvents = {}
+        function SimpleUI.EventProtection:Protect(Event)
+            if not Event or ProtectedEvents[Event] then
+                return false
+            end
+            ProtectedEvents[Event] = true
+            local OriginalConnect = Event.Connect
+            Event.Connect = newcclosure(function(self, ...)
+                return OriginalConnect(self, ...)
+            end)
+            local OriginalWait = Event.Wait
+            Event.Wait = newcclosure(function(self, ...)
+                return OriginalWait(self, ...)
+            end)
+            return true
+        end
     end
 
-    local mt = getrawmetatable(tbl) or {}
+    SimpleUI.MetatableProtection = {}
+    do
+        local ProtectedObjects = {}
+        function SimpleUI.MetatableProtection:Protect(Object)
+            if not Object or ProtectedObjects[Object] then
+                return false
+            end
+            ProtectedObjects[Object] = true
+            return true
+        end
 
-    mt.__metatable = "The metatable is locked"
+        function SimpleUI.MetatableProtection:ProtectUI(ScreenGui)
+            if not ScreenGui then
+                return false
+            end
+            self:Protect(ScreenGui)
+            for _, Descendant in ipairs(ScreenGui:GetDescendants()) do
+                if Descendant:IsA("GuiObject") then
+                    self:Protect(Descendant)
+                end
+            end
+            return true
+        end
+    end
 
-    local originalIndex = mt.__index
-    mt.__index = function(t, k)
-        if checkcaller and not checkcaller() then
+    SimpleUI.Utility = {}
+    do
+        function SimpleUI.Utility:GetService(ServiceName)
+            return cloneref(game:GetService(ServiceName))
+        end
+
+        function SimpleUI.Utility:IsMobile()
+            return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+        end
+
+        function SimpleUI.Utility:CreateInstance(ClassName, Properties, Parent)
+            local Instance = Instance.new(ClassName)
+            if Properties then
+                for Property, Value in pairs(Properties) do
+                    Instance[Property] = Value
+                end
+            end
+            if Parent then
+                Instance.Parent = Parent
+            end
+            return Instance
+        end
+
+        function SimpleUI.Utility:GenerateId()
+            local charset =
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/`~"
+            local rng = Random.new(math.floor(os.clock() * 1e9) + math.floor(tick() * 1e6) + math.random(1, 1e9))
+            local length = rng:NextInteger(24, 40)
+            local output = table.create(length)
+            for i = 1, length do
+                local index = rng:NextInteger(1, #charset)
+                output[i] = charset:sub(index, index)
+            end
+            return table.concat(output)
+        end
+
+        function SimpleUI.Utility:MergeTables(Base, Override)
+            local Result = {}
+            for Key, Value in pairs(Base or {}) do
+                Result[Key] = type(Value) == "table" and self:MergeTables(Value, {}) or Value
+            end
+            for Key, Value in pairs(Override or {}) do
+                if type(Value) == "table" and type(Result[Key]) == "table" then
+                    Result[Key] = self:MergeTables(Result[Key], Value)
+                else
+                    Result[Key] = Value
+                end
+            end
+            return Result
+        end
+
+        function SimpleUI.Utility:ApplyTheme(Properties, ThemeBindings, Theme)
+            local Result = {}
+            local Bindings = {}
+            for Property, Value in pairs(Properties) do
+                Result[Property] = Value
+            end
+            if ThemeBindings then
+                for Property, ThemeKey in pairs(ThemeBindings) do
+                    if Theme[ThemeKey] then
+                        Result[Property] = Theme[ThemeKey]
+                        Bindings[Property] = ThemeKey
+                    end
+                end
+            end
+            return Result, Bindings
+        end
+
+        function SimpleUI.Utility:GetWindowFromElement(Element)
+            local Current = Element
+            while Current do
+                if Current:IsA("ScreenGui") and SimpleUI.Windows[Current] then
+                    return SimpleUI.Windows[Current]
+                end
+                Current = Current.Parent
+            end
             return nil
         end
 
-        if type(originalIndex) == "function" then
-            return originalIndex(t, k)
-        else
-            return originalIndex[k]
-        end
-    end
-
-    setrawmetatable(tbl, mt)
-    if setreadonly then
-        setreadonly(mt, true)
-    end
-
-    return tbl
-end
-
-function SimpleUI:_wrapRemoteCall(remote, ...)
-    if not remote then
-        return
-    end
-
-    local args = {...}
-
-    if newcclosure then
-        local wrapped = newcclosure(function()
-            return remote:FireServer(unpack(args))
-        end)
-        return wrapped()
-    else
-        return remote:FireServer(unpack(args))
-    end
-end
-
-function SimpleUI:isMobile()
-    local uis = self:getService("UserInputService")
-    return uis.TouchEnabled and not uis.MouseEnabled
-end
-
-function SimpleUI:createElement(className, props, parent)
-    local obj = Instance.new(className)
-    for k, v in pairs(props or {}) do
-        obj[k] = v
-    end
-    obj.Parent = parent
-    return obj
-end
-
-function SimpleUI:merge(base, override)
-    local result = {}
-    for k, v in pairs(base or {}) do
-        result[k] = type(v) == "table" and self:merge(v, {}) or v
-    end
-    for k, v in pairs(override or {}) do
-        if type(v) == "table" and type(result[k]) == "table" then
-            result[k] = self:merge(result[k], v)
-        else
-            result[k] = v
-        end
-    end
-    return result
-end
-
-function SimpleUI:getTheme(element)
-    local gui = element
-    while gui do
-        if gui:IsA("ScreenGui") then
-            if self.Windows and self.Windows[gui] then
-                return self.Windows[gui].Theme
-            end
-            break
-        end
-        gui = gui.Parent
-    end
-    return self.Themes.Default
-end
-
-function SimpleUI:initializeThemeRegistry(window)
-    window._themeRegistry = {
-        elements = {},
-        currentTheme = window.Theme or self.Themes.NeonViolet
-    }
-end
-
-function SimpleUI:getCurrentTheme(window)
-    if window and window._themeRegistry then
-        return window._themeRegistry.currentTheme
-    end
-    return self.Themes.NeonViolet
-end
-
-function SimpleUI:registerThemeElement(window, element, bindings)
-    if not window or not window._themeRegistry then
-        return
-    end
-
-    if not element or not bindings then
-        return
-    end
-
-    for property, themeKey in pairs(bindings) do
-        table.insert(window._themeRegistry.elements, {
-            element = element,
-            property = property,
-            themeKey = themeKey
-        })
-    end
-end
-
-function SimpleUI:registerMultipleThemeElements(window, elements)
-    if not window then
-        return
-    end
-    for element, bindings in pairs(elements) do
-        self:registerThemeElement(window, element, bindings)
-    end
-end
-
-function SimpleUI:applyThemeToElement(element, property, themeKey, theme, animate)
-    if not element or not element.Parent then
-        return
-    end
-
-    if type(themeKey) == "function" then
-        return
-    end
-
-    local value = theme[themeKey]
-    if value == nil then
-        return
-    end
-
-    if animate and (property:find("Color") or property:find("Transparency")) then
-        local tweenService = self:getService("TweenService")
-        tweenService:Create(element, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            [property] = value
-        }):Play()
-    else
-        element[property] = value
-    end
-end
-
-function SimpleUI:setWindowTheme(window, themeName, animate)
-    if not window or not window._themeRegistry then
-        return
-    end
-
-    local newTheme = self.Themes[themeName]
-    if not newTheme then
-        return
-    end
-
-    window._themeRegistry.currentTheme = newTheme
-    window.Theme = newTheme
-
-    local seen = {}
-    local validElements = {}
-
-    for _, entry in ipairs(window._themeRegistry.elements) do
-        local el = entry.element
-        local prop = entry.property
-
-        if el and el.Parent then
-            seen[el] = seen[el] or {}
-
-            if not seen[el][prop] then
-                seen[el][prop] = true
-
-                if type(entry.themeKey) == "function" then
-                    entry.themeKey(el, newTheme)
-                else
-                    self:applyThemeToElement(el, prop, entry.themeKey, newTheme, animate)
+        function SimpleUI.Utility:ParentUI(Element, TargetParent)
+            local Success = pcall(function()
+                local FinalParent
+                pcall(protectgui, Element)
+                FinalParent = gethui()
+                if TargetParent then
+                    if type(TargetParent) == "function" then
+                        FinalParent = TargetParent()
+                    else
+                        FinalParent = TargetParent
+                    end
                 end
-
-                table.insert(validElements, entry)
+                Element.Parent = FinalParent
+            end)
+            if not (Success and Element.Parent) then
+                Element.Parent = LocalPlayer:WaitForChild("CoreGui", math.huge)
             end
         end
     end
 
-    window._themeRegistry.elements = validElements
-end
-
-function SimpleUI:getWindowTheme(window)
-    if not window or not window._themeRegistry then
-        return "Secondary"
-    end
-
-    for name, theme in pairs(self.Themes) do
-        if theme == window._themeRegistry.currentTheme then
-            return name
-        end
-    end
-
-    return "Secondary"
-end
-
-function SimpleUI:getWindowFromElement(element)
-    local current = element
-    while current do
-        if current:IsA("ScreenGui") then
-            return self.Windows and self.Windows[current]
-        end
-        current = current.Parent
-    end
-    return nil
-end
-
-function SimpleUI:applyTheme(properties, themeMap, theme)
-    local result = {}
-    local bindings = {}
-
-    for k, v in pairs(properties) do
-        result[k] = v
-    end
-
-    if themeMap then
-        for propName, themeKey in pairs(themeMap) do
-            if theme[themeKey] then
-                result[propName] = theme[themeKey]
-                bindings[propName] = themeKey
+    SimpleUI.ThemeManager = {}
+    do
+        function SimpleUI.ThemeManager:Initialize(Window)
+            local EH = SimpleUI.ErrorHandler
+            if not EH:ValidateType(Window, "table", "Window", "ThemeManager:Initialize") then
+                return false
             end
-        end
-    end
-
-    return result, bindings
-end
-
-function SimpleUI:updateScrollingContainer(container)
-    if not container or not container.Parent then
-        return container
-    end
-
-    local layout = container:FindFirstChildWhichIsA("UIListLayout")
-    if not layout then
-        return container
-    end
-
-    local parent = container.Parent
-    if not parent then
-        return container
-    end
-
-    local totalHeight = layout.AbsoluteContentSize.Y
-    local availableHeight = container.AbsoluteSize.Y
-    local needsScrolling = totalHeight > availableHeight
-    local isScrollFrame = container:IsA("ScrollingFrame")
-
-    if needsScrolling and not isScrollFrame then
-        local scroll = self:createElement("ScrollingFrame", {
-            Name = container.Name,
-            Position = container.Position,
-            Size = container.Size,
-            AnchorPoint = container.AnchorPoint,
-            BackgroundColor3 = container.BackgroundColor3,
-            BackgroundTransparency = container.BackgroundTransparency,
-            BorderSizePixel = 0,
-            BorderMode = Enum.BorderMode.Inset,
-            ZIndex = container.ZIndex,
-            LayoutOrder = container.LayoutOrder,
-            Visible = container.Visible,
-            ClipsDescendants = true,
-            ScrollBarThickness = 0,
-            ScrollBarImageColor3 = Color3.fromRGB(200, 200, 200),
-            ScrollBarImageTransparency = 1,
-            ScrollingDirection = Enum.ScrollingDirection.Y,
-            AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
-            ScrollingEnabled = true,
-            Active = true
-        }, parent)
-
-        for _, child in ipairs(container:GetChildren()) do
-            child.Parent = scroll
+            Window.ThemeData = {
+                Elements = {},
+                CurrentTheme = Window.Theme or SimpleUI.Themes.Obsidian
+            }
+            return true
         end
 
-        local gui = parent
-        while gui and not gui:IsA("ScreenGui") do
-            gui = gui.Parent
+        function SimpleUI.ThemeManager:GetCurrentTheme(Window)
+            local EH = SimpleUI.ErrorHandler
+            if not Window then
+                EH:Guard(false, "ThemeManager:GetCurrentTheme", "Window is nil, using Obsidian", EH.Levels.WARN)
+                return SimpleUI.Themes.Obsidian
+            end
+            if not Window.ThemeData then
+                EH:Guard(false, "ThemeManager:GetCurrentTheme", "ThemeData not initialized, using Obsidian",
+                    EH.Levels.WARN)
+                return SimpleUI.Themes.Obsidian
+            end
+            return Window.ThemeData.CurrentTheme
         end
 
-        if gui and self.Windows and self.Windows[gui] then
-            local window = self.Windows[gui]
-            if window.Elements and window.Elements.Pages then
-                for pageName, page in pairs(window.Elements.Pages) do
-                    if page == container then
-                        window.Elements.Pages[pageName] = scroll
-                        break
+        function SimpleUI.ThemeManager:RegisterElement(Window, Element, Bindings)
+            local EH = SimpleUI.ErrorHandler
+            if not Window or not Window.ThemeData then
+                EH:Guard(false, "ThemeManager:RegisterElement", "Invalid window", EH.Levels.WARN)
+                return false
+            end
+            if not Element then
+                EH:Guard(false, "ThemeManager:RegisterElement", "Element is nil", EH.Levels.WARN)
+                return false
+            end
+            if not EH:ValidateType(Bindings, "table", "Bindings", "ThemeManager:RegisterElement") then
+                return false
+            end
+            for Property, ThemeKey in pairs(Bindings) do
+                if EH:ValidateType(Property, "string", "Property", "ThemeManager:RegisterElement") then
+                    table.insert(Window.ThemeData.Elements, {
+                        Element = Element,
+                        Property = Property,
+                        ThemeKey = ThemeKey
+                    })
+                end
+            end
+            return true
+        end
+
+        function SimpleUI.ThemeManager:RegisterMultiple(Window, Elements)
+            local EH = SimpleUI.ErrorHandler
+            if not Window then
+                EH:Guard(false, "ThemeManager:RegisterMultiple", "Window is nil", EH.Levels.WARN)
+                return false
+            end
+            if not EH:ValidateType(Elements, "table", "Elements", "ThemeManager:RegisterMultiple") then
+                return false
+            end
+            for Element, Bindings in pairs(Elements) do
+                EH:Try(function()
+                    self:RegisterElement(Window, Element, Bindings)
+                end)
+            end
+            return true
+        end
+
+        function SimpleUI.ThemeManager:ApplyToElement(Element, Property, ThemeKey, Theme, Animate)
+            local EH = SimpleUI.ErrorHandler
+            if not Element or not Element.Parent then
+                return false
+            end
+            if type(ThemeKey) == "function" then
+                return EH:Try(function()
+                    ThemeKey(Element, Theme)
+                    return true
+                end, function()
+                    return false
+                end)
+            end
+            if not EH:ValidateType(Property, "string", "Property", "ThemeManager:ApplyToElement") then
+                return false
+            end
+            local Value = Theme[ThemeKey]
+            if Value == nil then
+                EH:Guard(false, "ThemeManager:ApplyToElement",
+                    string.format("Theme key '%s' not found", tostring(ThemeKey)), EH.Levels.WARN)
+                return false
+            end
+            return EH:Try(function()
+                if Animate and (Property:find("Color") or Property:find("Transparency")) then
+                    local Tween = TweenService:Create(Element, TweenInfo.new(SimpleUI.Constants.Animation.Normal,
+                        Enum.EasingStyle.Quad), {
+                        [Property] = Value
+                    })
+                    Tween:Play()
+                else
+                    Element[Property] = Value
+                end
+                return true
+            end, function()
+                EH:Guard(false, "ThemeManager:ApplyToElement", string.format("Failed to apply property '%s'", Property),
+                    EH.Levels.WARN)
+                return false
+            end)
+        end
+
+        function SimpleUI.ThemeManager:SetTheme(Window, ThemeName, Animate)
+            local EH = SimpleUI.ErrorHandler
+            if not Window or not Window.ThemeData then
+                EH:Guard(false, "ThemeManager:SetTheme", "Invalid window", EH.Levels.ERROR)
+                return false
+            end
+            if not EH:ValidateType(ThemeName, "string", "ThemeName", "ThemeManager:SetTheme") then
+                return false
+            end
+            local NewTheme = SimpleUI.Themes[ThemeName]
+            if not NewTheme then
+                EH:Guard(false, "ThemeManager:SetTheme", string.format("Theme '%s' not found", ThemeName),
+                    EH.Levels.ERROR)
+                return false
+            end
+            Window.ThemeData.CurrentTheme = NewTheme
+            Window.Theme = NewTheme
+            local ProcessedElements = {}
+            for _, Entry in ipairs(Window.ThemeData.Elements) do
+                local Element = Entry.Element
+                local Property = Entry.Property
+                if Element and Element.Parent then
+                    ProcessedElements[Element] = ProcessedElements[Element] or {}
+                    if not ProcessedElements[Element][Property] then
+                        ProcessedElements[Element][Property] = true
+                        EH:Try(function()
+                            if type(Entry.ThemeKey) == "function" then
+                                Entry.ThemeKey(Element, NewTheme)
+                            else
+                                self:ApplyToElement(Element, Property, Entry.ThemeKey, NewTheme, Animate)
+                            end
+                        end)
                     end
                 end
             end
-            if window.ActivePage == container then
-                window.ActivePage = scroll
+            return true
+        end
+
+        function SimpleUI.ThemeManager:GetThemeName(Window)
+            local EH = SimpleUI.ErrorHandler
+            if not Window or not Window.ThemeData then
+                EH:Guard(false, "ThemeManager:GetThemeName", "Invalid window, defaulting to Secondary", EH.Levels.WARN)
+                return "Secondary"
             end
-            if window.Elements.TabsContainer == container then
-                window.Elements.TabsContainer = scroll
+            for Name, Theme in pairs(SimpleUI.Themes) do
+                if Theme == Window.ThemeData.CurrentTheme then
+                    return Name
+                end
+            end
+            EH:Guard(false, "ThemeManager:GetThemeName", "Theme not found in registry, defaulting to Secondary",
+                EH.Levels.WARN)
+            return "Secondary"
+        end
+    end
+
+    SimpleUI.ScrollManager = {}
+    do
+        function SimpleUI.ScrollManager:Update(Container)
+            local EH = SimpleUI.ErrorHandler
+            if not Container or not Container.Parent then
+                return Container
+            end
+            if not (Container:IsA("Frame") or Container:IsA("ScrollingFrame")) then
+                EH:Guard(false, "ScrollManager:Update", "Container must be Frame or ScrollingFrame", EH.Levels.WARN)
+                return Container
+            end
+            local Layout = Container:FindFirstChildWhichIsA("UIListLayout")
+            if not Layout then
+                return Container
+            end
+            local Parent = Container.Parent
+            if not Parent then
+                return Container
+            end
+            local ContentHeight = Layout.AbsoluteContentSize.Y
+            local AvailableHeight = Container.AbsoluteSize.Y
+            local NeedsScrolling = ContentHeight > AvailableHeight
+            local IsScrollFrame = Container:IsA("ScrollingFrame")
+            if NeedsScrolling and not IsScrollFrame then
+                local ScrollFrame = SimpleUI.Utility:CreateInstance("ScrollingFrame", {
+                    Name = Container.Name,
+                    Position = Container.Position,
+                    Size = Container.Size,
+                    AnchorPoint = Container.AnchorPoint,
+                    BackgroundColor3 = Container.BackgroundColor3,
+                    BackgroundTransparency = Container.BackgroundTransparency,
+                    BorderSizePixel = 0,
+                    BorderMode = Enum.BorderMode.Inset,
+                    ZIndex = Container.ZIndex,
+                    LayoutOrder = Container.LayoutOrder,
+                    Visible = Container.Visible,
+                    ClipsDescendants = true,
+                    ScrollBarThickness = 0,
+                    ScrollBarImageColor3 = Color3.fromRGB(200, 200, 200),
+                    ScrollBarImageTransparency = 1,
+                    ScrollingDirection = Enum.ScrollingDirection.Y,
+                    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+                    CanvasSize = UDim2.new(0, 0, 0, 0),
+                    ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
+                    ScrollingEnabled = true,
+                    Active = true
+                }, Parent)
+                for _, Child in ipairs(Container:GetChildren()) do
+                    Child.Parent = ScrollFrame
+                end
+                local ScreenGui = Parent
+                while ScreenGui and not ScreenGui:IsA("ScreenGui") do
+                    ScreenGui = ScreenGui.Parent
+                end
+                if ScreenGui and SimpleUI.Windows[ScreenGui] then
+                    local Window = SimpleUI.Windows[ScreenGui]
+                    if Window.Elements and Window.Elements.Pages then
+                        for PageName, Page in pairs(Window.Elements.Pages) do
+                            if Page == Container then
+                                Window.Elements.Pages[PageName] = ScrollFrame
+                                break
+                            end
+                        end
+                    end
+                    if Window.ActivePage == Container then
+                        Window.ActivePage = ScrollFrame
+                    end
+                    if Window.Elements.TabsContainer == Container then
+                        Window.Elements.TabsContainer = ScrollFrame
+                    end
+                end
+                Container:Destroy()
+                Container = ScrollFrame
+            elseif not NeedsScrolling and IsScrollFrame then
+                Container.ScrollBarThickness = 0
+            elseif NeedsScrolling and IsScrollFrame then
+                Container.ScrollBarImageTransparency = 1
+            end
+            if Layout and not Layout:GetAttribute("ScrollUpdateHooked") then
+                Layout:SetAttribute("ScrollUpdateHooked", true)
+                local UpdateQueued = false
+                local LastContentSize = Layout.AbsoluteContentSize
+                Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                    if UpdateQueued or Layout.AbsoluteContentSize == LastContentSize then
+                        return
+                    end
+                    LastContentSize = Layout.AbsoluteContentSize
+                    UpdateQueued = true
+                    task.defer(function()
+                        UpdateQueued = false
+                        if Container and Container.Parent then
+                            SimpleUI.ScrollManager:Update(Container)
+                        end
+                    end)
+                end)
+            end
+            return Container
+        end
+    end
+
+    SimpleUI.WindowControlBuilder = {}
+    do
+        function SimpleUI.WindowControlBuilder:Create(ControlType, Style, Parent, Index, TotalControls)
+            local Config = SimpleUI.WindowControls[Style]
+            if not Config then
+                return
+            end
+            local IconData = Config.Icons and Config.Icons[ControlType] or {}
+            local Alignment = Config.Alignment or "Right"
+            local BaseColor = Config.Colors and Config.Colors[ControlType] or Color3.fromRGB(45, 45, 45)
+            local Spacing = Config.ButtonSpacing or 0
+            local IsMobile = SimpleUI.Utility:IsMobile()
+            local Position = Alignment == "Left" and
+                                 UDim2.new(0, Index * (Config.ButtonSize.X.Offset + Spacing), 0.5, 0) or
+                                 UDim2.new(1, -(TotalControls - Index) * (Config.ButtonSize.X.Offset + Spacing), 0.5, 0)
+            local Button = SimpleUI.Utility:CreateInstance("TextButton", {
+                Name = ControlType .. "Button",
+                Size = Config.ButtonSize,
+                Position = Position,
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundColor3 = BaseColor,
+                BackgroundTransparency = Config.Transparency or 0,
+                Text = "",
+                BorderSizePixel = 0,
+                ClipsDescendants = true,
+                AutoButtonColor = false,
+                ZIndex = SimpleUI.Constants.ZIndex.Control
+            }, Parent)
+            if Config.UseImages and IconData.Image then
+                SimpleUI.Utility:CreateInstance("ImageLabel", {
+                    Size = IconData.Size or UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    BackgroundTransparency = 1,
+                    Image = IconData.Image,
+                    ImageColor3 = IconData.Color or Color3.fromRGB(255, 255, 255),
+                    ZIndex = SimpleUI.Constants.ZIndex.Control + 1
+                }, Button)
+            end
+            SimpleUI.Utility:CreateInstance("UICorner", {
+                CornerRadius = Alignment == "Left" and UDim.new(1, 0) or UDim.new(0, 0)
+            }, Button)
+            if not IsMobile then
+                if IconData.HoverColor then
+                    local IsHovering = false
+                    Button.MouseEnter:Connect(function()
+                        IsHovering = true
+                        Button.BackgroundColor3 = IconData.HoverColor
+                    end)
+                    Button.MouseLeave:Connect(function()
+                        IsHovering = false
+                        Button.BackgroundColor3 = BaseColor
+                    end)
+                    if IconData.PressedColor then
+                        Button.Activated:Connect(function()
+                            Button.BackgroundColor3 = IconData.PressedColor
+                            task.wait(0.1)
+                            Button.BackgroundColor3 = IsHovering and IconData.HoverColor or BaseColor
+                        end)
+                    end
+                end
+            elseif IconData.PressedColor then
+                Button.Activated:Connect(function()
+                    Button.BackgroundColor3 = IconData.PressedColor
+                    task.wait(0.1)
+                    Button.BackgroundColor3 = BaseColor
+                end)
+            end
+            self:BindActions(Button, ControlType, Parent)
+            return Button
+        end
+
+        function SimpleUI.WindowControlBuilder:BindActions(Button, ControlType, TopBar)
+            local EH = SimpleUI.ErrorHandler
+            local ParentFrame = TopBar.Parent
+            if not ParentFrame or not TopBar then
+                EH:Guard(false, "WindowControlBuilder:BindActions", "Invalid frame references", EH.Levels.ERROR)
+                return
+            end
+            if ControlType == "Close" then
+                Button.Activated:Connect(function()
+                    local ScreenGui = ParentFrame.Parent.Parent
+                    if not ScreenGui then
+                        return
+                    end
+
+                    local FadeDuration = SimpleUI.Constants.Animation.Slow
+                    local TweenInfo = TweenInfo.new(FadeDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+                    local Tweens = {}
+
+                    for _, Object in ipairs(ScreenGui:GetDescendants()) do
+                        if Object:IsA("GuiObject") then
+                            local Properties = {
+                                Position = UDim2.new(Object.Position.X.Scale - 1.5, Object.Position.X.Offset,
+                                    Object.Position.Y.Scale, Object.Position.Y.Offset)
+                            }
+
+                            if Object:IsA("Frame") or Object:IsA("ScrollingFrame") or Object:IsA("TextButton") or
+                                Object:IsA("TextLabel") then
+                                Properties.BackgroundTransparency = 1
+                            end
+                            if Object:IsA("TextButton") or Object:IsA("TextLabel") then
+                                Properties.TextTransparency = 1
+                            end
+                            if Object:IsA("ImageLabel") or Object:IsA("ImageButton") then
+                                Properties.ImageTransparency = 1
+                            end
+
+                            table.insert(Tweens, TweenService:Create(Object, TweenInfo, Properties))
+                        end
+                    end
+
+                    for _, Tween in ipairs(Tweens) do
+                        Tween:Play()
+                    end
+
+                    task.delay(FadeDuration, function()
+                        SimpleUI.Windows[ScreenGui] = nil
+                        ScreenGui:Destroy()
+                    end)
+                end)
+            end
+            if ControlType == "Maximize" then
+                Button.Activated:Connect(function()
+                    local ScreenGui = ParentFrame.Parent.Parent
+                    if not ScreenGui then
+                        return
+                    end
+                    local MainFrame = ScreenGui:FindFirstChild("MainFrame")
+                    if not MainFrame then
+                        return
+                    end
+                    if not MainFrame:GetAttribute("OriginalSize") then
+                        MainFrame:SetAttribute("OriginalSize", MainFrame.Size)
+                    end
+                    local IsMaximized = MainFrame:GetAttribute("Maximized") or false
+                    MainFrame:SetAttribute("Maximized", not IsMaximized)
+                    local TargetSize = IsMaximized and MainFrame:GetAttribute("OriginalSize") or
+                                           UDim2.new(0.95, 0, 0.95, 0)
+                    TweenService:Create(MainFrame, TweenInfo.new(SimpleUI.Constants.Animation.Normal,
+                        Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = TargetSize
+                    }):Play()
+                end)
             end
         end
 
-        container:Destroy()
-        container = scroll
-
-    elseif not needsScrolling and isScrollFrame then
-        container.ScrollBarThickness = 0
-    elseif needsScrolling and isScrollFrame then
-        container.ScrollBarImageTransparency = 1
-    end
-
-    if layout and not layout:GetAttribute("AutoScrollHooked") then
-        layout:SetAttribute("AutoScrollHooked", true)
-
-        local updateQueued = false
-        local lastContentSize = layout.AbsoluteContentSize
-
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            if updateQueued or layout.AbsoluteContentSize == lastContentSize then
+        function SimpleUI.WindowControlBuilder:RegisterIconBindings(Window, ControlButtons, Options)
+            local ControlStyle = Options.ControlStyle or "Windows"
+            local Config = SimpleUI.WindowControls[ControlStyle]
+            if not Config or not Config.Icons then
                 return
             end
-            lastContentSize = layout.AbsoluteContentSize
-            updateQueued = true
+            for ControlType, Button in pairs(ControlButtons) do
+                local IconData = Config.Icons[ControlType]
+                if IconData and IconData.ColorKey then
+                    local Icon = Button:FindFirstChildWhichIsA("ImageLabel")
+                    if Icon then
+                        SimpleUI.ThemeManager:RegisterElement(Window, Icon, {
+                            ImageColor3 = IconData.ColorKey
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    SimpleUI.ComponentBuilder = {}
+    do
+        function SimpleUI.ComponentBuilder:CreateContainer(Config, Theme)
+            if not SimpleUI.ErrorHandler:ValidateInstance(Config.Parent, "GuiObject", "ComponentBuilder:CreateContainer") then
+                return nil
+            end
+            local Container = SimpleUI.Utility:CreateInstance("Frame", {
+                Size = UDim2.new(1, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundColor3 = Theme[Config.ColorTier or "Secondary"],
+                BackgroundTransparency = Theme.TransparencySecondary,
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Control
+            }, Config.Parent)
+            if Config.MinHeight then
+                SimpleUI.Utility:CreateInstance("UISizeConstraint", {
+                    MinSize = Vector2.new(0, Config.MinHeight)
+                }, Container)
+            end
+            if Config.CornerRadius then
+                SimpleUI.Utility:CreateInstance("UICorner", {
+                    CornerRadius = UDim.new(0, Config.CornerRadius)
+                }, Container)
+            end
+            local Padding = Config.Padding or {}
+            if type(Padding) == "number" then
+                Padding = {
+                    Top = Padding,
+                    Bottom = Padding,
+                    Left = Padding,
+                    Right = Padding
+                }
+            end
+            if type(Padding) == "table" then
+                for key, value in pairs(Padding) do
+                    if type(value) ~= "number" then
+                        Padding[key] = SimpleUI.Constants.Padding.Medium
+                    end
+                end
+            end
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingTop = UDim.new(0, Padding.Top or SimpleUI.Constants.Padding.Medium),
+                PaddingBottom = UDim.new(0, Padding.Bottom or SimpleUI.Constants.Padding.Medium),
+                PaddingLeft = UDim.new(0, Padding.Left or SimpleUI.Constants.Padding.Large),
+                PaddingRight = UDim.new(0, Padding.Right or 0)
+            }, Container)
+            local TextZone, InteractiveZone, Layout
+            if Config.Layout == "TextLeft" then
+                TextZone = SimpleUI.Utility:CreateInstance("Frame", {
+                    Size = UDim2.new(Config.TextWidth or 0.65, 0, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 1,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay
+                }, Container)
+                Layout = SimpleUI.Utility:CreateInstance("UIListLayout", {
+                    FillDirection = Enum.FillDirection.Vertical,
+                    HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                    VerticalAlignment = Config.HasDescription and Enum.VerticalAlignment.Top or
+                        Enum.VerticalAlignment.Center,
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    Padding = UDim.new(0, SimpleUI.Constants.Spacing.Relaxed)
+                }, TextZone)
+                InteractiveZone = Container
+            elseif Config.Layout == "Stacked" then
+                local ContentFrame = SimpleUI.Utility:CreateInstance("Frame", {
+                    Size = UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundTransparency = 1,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay
+                }, Container)
+                Layout = SimpleUI.Utility:CreateInstance("UIListLayout", {
+                    FillDirection = Enum.FillDirection.Vertical,
+                    HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                    VerticalAlignment = Enum.VerticalAlignment.Top,
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    Padding = UDim.new(0, Config.Spacing or SimpleUI.Constants.Spacing.Normal)
+                }, ContentFrame)
+                if not Config.HasDescription then
+                    ContentFrame.Position = UDim2.new(0, 0, 0.5, 0)
+                    ContentFrame.AnchorPoint = Vector2.new(0, 0.5)
+                end
+                TextZone = ContentFrame
+                InteractiveZone = ContentFrame
+            else
+                TextZone = Container
+                InteractiveZone = Container
+            end
+            return {
+                Container = Container,
+                TextZone = TextZone,
+                InteractiveZone = InteractiveZone,
+                Layout = Layout
+            }
+        end
+
+        function SimpleUI.ComponentBuilder:CreateLabel(Parent, Text, Theme, Config)
+            Config = Config or {}
+            if Config and
+                not SimpleUI.ErrorHandler:ValidateType(Config, "table", "Config", "ComponentBuilder:CreateLabel") then
+                Config = {}
+            end
+            return SimpleUI.Utility:CreateInstance("TextLabel", {
+                Size = UDim2.new(1, Config.WidthOffset or 0, 0, 0),
+                BackgroundTransparency = 1,
+                Text = Text or "",
+                TextColor3 = Theme[Config.ColorTier or "TextPrimary"],
+                TextSize = Config.Size or 14,
+                Font = Theme[Config.Font or "FontSecondary"],
+                TextXAlignment = Config.Align or Enum.TextXAlignment.Left,
+                TextWrapped = true,
+                AutomaticSize = Enum.AutomaticSize.Y,
+                LayoutOrder = Config.Order or 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Overlay
+            }, Parent)
+        end
+
+        function SimpleUI.ComponentBuilder:CreateDescription(Parent, Text, Theme, Order)
+            if not Text or Text == "" then
+                return nil
+            end
+            return self:CreateLabel(Parent, Text, Theme, {
+                ColorTier = "TextSecondary",
+                Size = 14,
+                Order = Order or 2
+            })
+        end
+
+        function SimpleUI.ComponentBuilder:UpdateDescriptionPadding(Zones, HasDescription)
+            local Padding = Zones.Container:FindFirstChildOfClass("UIPadding")
+            if not Padding then
+                return
+            end
+            if HasDescription then
+                Padding.PaddingTop = UDim.new(0, SimpleUI.Constants.Padding.Large)
+                Padding.PaddingBottom = UDim.new(0, SimpleUI.Constants.Padding.Large)
+                if Zones.Layout then
+                    Zones.Layout.Padding = UDim.new(0, SimpleUI.Constants.Spacing.Tight)
+                end
+                if Zones.TextZone then
+                    Zones.TextZone.Position = UDim2.new(0, 0, 0, 0)
+                    Zones.TextZone.AnchorPoint = Vector2.new(0, 0)
+                end
+            else
+                Padding.PaddingTop = UDim.new(0, 0)
+                Padding.PaddingBottom = UDim.new(0, 0)
+                if Zones.Layout then
+                    Zones.Layout.Padding = UDim.new(0, 0)
+                end
+                if Zones.TextZone then
+                    Zones.TextZone.Position = UDim2.new(0, 0, 0.5, 0)
+                    Zones.TextZone.AnchorPoint = Vector2.new(0, 0.5)
+                end
+            end
+        end
+    end
+
+    SimpleUI.DropdownManager = {}
+    do
+        function SimpleUI.DropdownManager:NormalizeOptions(Options)
+            local EH = SimpleUI.ErrorHandler
+            if not EH:ValidateType(Options, "table", "Options", "DropdownManager:NormalizeOptions") then
+                return {}, {}
+            end
+            local Normalized = {}
+            local DataMap = {}
+            for Index, Option in ipairs(Options) do
+                if type(Option) == "table" then
+                    local DisplayText = Option.Text or Option.text or Option.Label or Option.label or tostring(Option)
+                    Normalized[Index] = DisplayText
+                    DataMap[DisplayText] = Option
+                else
+                    Normalized[Index] = tostring(Option)
+                    DataMap[tostring(Option)] = Option
+                end
+            end
+            return Normalized, DataMap
+        end
+
+        function SimpleUI.DropdownManager:InitializeSelection(DefaultValue, IsMultiSelect, DataMap)
+            local EH = SimpleUI.ErrorHandler
+            if IsMultiSelect then
+                local Selected = {}
+                if type(DefaultValue) == "table" then
+                    if not EH:ValidateType(DefaultValue, "table", "DefaultValue", "DropdownManager:InitializeSelection") then
+                        return Selected
+                    end
+                    for _, Value in ipairs(DefaultValue) do
+                        local Normalized = type(Value) == "table" and
+                                               (Value.Text or Value.text or Value.Label or Value.label or
+                                                   tostring(Value)) or tostring(Value)
+                        if DataMap[Normalized] then
+                            Selected[Normalized] = true
+                        end
+                    end
+                end
+                return Selected
+            else
+                if DefaultValue then
+                    local Normalized = type(DefaultValue) == "table" and
+                                           (DefaultValue.Text or DefaultValue.text or DefaultValue.Label or
+                                               DefaultValue.label or tostring(DefaultValue)) or tostring(DefaultValue)
+                    return DataMap[Normalized] and Normalized or nil
+                end
+                return nil
+            end
+        end
+
+        function SimpleUI.DropdownManager:GetSelectedData(Selection, IsMultiSelect, DataMap)
+            if IsMultiSelect then
+                local Selected = {}
+                for Value, Enabled in pairs(Selection) do
+                    if Enabled then
+                        table.insert(Selected, DataMap[Value])
+                    end
+                end
+                return Selected
+            else
+                return DataMap[Selection]
+            end
+        end
+
+        function SimpleUI.DropdownManager:UpdateDisplayText(DisplayLabel, Selection, IsMultiSelect)
+            local EH = SimpleUI.ErrorHandler
+            if not DisplayLabel or not DisplayLabel.Parent then
+                EH:Guard(false, "DropdownManager:UpdateDisplayText", "Invalid DisplayLabel", EH.Levels.WARN)
+                return
+            end
+            EH:Try(function()
+                if IsMultiSelect then
+                    local Selected = {}
+                    for Value, Enabled in pairs(Selection) do
+                        if Enabled then
+                            table.insert(Selected, Value)
+                        end
+                    end
+                    DisplayLabel.Text = #Selected > 0 and table.concat(Selected, ", ") or "Select"
+                else
+                    DisplayLabel.Text = Selection or "Select"
+                end
+            end)
+        end
+    end
+
+    SimpleUI.WindowBuilder = {}
+    do
+        function SimpleUI.WindowBuilder:CreateMainFrame(ScreenGui, Options, Theme)
+            local MainFrameProperties, MainFrameBindings = SimpleUI.Utility:ApplyTheme({
+                Name = "MainFrame",
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Active = true,
+                AutoButtonColor = false,
+                Position = Options.Position or UDim2.new(0.5, 0, 0.5, 0),
+                Size = Options.Size or UDim2.new(0, 650, 0, 600),
+                Text = "",
+                BorderSizePixel = 0,
+                ClipsDescendants = false
+            }, {
+                BackgroundColor3 = "Primary",
+                BackgroundTransparency = "TransparencyPrimary"
+            }, Theme)
+            local MainFrame = SimpleUI.Utility:CreateInstance("TextButton", MainFrameProperties, ScreenGui)
+            SimpleUI.Utility:CreateInstance("UICorner", {
+                CornerRadius = UDim.new(0, SimpleUI.Constants.Corner.Large)
+            }, MainFrame)
+            SimpleUI.Utility:CreateInstance("UISizeConstraint", {
+                MinSize = Options.MinSize or SimpleUI.Constants.Window.MinSize,
+                MaxSize = Options.MaxSize or SimpleUI.Constants.Window.MaxSize
+            }, MainFrame)
+            local UIScale = SimpleUI.Utility:CreateInstance("UIScale", {
+                Name = "WindowScale",
+                Scale = Options.DefaultScale or SimpleUI.Constants.Window.DefaultScale
+            }, MainFrame)
+            return MainFrame, UIScale, MainFrameBindings
+        end
+
+        function SimpleUI.WindowBuilder:CreateTopBar(Parent, Options, Theme)
+            local TopBarHeight = Options.TopBarHeight or SimpleUI.Constants.Window.TopBarHeight
+            local TopBar = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "TopBar",
+                Size = UDim2.new(1, 0, 0, TopBarHeight),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Base,
+                ClipsDescendants = false,
+                Active = true
+            }, Parent)
+            local Sep
+            local SepBindings
+            local SepProps
+            if Options.TopBarSeparator ~= false then
+                SepProps, SepBindings = SimpleUI.Utility:ApplyTheme({
+                    Name = "TopBarSeparator",
+                    AnchorPoint = Vector2.new(0, 1),
+                    Position = UDim2.new(0, 0, 1, 0),
+                    Size = UDim2.new(1, 0, 0, 1),
+                    BorderSizePixel = 0,
+                    ZIndex = TopBar.ZIndex + 1
+                }, {
+                    BackgroundColor3 = "Separator",
+                    BackgroundTransparency = "SeparatorTransparency"
+                }, Theme)
+                Sep = SimpleUI.Utility:CreateInstance("Frame", SepProps, TopBar)
+            end
+            return TopBar, Sep, SepBindings
+        end
+
+        function SimpleUI.WindowBuilder:CreateTitleSection(TopBar, Options, Theme)
+            local ControlStyle = Options.ControlStyle or "Windows"
+            local HasBrand = Options.Brand ~= nil
+            local BrandName = HasBrand and Options.Brand.Name or ""
+            local BrandIcon = HasBrand and Options.Brand.Icon or nil
+
+            local BaseLeftOffset = 10
+            local IconSize = 40
+            local IconGap = 12
+
+            local BrandIconElement = nil
+            local BrandInitialElement = nil
+
+            if HasBrand then
+                if BrandIcon and type(BrandIcon) == "table" and BrandIcon.Image then
+                    local IconData = SimpleUI.IconManager:WrapIcon(BrandIcon)
+                    BrandIconElement = SimpleUI.Utility:CreateInstance("ImageLabel", {
+                        Name = "BrandIcon",
+                        Size = UDim2.new(0, IconSize, 0, IconSize),
+                        Position = UDim2.new(0, BaseLeftOffset, 0.5, 0),
+                        AnchorPoint = Vector2.new(0, 0.5),
+                        BackgroundTransparency = 1,
+                        Image = IconData.Url,
+                        ImageColor3 = Theme.TextPrimary,
+                        ScaleType = Enum.ScaleType.Fit,
+                        BorderSizePixel = 0,
+                        ZIndex = SimpleUI.Constants.ZIndex.Content + 1
+                    }, TopBar)
+                else
+                    local Initials = BrandName:sub(1, 1):upper()
+                    BrandInitialElement = SimpleUI.Utility:CreateInstance("TextLabel", {
+                        Name = "BrandInitial",
+                        Size = UDim2.new(0, IconSize, 0, IconSize),
+                        Position = UDim2.new(0, BaseLeftOffset, 0.5, 0),
+                        AnchorPoint = Vector2.new(0, 0.5),
+                        BackgroundTransparency = 1,
+                        Text = Initials,
+                        TextColor3 = Theme.TextPrimary,
+                        Font = Enum.Font.GothamBold,
+                        TextSize = 42,
+                        BorderSizePixel = 0,
+                        ZIndex = SimpleUI.Constants.ZIndex.Content
+                    }, TopBar)
+                end
+            end
+
+            local BrandTitleLabel = nil
+            if HasBrand and BrandName and BrandName ~= "" then
+                BrandTitleLabel = SimpleUI.Utility:CreateInstance("TextLabel", {
+                    Name = "BrandTitle",
+                    Size = UDim2.new(0, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.XY,
+                    Position = UDim2.new(0, BaseLeftOffset + IconSize + IconGap, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    BackgroundTransparency = 1,
+                    Text = BrandName,
+                    TextColor3 = Theme.TextPrimary,
+                    Font = Theme.FontPrimary,
+                    TextSize = 16,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
+                    TextTransparency = 1,
+                    ZIndex = SimpleUI.Constants.ZIndex.Content
+                }, TopBar)
+
+                SimpleUI.Utility:CreateInstance("UISizeConstraint", {
+                    MaxSize = Vector2.new(200, math.huge)
+                }, BrandTitleLabel)
+            end
+
+            local TabInfoContainer = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "TabInfoContainer",
+                Position = UDim2.new(0, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(0, 0, 0.7, 0),
+                AutomaticSize = Enum.AutomaticSize.X,
+                BackgroundTransparency = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Content,
+                ClipsDescendants = true,
+                Visible = true
+            }, TopBar)
+
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingLeft = UDim.new(0, 12),
+                PaddingRight = UDim.new(0, 200)
+            }, TabInfoContainer)
+
+            SimpleUI.Utility:CreateInstance("UIListLayout", {
+                FillDirection = Enum.FillDirection.Vertical,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                Padding = UDim.new(0, 2)
+            }, TabInfoContainer)
+
+            local TabNameLabel = SimpleUI.Utility:CreateInstance("TextLabel", {
+                Name = "TabNameLabel",
+                Size = UDim2.new(1, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                Text = "Select Tab",
+                TextColor3 = Theme.TextPrimary,
+                Font = Theme.FontPrimary,
+                TextSize = 16,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                LayoutOrder = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Content
+            }, TabInfoContainer)
+
+            local TabDescLabel = SimpleUI.Utility:CreateInstance("TextLabel", {
+                Name = "TabDescLabel",
+                Size = UDim2.new(1, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                Text = "",
+                TextColor3 = Theme.TextSecondary,
+                Font = Theme.FontSecondary,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                LayoutOrder = 2,
+                ZIndex = SimpleUI.Constants.ZIndex.Content
+            }, TabInfoContainer)
+
+            local ControlsContainer = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "ControlsContainer",
+                Position = UDim2.new(1, -10, 0.5, 0),
+                AnchorPoint = Vector2.new(1, 0.5),
+                Size = UDim2.new(0, 100, 0.7, 0),
+                BackgroundTransparency = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Content,
+                ClipsDescendants = false
+            }, TopBar)
+
+            return TabInfoContainer, ControlsContainer, TabNameLabel, TabDescLabel, BrandIconElement,
+                BrandInitialElement, BrandTitleLabel
+        end
+
+        function SimpleUI.WindowBuilder:CreateWindowControls(ControlsContainer, Options, Theme)
+            local ControlStyle = Options.ControlStyle or "Windows"
+            local Controls = Options.WindowControls or
+                                 (ControlStyle == "Windows" and {"Maximize", "Close"} or {"Close", "Maximize"})
+            local ControlButtons = {}
+            if Controls then
+                for Index, ControlType in ipairs(Controls) do
+                    local Button = SimpleUI.WindowControlBuilder:Create(ControlType, ControlStyle, ControlsContainer,
+                        Index - 1, #Controls)
+                    if Button then
+                        ControlButtons[ControlType] = Button
+                    end
+                end
+            end
+            return ControlButtons
+        end
+
+        function SimpleUI.WindowBuilder:CreateContentAreas(MainContainer, MainFrame, TopBar, Options)
+            local Const = SimpleUI.Constants.Window
+            local TabsWidth = Const.TabsWidthOpen
+            local ContentWidth = Const.ContentWidthOpen
+            local IsCollapsed = Options.IsCollapsed
+            local HorizontalPadding = IsCollapsed and 4 or Options.HorizontalPadding or Const.HorizontalPadding
+            local HasBrand = Options.Brand ~= nil
+
+            local TabsContainer = SimpleUI.Utility:CreateInstance("ScrollingFrame", {
+                Name = "TabsContainer",
+                Position = UDim2.new(0, HorizontalPadding, 0, 0),
+                Size = UDim2.new(TabsWidth, -(HorizontalPadding * 1.5), 1, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Content,
+                ClipsDescendants = true,
+                ScrollingDirection = Enum.ScrollingDirection.Y,
+                ScrollBarThickness = 0,
+                CanvasSize = UDim2.new(0, 0, 0, 0),
+                AutomaticCanvasSize = Enum.AutomaticSize.Y
+            }, MainContainer)
+            SimpleUI.Utility:CreateInstance("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                Padding = UDim.new(0, SimpleUI.Constants.Padding.Large)
+            }, TabsContainer)
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingTop = UDim.new(0, 0),
+                PaddingBottom = UDim.new(0, 0),
+                PaddingLeft = UDim.new(0, 2),
+                PaddingRight = UDim.new(0, 1)
+            }, TabsContainer)
+            local Theme = SimpleUI.ThemeManager:GetCurrentTheme({
+                ThemeData = {
+                    CurrentTheme = SimpleUI.Themes.Obsidian
+                }
+            })
+            local TabsSeparatorProperties, TabsSeparatorBindings = SimpleUI.Utility:ApplyTheme({
+                Name = "TabsSeparator",
+                Position = UDim2.new(TabsWidth, Const.TabSeparatorGap, 0, HasBrand and 0 or Const.TopBarHeight),
+                Size = UDim2.new(0, 1, 1, HasBrand and 0 or -Const.TopBarHeight),
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Content
+            }, {
+                BackgroundColor3 = "Separator",
+                BackgroundTransparency = "SeparatorTransparency"
+            }, Theme)
+            local TabsSeparator = SimpleUI.Utility:CreateInstance("Frame", TabsSeparatorProperties, MainFrame)
+            local ContentsContainer = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "ContentsContainer",
+                Position = UDim2.new(TabsWidth, HorizontalPadding, 0, 0),
+                Size = UDim2.new(ContentWidth, -(HorizontalPadding * 2), 1, 0),
+                BorderSizePixel = 0,
+                BackgroundTransparency = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Content,
+                ClipsDescendants = true
+            }, MainContainer)
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingBottom = UDim.new(0, SimpleUI.Constants.Padding.Large),
+                PaddingLeft = UDim.new(0, SimpleUI.Constants.Padding.Large),
+                PaddingRight = UDim.new(0, SimpleUI.Constants.Padding.Large)
+            }, ContentsContainer)
+            return TabsContainer, ContentsContainer, TabsSeparator, TabsSeparatorBindings
+        end
+
+        function SimpleUI.WindowBuilder:CreateMainContainer(Parent, Options, Theme, TopBarHeight, FooterHeight)
+            local VerticalPadding = Options.VerticalPadding or SimpleUI.Constants.Window.VerticalPadding
+            local FooterOffset = (FooterHeight and FooterHeight > 0) and -(Options.FooterOverlap or 0) or 0
+            local MainContainer = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "MainContainer",
+                Position = UDim2.new(0, 0, 0, TopBarHeight),
+                Size = UDim2.new(1, 0, 1, -(TopBarHeight + FooterOffset)),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Base,
+                ClipsDescendants = true
+            }, Parent)
+            if Options.AcrylicEffect then
+                local Blur = SimpleUI.Utility:CreateInstance("Frame", {
+                    Name = "BlurBackground",
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 0.3,
+                    BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Background
+                }, MainContainer)
+                SimpleUI.Utility:CreateInstance("UICorner", {
+                    CornerRadius = UDim.new(0, SimpleUI.Constants.Corner.Large)
+                }, Blur)
+                pcall(function()
+                    local BlurEffect = Instance.new("BlurEffect")
+                    BlurEffect.Size = 24
+                    BlurEffect.Parent = Lighting
+                end)
+            end
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingTop = UDim.new(0, VerticalPadding),
+                PaddingBottom = UDim.new(0, VerticalPadding),
+                PaddingLeft = UDim.new(0, 0),
+                PaddingRight = UDim.new(0, 0)
+            }, MainContainer)
+            return MainContainer
+        end
+
+        function SimpleUI.WindowBuilder:SetupDragging(TopBar, MainFrame)
+            local IsDragging = false
+            local DragStart
+            local StartPosition
+            TopBar.InputBegan:Connect(function(Input)
+                if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType ==
+                    Enum.UserInputType.Touch then
+                    IsDragging = true
+                    DragStart = Input.Position
+                    StartPosition = MainFrame.Position
+                    Input:GetPropertyChangedSignal("UserInputState"):Connect(function()
+                        if Input.UserInputState == Enum.UserInputState.End then
+                            IsDragging = false
+                        end
+                    end)
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(Input)
+                if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType ==
+                    Enum.UserInputType.Touch then
+                    IsDragging = false
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(Input)
+                if IsDragging and
+                    (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType ==
+                        Enum.UserInputType.Touch) then
+                    local CurrentPosition = Input.Position
+                    local Delta = CurrentPosition - DragStart
+                    MainFrame.Position = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X,
+                        StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
+                end
+            end)
+        end
+
+        function SimpleUI.WindowBuilder:CreateFooter(Parent, Options, Theme)
+            if not Options.Footer then
+                return nil, {}, nil
+            end
+            local FooterHeight = Options.FooterHeight or 20
+            local FooterOverlap = Options.FooterOverlap or -10
+            local FooterProperties, FooterBindings = SimpleUI.Utility:ApplyTheme({
+                Name = "Footer",
+                Position = UDim2.new(0, 0, 1, FooterOverlap),
+                AnchorPoint = Vector2.new(0, 0),
+                Size = UDim2.new(1, 0, 0, FooterHeight),
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Overlay,
+                ClipsDescendants = false
+            }, {
+                BackgroundColor3 = "Secondary",
+                BackgroundTransparency = "TransparencyPrimary"
+            }, Theme)
+            local Footer = SimpleUI.Utility:CreateInstance("Frame", FooterProperties, Parent)
+            SimpleUI.Utility:CreateInstance("UICorner", {
+                CornerRadius = UDim.new(0, SimpleUI.Constants.Corner.Large)
+            }, Footer)
+            local SeparatorBindings = {}
+            if Options.FooterSeparator ~= false then
+                local SepProps, SepBindings = SimpleUI.Utility:ApplyTheme({
+                    Name = "FooterSeparator",
+                    Position = UDim2.new(0, 0, 1, FooterOverlap),
+                    Size = UDim2.new(1, 0, 0, 1),
+                    BorderSizePixel = 0,
+                    ZIndex = Footer.ZIndex + 1
+                }, {
+                    BackgroundColor3 = "Separator",
+                    BackgroundTransparency = "SeparatorTransparency"
+                }, Theme)
+                local Separator = SimpleUI.Utility:CreateInstance("Frame", SepProps, Parent)
+                if SepBindings then
+                    SeparatorBindings = {
+                        Element = Separator,
+                        Bindings = SepBindings
+                    }
+                end
+            end
+            local ContentFrame = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "FooterContent",
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(1, Options.CanResize and -24 or 0, 1, 0),
+                BackgroundTransparency = 1,
+                ZIndex = Footer.ZIndex + 1
+            }, Footer)
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingLeft = UDim.new(0, SimpleUI.Constants.Padding.Large),
+                PaddingRight = UDim.new(0, SimpleUI.Constants.Padding.Large),
+                PaddingTop = UDim.new(0, SimpleUI.Constants.Padding.Medium),
+                PaddingBottom = UDim.new(0, SimpleUI.Constants.Padding.Medium)
+            }, ContentFrame)
+            SimpleUI.Utility:CreateInstance("UIListLayout", {
+                FillDirection = Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Options.FooterAlignment or Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, SimpleUI.Constants.Spacing.Normal)
+            }, ContentFrame)
+            local ResizeContainer
+            if Options.CanResize then
+                ResizeContainer = SimpleUI.Utility:CreateInstance("Frame", {
+                    Name = "FooterResizeArea",
+                    AnchorPoint = Vector2.new(1, 1),
+                    Position = UDim2.new(1, 1, 1, 1),
+                    Size = UDim2.fromOffset(20, 20),
+                    BackgroundTransparency = 1,
+                    ZIndex = Footer.ZIndex + 3
+                }, Footer)
+            end
+            return Footer, FooterBindings, ContentFrame, SeparatorBindings, ResizeContainer
+        end
+
+        function SimpleUI.WindowBuilder:PopulateFooter(Window, Options, Theme)
+            if not Window.Elements.FooterContent or not Options.FooterItems then
+                return
+            end
+            for _, Item in ipairs(Options.FooterItems) do
+                if Item.Type == "Text" then
+                    local TextProperties, TextBindings = SimpleUI.Utility:ApplyTheme({
+                        Name = Item.Name or "FooterText",
+                        LayoutOrder = Item.Order or 1,
+                        Size = UDim2.new(0, 0, 1, 0),
+                        AutomaticSize = Enum.AutomaticSize.X,
+                        BackgroundTransparency = 1,
+                        Text = Item.Text or "",
+                        TextSize = Item.TextSize or 14,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        ZIndex = Window.Elements.Footer.ZIndex + 2
+                    }, {
+                        Font = "FontSecondary",
+                        TextColor3 = Item.ColorTier or "TextSecondary"
+                    }, Theme)
+                    local Label = SimpleUI.Utility:CreateInstance("TextLabel", TextProperties,
+                        Window.Elements.FooterContent)
+                    if Item.Id then
+                        Window.Elements[Item.Id] = Label
+                    end
+                    if TextBindings then
+                        SimpleUI.ThemeManager:RegisterElement(Window, Label, TextBindings)
+                    end
+                elseif Item.Type == "Button" then
+                    local ButtonProperties, ButtonBindings = SimpleUI.Utility:ApplyTheme({
+                        Name = Item.Name or Item.Text or "FooterButton",
+                        LayoutOrder = Item.Order or 1,
+                        Size = UDim2.new(0, Item.Width or 80, 1, -8),
+                        Text = Item.Text or "Button",
+                        TextSize = Item.TextSize or 14,
+                        BorderSizePixel = 0,
+                        AutoButtonColor = false,
+                        ZIndex = Window.Elements.Footer.ZIndex + 2
+                    }, {
+                        Font = "FontSecondary",
+                        TextColor3 = "TextPrimary",
+                        BackgroundColor3 = "Tertiary"
+                    }, Theme)
+                    local Button = SimpleUI.Utility:CreateInstance("TextButton", ButtonProperties,
+                        Window.Elements.FooterContent)
+                    SimpleUI.Utility:CreateInstance("UICorner", {
+                        CornerRadius = UDim.new(0, SimpleUI.Constants.Corner.Medium)
+                    }, Button)
+                    if not SimpleUI.Utility:IsMobile() then
+                        Button.MouseEnter:Connect(function()
+                            TweenService:Create(Button, TweenInfo.new(0.15), {
+                                BackgroundColor3 = Theme.TertiaryHover
+                            }):Play()
+                        end)
+                        Button.MouseLeave:Connect(function()
+                            TweenService:Create(Button, TweenInfo.new(0.15), {
+                                BackgroundColor3 = Theme.Tertiary
+                            }):Play()
+                        end)
+                    end
+                    if Item.Callback then
+                        Button.Activated:Connect(function()
+                            TweenService:Create(Button, TweenInfo.new(0.1), {
+                                BackgroundColor3 = Theme.TertiaryPressed
+                            }):Play()
+                            task.wait(0.1)
+                            TweenService:Create(Button, TweenInfo.new(0.1), {
+                                BackgroundColor3 = Theme.Tertiary
+                            }):Play()
+                            SimpleUI.ErrorHandler:Try(Item.Callback)
+                        end)
+                    end
+                    if Item.Id then
+                        Window.Elements[Item.Id] = Button
+                    end
+                    if ButtonBindings then
+                        SimpleUI.ThemeManager:RegisterElement(Window, Button, ButtonBindings)
+                    end
+                elseif Item.Type == "Spacer" then
+                    SimpleUI.Utility:CreateInstance("Frame", {
+                        Name = "Spacer",
+                        LayoutOrder = Item.Order or 1,
+                        Size = UDim2.new(0, Item.Width or 10, 1, 0),
+                        BackgroundTransparency = 1
+                    }, Window.Elements.FooterContent)
+                end
+            end
+        end
+
+        function SimpleUI.WindowBuilder:SetupResizing(MainFrame, UIScale, Options, ResizeParent)
+            if not Options.CanResize or not ResizeParent then
+                return
+            end
+            local ResizeHandle = SimpleUI.Utility:CreateInstance("TextButton", {
+                Name = "ResizeHandle",
+                Size = UDim2.fromOffset(16, 16),
+                Position = UDim2.fromScale(0.5, 0.5),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 0.8,
+                BackgroundColor3 = Color3.fromRGB(100, 100, 110),
+                BorderSizePixel = 0,
+                Text = "",
+                AutoButtonColor = false,
+                ZIndex = SimpleUI.Constants.ZIndex.Modal
+            }, ResizeParent)
+            SimpleUI.Utility:CreateInstance("UICorner", {
+                CornerRadius = UDim.new(1, 0)
+            }, ResizeHandle)
+            SimpleUI.Utility:CreateInstance("ImageLabel", {
+                Size = UDim2.fromScale(0.7, 0.7),
+                Position = UDim2.fromScale(0.5, 0.5),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 1,
+                Image = "rbxassetid://16898613613",
+                ImageRectSize = Vector2.new(48, 48),
+                ImageRectOffset = Vector2.new(967, 49),
+                ZIndex = SimpleUI.Constants.ZIndex.Modal + 1
+            }, ResizeHandle)
+
+            local resizing = false
+            local startMousePos
+            local startSize
+            local inputConnection
+
+            ResizeHandle.InputBegan:Connect(function(input)
+                if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~=
+                    Enum.UserInputType.Touch then
+                    return
+                end
+                resizing = true
+                startMousePos = Vector2.new(input.Position.X, input.Position.Y)
+                startSize = MainFrame.AbsoluteSize
+
+                if inputConnection then
+                    inputConnection:Disconnect()
+                end
+
+                inputConnection = UserInputService.InputChanged:Connect(function(changeInput)
+                    if not resizing then
+                        return
+                    end
+                    if changeInput.UserInputType ~= Enum.UserInputType.MouseMovement and changeInput.UserInputType ~=
+                        Enum.UserInputType.Touch then
+                        return
+                    end
+
+                    local currentMousePos = Vector2.new(changeInput.Position.X, changeInput.Position.Y)
+                    local mouseDelta = currentMousePos - startMousePos
+
+                    local minSize = SimpleUI.Constants.Window.MinSize
+                    local maxSize = SimpleUI.Constants.Window.MaxSize
+
+                    local newWidth = math.clamp(startSize.X + mouseDelta.X, minSize.X, maxSize.X)
+                    local newHeight = math.clamp(startSize.Y + mouseDelta.Y, minSize.Y, maxSize.Y)
+
+                    MainFrame.Size = UDim2.fromOffset(newWidth, newHeight)
+                end)
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType ==
+                    Enum.UserInputType.Touch then
+                    if resizing then
+                        resizing = false
+                        if inputConnection then
+                            inputConnection:Disconnect()
+                            inputConnection = nil
+                        end
+                    end
+                end
+            end)
+        end
+
+        function SimpleUI.WindowBuilder:SetupScrollUpdates(WindowInstance)
+            task.defer(function()
+                local function UpdateContainers()
+                    task.wait()
+                    WindowInstance.Elements.TabsContainer = SimpleUI.ScrollManager:Update(WindowInstance.Elements
+                                                                                              .TabsContainer)
+                    if WindowInstance.ActivePage then
+                        WindowInstance.ActivePage = SimpleUI.ScrollManager:Update(WindowInstance.ActivePage)
+                    end
+                end
+                UpdateContainers()
+                WindowInstance.Elements.TabsContainer.ChildAdded:Connect(UpdateContainers)
+                WindowInstance.Elements.TabsContainer.ChildRemoved:Connect(UpdateContainers)
+                WindowInstance.Elements.ContentsContainer.ChildAdded:Connect(function(Child)
+                    if Child:IsA("Frame") then
+                        local Layout = Child:FindFirstChildWhichIsA("UIListLayout")
+                        if Layout then
+                            Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                                if Child == WindowInstance.ActivePage then
+                                    WindowInstance.ActivePage = SimpleUI.ScrollManager:Update(Child)
+                                end
+                            end)
+                        end
+                        local function UpdatePage()
+                            if Child == WindowInstance.ActivePage then
+                                task.wait()
+                                WindowInstance.ActivePage = SimpleUI.ScrollManager:Update(Child)
+                            end
+                        end
+                        Child.ChildAdded:Connect(UpdatePage)
+                        Child.ChildRemoved:Connect(UpdatePage)
+                    end
+                end)
+            end)
+        end
+    end
+
+    SimpleUI.SectionManager = {}
+    do
+        function SimpleUI.SectionManager:CreateSimpleSection(Page, Text, Options, Theme, Window, Style)
+            local LABEL_HEIGHT = 26
+            local TEXT_SIZE = Options.TextSize or 19
+            local LABEL_TEXT = Text or "Section"
+
+            local StyleDefs = {
+                sidebar = {
+                    SectionHeight = LABEL_HEIGHT + 4,
+                    Indent = 10
+                },
+                notch = {
+                    SectionHeight = LABEL_HEIGHT + 4,
+                    Indent = 16
+                },
+                filled = {
+                    SectionHeight = LABEL_HEIGHT + 8,
+                    Indent = 14
+                },
+                inset = {
+                    SectionHeight = LABEL_HEIGHT + 6,
+                    Indent = 10
+                },
+                stepped = {
+                    SectionHeight = LABEL_HEIGHT + 10,
+                    Indent = 8
+                },
+                panel = {
+                    SectionHeight = LABEL_HEIGHT + 8,
+                    Indent = 14
+                }
+            }
+
+            local Def = StyleDefs[Style] or {
+                SectionHeight = LABEL_HEIGHT + 4,
+                Indent = 0
+            }
+            local SECTION_HEIGHT = Def.SectionHeight
+            local INDENT = Def.Indent
+            local LabelY = math.floor((SECTION_HEIGHT - LABEL_HEIGHT) / 2)
+
+            local AccentElement, AccentBindings, ExtraElements = nil, {}, {}
+
+            local Section = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "Section",
+                Size = UDim2.new(1, 0, 0, SECTION_HEIGHT),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ClipsDescendants = false,
+                ZIndex = SimpleUI.Constants.ZIndex.Control
+            }, Page)
+
+            local LabelProperties, LabelBindings = SimpleUI.Utility:ApplyTheme({
+                Size = UDim2.new(1, -INDENT, 0, LABEL_HEIGHT),
+                Position = UDim2.new(0, INDENT, 0, LabelY),
+                Text = LABEL_TEXT,
+                TextSize = TEXT_SIZE,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                BackgroundTransparency = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Overlay
+            }, {
+                Font = "FontPrimary",
+                TextColor3 = "TextActive"
+            }, Theme)
+            local Label = SimpleUI.Utility:CreateInstance("TextLabel", LabelProperties, Section)
+
+            if Style == "sidebar" then
+                local Thickness = Options.BarThickness or 3
+                local BarProps, BarBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(0, Thickness, 0, LABEL_HEIGHT),
+                    Position = UDim2.new(0, 0, 0, LabelY),
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Bar = SimpleUI.Utility:CreateInstance("Frame", BarProps, Section)
+                SimpleUI.Utility:CreateInstance("UICorner", {
+                    CornerRadius = UDim.new(1, 0)
+                }, Bar)
+                AccentElement, AccentBindings = Bar, BarBindings
+
+            elseif Style == "notch" then
+                local NOTCH_SIZE = 6
+                local NotchProps, NotchBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(0, NOTCH_SIZE, 0, NOTCH_SIZE),
+                    Position = UDim2.new(0, 2, 0, LabelY + math.floor((LABEL_HEIGHT - NOTCH_SIZE) / 2)),
+                    Rotation = 45,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Notch = SimpleUI.Utility:CreateInstance("Frame", NotchProps, Section)
+                AccentElement, AccentBindings = Notch, NotchBindings
+
+            elseif Style == "filled" then
+                local STRIPE_WIDTH = Options.StripeWidth or 4
+
+                local BgProps, BgBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 0.88,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 2
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Bg = SimpleUI.Utility:CreateInstance("Frame", BgProps, Section)
+                SimpleUI.Utility:CreateInstance("UICorner", {
+                    CornerRadius = UDim.new(0, 4)
+                }, Bg)
+                SimpleUI.Utility:CreateInstance("UIGradient", {
+                    Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0),
+                                                       NumberSequenceKeypoint.new(0.6, 0),
+                                                       NumberSequenceKeypoint.new(1, 1)}),
+                    Rotation = 0
+                }, Bg)
+
+                local StripeProps, StripeBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(0, STRIPE_WIDTH, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 1
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Stripe = SimpleUI.Utility:CreateInstance("Frame", StripeProps, Section)
+                SimpleUI.Utility:CreateInstance("UICorner", {
+                    CornerRadius = UDim.new(0, 2)
+                }, Stripe)
+
+                AccentElement, AccentBindings = Stripe, StripeBindings
+                table.insert(ExtraElements, {
+                    Element = Bg,
+                    Bindings = BgBindings
+                })
+
+            elseif Style == "inset" then
+                local FillProps, FillBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 0.92,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 2
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Fill = SimpleUI.Utility:CreateInstance("Frame", FillProps, Section)
+
+                local TopProps, TopBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(1, 0, 0, 1),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 0.5,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 1
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local TopLine = SimpleUI.Utility:CreateInstance("Frame", TopProps, Section)
+
+                local BotProps, BotBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(1, 0, 0, 1),
+                    Position = UDim2.new(0, 0, 1, -1),
+                    BackgroundTransparency = 0.5,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 1
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local BotLine = SimpleUI.Utility:CreateInstance("Frame", BotProps, Section)
+
+                AccentElement, AccentBindings = TopLine, TopBindings
+                table.insert(ExtraElements, {
+                    Element = BotLine,
+                    Bindings = BotBindings
+                })
+                table.insert(ExtraElements, {
+                    Element = Fill,
+                    Bindings = FillBindings
+                })
+
+            elseif Style == "stepped" then
+                local LINE_Y = SECTION_HEIGHT - 3
+                local CAP_HEIGHT = 3
+                local CAP_WIDTH = Options.CapWidth or 36
+
+                local CapProps, CapBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(0, CAP_WIDTH, 0, CAP_HEIGHT),
+                    Position = UDim2.new(0, 0, 0, LINE_Y - CAP_HEIGHT + 1),
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Cap = SimpleUI.Utility:CreateInstance("Frame", CapProps, Section)
+                SimpleUI.Utility:CreateInstance("UICorner", {
+                    CornerRadius = UDim.new(0, 2)
+                }, Cap)
+
+                local HairProps, HairBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(1, -CAP_WIDTH, 0, 1),
+                    Position = UDim2.new(0, CAP_WIDTH, 0, LINE_Y),
+                    BackgroundTransparency = 0.55,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 1
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Hair = SimpleUI.Utility:CreateInstance("Frame", HairProps, Section)
+
+                AccentElement, AccentBindings = Cap, CapBindings
+                table.insert(ExtraElements, {
+                    Element = Hair,
+                    Bindings = HairBindings
+                })
+
+            elseif Style == "panel" then
+                local STRIPE_WIDTH = Options.StripeWidth or 3
+
+                local BgProps, BgBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 0.78,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 2
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Bg = SimpleUI.Utility:CreateInstance("Frame", BgProps, Section)
+                SimpleUI.Utility:CreateInstance("UIGradient", {
+                    Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0),
+                                                       NumberSequenceKeypoint.new(0.45, 0),
+                                                       NumberSequenceKeypoint.new(1, 1)}),
+                    Rotation = 0
+                }, Bg)
+
+                local StripeProps, StripeBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(0, STRIPE_WIDTH, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 1
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Stripe = SimpleUI.Utility:CreateInstance("Frame", StripeProps, Section)
+
+                local BottomProps, BottomBindings = SimpleUI.Utility:ApplyTheme({
+                    Size = UDim2.new(1, 0, 0, 1),
+                    Position = UDim2.new(0, 0, 1, -1),
+                    BackgroundTransparency = 0.65,
+                    BorderSizePixel = 0,
+                    ZIndex = SimpleUI.Constants.ZIndex.Overlay - 1
+                }, {
+                    BackgroundColor3 = "Accent"
+                }, Theme)
+                local Bottom = SimpleUI.Utility:CreateInstance("Frame", BottomProps, Section)
+
+                AccentElement, AccentBindings = Stripe, StripeBindings
+                table.insert(ExtraElements, {
+                    Element = Bg,
+                    Bindings = BgBindings
+                })
+                table.insert(ExtraElements, {
+                    Element = Bottom,
+                    Bindings = BottomBindings
+                })
+            end
+
+            if Window then
+                local Batch = {
+                    [Label] = LabelBindings
+                }
+                if AccentElement then
+                    Batch[AccentElement] = AccentBindings
+                end
+                for _, Entry in ipairs(ExtraElements) do
+                    Batch[Entry.Element] = Entry.Bindings
+                end
+                SimpleUI.ThemeManager:RegisterMultiple(Window, Batch)
+            end
+
+            return {
+                SetText = function(self, NewText)
+                    Label.Text = NewText
+                end,
+
+                SetTextSize = function(self, Size)
+                    Label.TextSize = Size
+                end,
+
+                SetVisible = function(self, Visible)
+                    Section.Visible = Visible
+                end,
+
+                GetElements = function(self)
+                    return {
+                        Section = Section,
+                        Label = Label,
+                        Accent = AccentElement
+                    }
+                end
+            }
+        end
+
+        function SimpleUI.SectionManager:CreateBoxSection(Page, Text, Options, Theme, Window)
+            if not Page or not Page.Parent then
+                SimpleUI.ErrorHandler:Guard(false, "CreateBoxSection", "Page is nil or unparented",
+                    SimpleUI.ErrorHandler.Levels.ERROR)
+                return nil
+            end
+            Options = type(Options) == "table" and Options or {}
+            Theme = type(Theme) == "table" and Theme or SimpleUI.Themes.Obsidian
+            Text = type(Text) == "string" and Text or "Section"
+
+            local U = SimpleUI.Utility
+            local TM = SimpleUI.ThemeManager
+            local CORNER = SimpleUI.Constants.Corner.Medium
+            local PAD = SimpleUI.Constants.Padding
+            local ZI = SimpleUI.Constants.ZIndex
+            local HEADER_H = 36
+            local TWEEN_INFO = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local IsExpanded = Options.DefaultExpanded ~= false
+
+            local function GetWindowScale()
+                if Window and Window.Scale and typeof(Window.Scale) == "Instance" then
+                    local ok, scale = pcall(function()
+                        return Window.Scale.Scale
+                    end)
+                    if ok and type(scale) == "number" and scale > 0 then
+                        return scale
+                    end
+                end
+                return 1
+            end
+
+            local function Tween(Object, Properties)
+                if not Object or not Object.Parent then
+                    return
+                end
+                local ok, err = pcall(function()
+                    TweenService:Create(Object, TWEEN_INFO, Properties):Play()
+                end)
+                if not ok then
+                    SimpleUI.ErrorHandler:Guard(false, "CreateBoxSection:Tween", tostring(err),
+                        SimpleUI.ErrorHandler.Levels.WARN)
+                end
+            end
+
+            local Section = U:CreateInstance("Frame", {
+                Name = "BoxSection",
+                Size = UDim2.new(1, 0, 0, HEADER_H),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ClipsDescendants = false,
+                ZIndex = ZI.Control
+            }, Page)
+
+            local Border = U:CreateInstance("Frame", {
+                Name = "Border",
+                Size = UDim2.new(1, 0, 0, HEADER_H),
+                Position = UDim2.new(0, 0, 0, 0),
+                BackgroundColor3 = Theme.BoxBackground or Theme.Secondary,
+                BackgroundTransparency = Theme.TransparencySecondary,
+                BorderSizePixel = 0,
+                ZIndex = ZI.Control
+            }, Section)
+            U:CreateInstance("UICorner", {
+                CornerRadius = UDim.new(0, CORNER)
+            }, Border)
+
+            local Stroke = U:CreateInstance("UIStroke", {
+                Color = Theme.Separator,
+                Thickness = 1,
+                Transparency = Theme.SeparatorTransparency,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            }, Border)
+
+            local HeaderContainer = U:CreateInstance("Frame", {
+                Name = "HeaderContainer",
+                Size = UDim2.new(1, 0, 0, HEADER_H),
+                BackgroundTransparency = 1,
+                ZIndex = ZI.Control + 1
+            }, Border)
+            U:CreateInstance("UIPadding", {
+                PaddingLeft = UDim.new(0, PAD.Medium),
+                PaddingRight = UDim.new(0, PAD.Medium)
+            }, HeaderContainer)
+
+            local HeaderContent = U:CreateInstance("Frame", {
+                Name = "HeaderContent",
+                Size = UDim2.new(1, -(20 + PAD.Medium), 1, 0),
+                BackgroundTransparency = 1,
+                ZIndex = ZI.Control + 1
+            }, HeaderContainer)
+            U:CreateInstance("UIListLayout", {
+                FillDirection = Enum.FillDirection.Horizontal,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, PAD.Medium)
+            }, HeaderContent)
+
+            local IconContainer = nil
+            if Options.Icon then
+                IconContainer = U:CreateInstance("Frame", {
+                    Name = "IconContainer",
+                    Size = UDim2.new(0, 20, 0, 20),
+                    BackgroundTransparency = 1,
+                    ZIndex = ZI.Control + 1,
+                    LayoutOrder = 1
+                }, HeaderContent)
+
+                local rawIcon = Options.Icon
+                local iconData = SimpleUI.IconManager:WrapIcon(
+                    type(rawIcon) == "table" and rawIcon or {
+                        Image = rawIcon
+                    })
+
+                if iconData then
+                    U:CreateInstance("ImageLabel", {
+                        Name = "Icon",
+                        Size = UDim2.new(1, 0, 1, 0),
+                        BackgroundTransparency = 1,
+                        Image = iconData.Url,
+                        ImageColor3 = (type(rawIcon) == "table" and rawIcon.ImageColor3) or Theme.TextPrimary,
+                        ImageRectOffset = iconData.ImageRectOffset,
+                        ImageRectSize = iconData.ImageRectSize,
+                        ZIndex = ZI.Control + 1
+                    }, IconContainer)
+                end
+            end
+
+            local Title = U:CreateInstance("TextLabel", {
+                Name = "Title",
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                Text = Text,
+                TextColor3 = Theme.TextActive,
+                Font = Theme.FontPrimary,
+                TextSize = type(Options.TextSize) == "number" and Options.TextSize or 15,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Center,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = ZI.Control + 1,
+                LayoutOrder = 2
+            }, HeaderContent)
+
+            local Arrow = U:CreateInstance("ImageLabel", {
+                Name = "Arrow",
+                Size = UDim2.new(0, 12, 0, 12),
+                Position = UDim2.new(1, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(1, 0.5),
+                BackgroundTransparency = 1,
+                Image = "rbxassetid://10709790948",
+                ImageColor3 = Theme.TextPrimary,
+                Rotation = IsExpanded and 0 or -90,
+                ZIndex = ZI.Control + 1
+            }, HeaderContainer)
+
+            local Content = U:CreateInstance("Frame", {
+                Name = "Content",
+                Size = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 0, HEADER_H),
+                BackgroundTransparency = 1,
+                ClipsDescendants = true,
+                ZIndex = ZI.Control + 1
+            }, Border)
+
+            local ContentPadding = U:CreateInstance("UIPadding", {
+                PaddingTop = UDim.new(0, PAD.Medium),
+                PaddingBottom = UDim.new(0, PAD.Large),
+                PaddingLeft = UDim.new(0, PAD.Medium),
+                PaddingRight = UDim.new(0, PAD.Medium)
+            }, Content)
+
+            local ListLayout = U:CreateInstance("UIListLayout", {
+                Padding = UDim.new(0, SimpleUI.Constants.Spacing.Loose),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }, Content)
+
+            local ClickButton = U:CreateInstance("TextButton", {
+                Name = "ClickButton",
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                Text = "",
+                AutoButtonColor = false,
+                ZIndex = ZI.Modal
+            }, HeaderContainer)
+
+            local function CalculateContentHeight()
+                local scale = GetWindowScale()
+                local logicalContent = ListLayout.AbsoluteContentSize.Y / scale
+                return logicalContent + ContentPadding.PaddingTop.Offset + ContentPadding.PaddingBottom.Offset
+            end
+
+            local function SetExpandedSize()
+                if not IsExpanded then
+                    return
+                end
+                local contentH = CalculateContentHeight()
+                local totalH = HEADER_H + contentH
+                Tween(Content, {
+                    Size = UDim2.new(1, 0, 0, contentH)
+                })
+                Tween(Border, {
+                    Size = UDim2.new(1, 0, 0, totalH)
+                })
+                Tween(Section, {
+                    Size = UDim2.new(1, 0, 0, totalH)
+                })
+            end
+
+            local function SetCollapsedSize()
+                Tween(Content, {
+                    Size = UDim2.new(1, 0, 0, 0)
+                })
+                Tween(Border, {
+                    Size = UDim2.new(1, 0, 0, HEADER_H)
+                })
+                Tween(Section, {
+                    Size = UDim2.new(1, 0, 0, HEADER_H)
+                })
+            end
+
+            local function Toggle()
+                IsExpanded = not IsExpanded
+                Tween(Arrow, {
+                    Rotation = IsExpanded and 0 or -90
+                })
+                if IsExpanded then
+                    SetExpandedSize()
+                else
+                    SetCollapsedSize()
+                end
+            end
+
+            ClickButton.Activated:Connect(Toggle)
+
+            local resizePending = false
+            local function RequestResize()
+                if not IsExpanded or resizePending then
+                    return
+                end
+                resizePending = true
+                task.defer(function()
+                    resizePending = false
+                    if Section.Parent then
+                        SetExpandedSize()
+                    end
+                end)
+            end
+
+            Content.ChildAdded:Connect(RequestResize)
+            Content.ChildRemoved:Connect(RequestResize)
+            ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(RequestResize)
+
+            if Window and Window.Scale and typeof(Window.Scale) == "Instance" then
+                Window.Scale:GetPropertyChangedSignal("Scale"):Connect(function()
+                    if IsExpanded and Section.Parent then
+                        local contentH = CalculateContentHeight()
+                        local totalH = HEADER_H + contentH
+                        Content.Size = UDim2.new(1, 0, 0, contentH)
+                        Border.Size = UDim2.new(1, 0, 0, totalH)
+                        Section.Size = UDim2.new(1, 0, 0, totalH)
+                    end
+                end)
+            end
+
+            if IsExpanded then
+                task.defer(SetExpandedSize)
+            end
+
+            if Window then
+                local themeTargets = {
+                    [Border] = {
+                        BackgroundColor3 = "BoxBackground",
+                        BackgroundTransparency = "TransparencySecondary"
+                    },
+                    [Stroke] = {
+                        Color = "Separator",
+                        Transparency = "SeparatorTransparency"
+                    },
+                    [Title] = {
+                        TextColor3 = "TextActive",
+                        Font = "FontPrimary"
+                    },
+                    [Arrow] = {
+                        ImageColor3 = "TextPrimary"
+                    }
+                }
+
+                if IconContainer then
+                    local iconEl = IconContainer:FindFirstChild("Icon")
+                    if iconEl then
+                        local hasExplicitColor = type(Options.Icon) == "table" and Options.Icon.ImageColor3 ~= nil
+                        if not hasExplicitColor then
+                            themeTargets[iconEl] = {
+                                ImageColor3 = "TextPrimary"
+                            }
+                        end
+                    end
+                end
+
+                TM:RegisterMultiple(Window, themeTargets)
+            end
+
+            return {
+                Container = Content,
+                Section = Section,
+                Header = HeaderContainer,
+                Title = Title,
+                Arrow = Arrow,
+                IconContainer = IconContainer,
+
+                SetExpanded = function(_, value)
+                    if type(value) ~= "boolean" then
+                        return
+                    end
+                    if value ~= IsExpanded then
+                        Toggle()
+                    end
+                end,
+
+                IsExpanded = function()
+                    return IsExpanded
+                end,
+
+                Refresh = function()
+                    if IsExpanded then
+                        SetExpandedSize()
+                    end
+                end,
+
+                SetTitle = function(_, newText)
+                    if type(newText) == "string" then
+                        Title.Text = newText
+                    end
+                end
+            }
+        end
+    end
+
+    SimpleUI.IconManager = {}
+    do
+        function SimpleUI.IconManager:WrapIcon(IconInput)
+            if not IconInput then
+                return nil
+            end
+
+            if type(IconInput) == "table" and IconInput.Image then
+                return {
+                    Url = IconInput.Image,
+                    ImageRectOffset = IconInput.ImageRectOffset or Vector2.zero,
+                    ImageRectSize = IconInput.ImageRectSize or Vector2.zero
+                }
+            end
+
+            return {
+                Url = tostring(IconInput),
+                ImageRectOffset = Vector2.zero,
+                ImageRectSize = Vector2.zero
+            }
+        end
+    end
+
+    SimpleUI.NotificationManager = {}
+    do
+        local ActiveNotifications = {}
+
+        function SimpleUI.NotificationManager:Initialize()
+            if self.Initialized then
+                return
+            end
+            self.Initialized = true
+            self.Container = nil
+            self.NotificationQueue = {}
+            self.QueueProcessing = false
+        end
+
+        function SimpleUI.NotificationManager:GetContainer()
+            if self.Container and self.Container.Parent then
+                return self.Container
+            end
+
+            local Parent = SimpleUI.Utility:CreateInstance("ScreenGui", {
+                Name = "SimpleUINotifications",
+                ResetOnSpawn = false,
+                ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+                DisplayOrder = SimpleUI.Constants.ZIndex.Notification
+            })
+
+            SimpleUI.Utility:ParentUI(Parent)
+            self.Container = Parent
+
+            local Holder = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "Holder",
+                Position = UDim2.new(1, -20, 0, 20),
+                AnchorPoint = Vector2.new(1, 0),
+                Size = UDim2.new(0, 360, 1, -40),
+                BackgroundTransparency = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification
+            }, Parent)
+
+            SimpleUI.Utility:CreateInstance("UIListLayout", {
+                FillDirection = Enum.FillDirection.Vertical,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
+                HorizontalAlignment = Enum.HorizontalAlignment.Right,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 10)
+            }, Holder)
+
+            return Parent
+        end
+
+        function SimpleUI.NotificationManager:GetHolder()
+            return self:GetContainer():FindFirstChild("Holder") or self:GetContainer()
+        end
+
+        function SimpleUI.NotificationManager:CreateNotificationUI(Config)
+            local Theme = Config.Theme or SimpleUI.Themes.Obsidian
+            local Holder = self:GetHolder()
+            local IsMobile = SimpleUI.Utility:IsMobile()
+            local HasDuration = Config.Duration and Config.Duration > 0
+
+            local TypeColors = {
+                Default = Theme.Accent,
+                Info = Color3.fromRGB(30, 144, 255),
+                Success = Color3.fromRGB(40, 187, 109),
+                Warning = Color3.fromRGB(255, 193, 7),
+                Error = Color3.fromRGB(220, 60, 69)
+            }
+            local TypeTags = {
+                Default = "NOTICE",
+                Info = "INFO",
+                Success = "SUCCESS",
+                Warning = "WARNING",
+                Error = "ERROR"
+            }
+
+            local Accent = TypeColors[Config.Type] or Config.Color or Theme.Accent
+            local LightAccent = Accent:Lerp(Color3.new(1, 1, 1), 0.4)
+            local TagText = Config.Tag or TypeTags[Config.Type] or "NOTICE"
+            local BasePad = IsMobile and 8 or 10
+            local SidePad = IsMobile and 10 or 12
+
+            local Notification = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "Notification",
+                Size = UDim2.new(1, 0, 0, 0),
+                BackgroundColor3 = Theme.Secondary,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ClipsDescendants = false,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification,
+                LayoutOrder = tick()
+            }, Holder)
+
+            local AccentBar = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "AccentBar",
+                Size = UDim2.new(0, 3, 1, 0),
+                BackgroundColor3 = Accent,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification + 1
+            }, Notification)
+
+            local Shadow = SimpleUI.Utility:CreateInstance("ImageLabel", {
+                Name = "Shadow",
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                Size = UDim2.new(1, 20, 1, 20),
+                BackgroundTransparency = 1,
+                Image = "rbxassetid://7717391613",
+                ImageColor3 = Color3.new(0, 0, 0),
+                ImageTransparency = 1,
+                ScaleType = Enum.ScaleType.Slice,
+                SliceCenter = Rect.new(100, 100, 100, 100),
+                ZIndex = SimpleUI.Constants.ZIndex.Notification - 1
+            }, Notification)
+
+            local Content = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "Content",
+                Position = UDim2.new(0, 3, 0, 0),
+                Size = UDim2.new(1, -3, 1, 0),
+                BackgroundTransparency = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification + 2
+            }, Notification)
+
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingTop = UDim.new(0, BasePad),
+                PaddingBottom = UDim.new(0, BasePad),
+                PaddingLeft = UDim.new(0, SidePad),
+                PaddingRight = UDim.new(0, IsMobile and 26 or 30)
+            }, Content)
+
+            local TextContainer = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "TextContainer",
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification + 2
+            }, Content)
+
+            SimpleUI.Utility:CreateInstance("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, IsMobile and 2 or 3)
+            }, TextContainer)
+
+            local TitleRow = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = "TitleRow",
+                Size = UDim2.new(1, Config.Closable ~= false and -(IsMobile and 22 or 26) or 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                LayoutOrder = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification + 2
+            }, TextContainer)
+
+            SimpleUI.Utility:CreateInstance("UIListLayout", {
+                FillDirection = Enum.FillDirection.Horizontal,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 5)
+            }, TitleRow)
+
+            local TitleLabel = SimpleUI.Utility:CreateInstance("TextLabel", {
+                Name = "Title",
+                Size = UDim2.new(0, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.XY,
+                BackgroundTransparency = 1,
+                Text = Config.Title or "Notification",
+                TextColor3 = Theme.TextActive,
+                TextTransparency = 1,
+                TextSize = IsMobile and 12 or 13,
+                Font = Theme.FontPrimary,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextWrapped = false,
+                RichText = true,
+                LineHeight = 1.1,
+                LayoutOrder = 1,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification + 3
+            }, TitleRow)
+
+            local Tag = SimpleUI.Utility:CreateInstance("TextLabel", {
+                Name = "Tag",
+                Size = UDim2.new(0, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.XY,
+                BackgroundColor3 = Accent,
+                BackgroundTransparency = 1,
+                Text = TagText,
+                TextColor3 = LightAccent,
+                TextTransparency = 1,
+                TextSize = IsMobile and 8 or 9,
+                Font = Theme.FontPrimary,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                LayoutOrder = 2,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification + 3
+            }, TitleRow)
+
+            SimpleUI.Utility:CreateInstance("UICorner", {
+                CornerRadius = UDim.new(0, 3)
+            }, Tag)
+            SimpleUI.Utility:CreateInstance("UIPadding", {
+                PaddingLeft = UDim.new(0, 5),
+                PaddingRight = UDim.new(0, 5),
+                PaddingTop = UDim.new(0, 2),
+                PaddingBottom = UDim.new(0, 2)
+            }, Tag)
+
+            local DescriptionLabel = nil
+            if Config.Description then
+                DescriptionLabel = SimpleUI.Utility:CreateInstance("TextLabel", {
+                    Name = "Description",
+                    Size = UDim2.new(1, Config.Closable ~= false and -(IsMobile and 22 or 26) or 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundTransparency = 1,
+                    Text = Config.Description,
+                    TextColor3 = Theme.TextSecondary,
+                    TextTransparency = 1,
+                    TextSize = IsMobile and 11 or 12,
+                    Font = Theme.FontSecondary,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextWrapped = true,
+                    RichText = true,
+                    LineHeight = 1.2,
+                    LayoutOrder = 2,
+                    ZIndex = SimpleUI.Constants.ZIndex.Notification + 3
+                }, TextContainer)
+            end
+
+            if Config.Closable ~= false then
+                local CloseBtn = SimpleUI.Utility:CreateInstance("TextButton", {
+                    Name = "CloseButton",
+                    Position = UDim2.new(1, 0, 0, 0),
+                    AnchorPoint = Vector2.new(1, 0),
+                    Size = UDim2.new(0, IsMobile and 16 or 18, 0, IsMobile and 16 or 18),
+                    BackgroundTransparency = 1,
+                    Text = "×",
+                    Font = Theme.FontPrimary,
+                    TextSize = IsMobile and 18 or 20,
+                    TextColor3 = Theme.TextInactive,
+                    TextTransparency = 1,
+                    AutoButtonColor = false,
+                    ZIndex = SimpleUI.Constants.ZIndex.Notification + 5
+                }, Content)
+
+                CloseBtn.MouseEnter:Connect(function()
+                    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
+                        TextColor3 = Color3.fromRGB(255, 85, 85),
+                        Rotation = 90
+                    }):Play()
+                end)
+                CloseBtn.MouseLeave:Connect(function()
+                    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
+                        TextColor3 = Theme.TextInactive,
+                        Rotation = 0
+                    }):Play()
+                end)
+                CloseBtn.Activated:Connect(function()
+                    SimpleUI.NotificationManager:Dismiss(Notification)
+                end)
+            end
+
+            if Config.Callback then
+                local ClickArea = SimpleUI.Utility:CreateInstance("TextButton", {
+                    Name = "ClickArea",
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = SimpleUI.Constants.ZIndex.Notification
+                }, Notification)
+
+                ClickArea.Activated:Connect(function()
+                    SimpleUI.ErrorHandler:Try(function()
+                        Config.Callback(Notification)
+                    end)
+                end)
+                ClickArea.MouseEnter:Connect(function()
+                    TweenService:Create(Notification, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Theme.SecondaryHover
+                    }):Play()
+                end)
+                ClickArea.MouseLeave:Connect(function()
+                    TweenService:Create(Notification, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Theme.Secondary
+                    }):Play()
+                end)
+            end
 
             task.defer(function()
-                updateQueued = false
-                if container and container.Parent then
-                    SimpleUI:updateScrollingContainer(container)
+                task.wait()
+
+                local TextH = 0
+                for _, Child in ipairs(TextContainer:GetChildren()) do
+                    if Child:IsA("TextLabel") or Child:IsA("Frame") then
+                        TextH = TextH + Child.AbsoluteSize.Y
+                    end
+                end
+                local Layout = TextContainer:FindFirstChildOfClass("UIListLayout")
+                local ChildCount = 0
+                for _, Child in ipairs(TextContainer:GetChildren()) do
+                    if Child:IsA("TextLabel") or Child:IsA("Frame") then
+                        ChildCount = ChildCount + 1
+                    end
+                end
+                if Layout and ChildCount > 1 then
+                    TextH = TextH + Layout.Padding.Offset * (ChildCount - 1)
+                end
+
+                local MinH = IsMobile and 38 or 42
+                local CardH = math.max(TextH + BasePad * 2, MinH)
+                local BarH = HasDuration and 2 or 0
+
+                Notification.Size = UDim2.new(1, 0, 0, CardH + BarH)
+                Notification.Position = UDim2.new(0, 0, 0, 0)
+                Notification.BackgroundTransparency = 1
+                Shadow.ImageTransparency = 1
+
+                for _, Child in ipairs(Notification:GetDescendants()) do
+                    if Child:IsA("TextLabel") or Child:IsA("TextButton") then
+                        Child.TextTransparency = 1
+                    elseif Child:IsA("ImageLabel") and Child.Name ~= "Shadow" then
+                        Child.ImageTransparency = 1
+                    elseif Child:IsA("Frame") and Child ~= Notification then
+                        Child.BackgroundTransparency = 1
+                    end
+                end
+
+                local SlideInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+                local Tweens = {}
+
+                table.insert(Tweens, TweenService:Create(Notification, SlideInfo, {
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 0
+                }))
+                table.insert(Tweens, TweenService:Create(Shadow, SlideInfo, {
+                    ImageTransparency = 0.75
+                }))
+                table.insert(Tweens, TweenService:Create(AccentBar, SlideInfo, {
+                    BackgroundTransparency = 0
+                }))
+                table.insert(Tweens, TweenService:Create(Tag, SlideInfo, {
+                    TextTransparency = 0,
+                    BackgroundTransparency = 0.78
+                }))
+
+                for _, Child in ipairs(Notification:GetDescendants()) do
+                    if Child:IsA("TextLabel") and Child.Name ~= "Tag" then
+                        table.insert(Tweens, TweenService:Create(Child, SlideInfo, {
+                            TextTransparency = 0
+                        }))
+                    elseif Child:IsA("TextButton") and Child.Name == "CloseButton" then
+                        table.insert(Tweens, TweenService:Create(Child, SlideInfo, {
+                            TextTransparency = 0
+                        }))
+                    end
+                end
+
+                for _, Tween in ipairs(Tweens) do
+                    Tween:Play()
+                end
+
+                if HasDuration then
+                    local ProgressBar = SimpleUI.Utility:CreateInstance("Frame", {
+                        Name = "ProgressBar",
+                        Position = UDim2.new(0, 0, 1, -BarH),
+                        Size = UDim2.new(1, 0, 0, BarH),
+                        BackgroundColor3 = Accent,
+                        BorderSizePixel = 0,
+                        ZIndex = SimpleUI.Constants.ZIndex.Notification + 4
+                    }, Notification)
+
+                    TweenService:Create(ProgressBar, TweenInfo.new(Config.Duration, Enum.EasingStyle.Linear), {
+                        Size = UDim2.new(0, 0, 0, BarH)
+                    }):Play()
+
+                    task.delay(Config.Duration, function()
+                        if Notification and Notification.Parent then
+                            self:Dismiss(Notification)
+                        end
+                    end)
                 end
             end)
-        end)
-    end
 
-    return container
-end
-
-function SimpleUI:createWindowControl(controlType, style, parent, index, totalControls)
-    local config = self.WindowControlStyles[style]
-    if not config then
-        return
-    end
-    local iconData = config.Icons and config.Icons[controlType] or {}
-    local alignment = config.Alignment or "Right"
-    local baseColor = config.Colors and config.Colors[controlType] or Color3.fromRGB(45, 45, 45)
-    local spacing = config.Gap or config.Spacing or 0
-    local mobile = self:isMobile()
-    local position = alignment == "Left" and UDim2.new(0, index * (config.Size.X.Offset + spacing), 0.5, 0) or
-                         UDim2.new(1, -(totalControls - index) * (config.Size.X.Offset + spacing), 0.5, 0)
-    local button = self:createElement("TextButton", {
-        Name = controlType .. "Button",
-        Size = config.Size,
-        Position = position,
-        AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundColor3 = baseColor,
-        BackgroundTransparency = config.Transparency or 0,
-        Text = "",
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        AutoButtonColor = false,
-        ZIndex = 3
-    }, parent)
-    if config.UseImage then
-        local imageId = iconData.Image or ""
-        local imageSize = iconData.ImageSize or UDim2.new(0, 12, 0, 12)
-        self:createElement("ImageLabel", {
-            Size = imageSize,
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundTransparency = 1,
-            Image = imageId,
-            ImageColor3 = iconData.ImageColor or Color3.fromRGB(255, 255, 255),
-            ZIndex = 4
-        }, button)
-    elseif config.UseText then
-        self:createElement("TextLabel", {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            Text = iconData.Text or "",
-            TextColor3 = iconData.TextColor or Color3.fromRGB(240, 240, 240),
-            TextSize = iconData.TextSize or 18,
-            Font = Enum.Font.GothamBold,
-            ZIndex = 4
-        }, button)
-    end
-    self:createElement("UICorner", {
-        CornerRadius = alignment == "Left" and UDim.new(1, 0) or UDim.new(0, 0)
-    }, button)
-    if iconData.HoverColor and not mobile then
-        local isHovering = false
-        button.MouseEnter:Connect(function()
-            isHovering = true
-            button.BackgroundColor3 = iconData.HoverColor
-        end)
-        button.MouseLeave:Connect(function()
-            isHovering = false
-            button.BackgroundColor3 = baseColor
-        end)
-        if iconData.ClickColor then
-            button.Activated:Connect(function()
-                button.BackgroundColor3 = iconData.ClickColor
-                task.wait(0.1)
-                button.BackgroundColor3 = isHovering and iconData.HoverColor or baseColor
-            end)
+            return {
+                Container = Notification,
+                Title = TitleLabel,
+                Description = DescriptionLabel,
+                Tag = Tag,
+                Content = Content,
+                AccentBar = AccentBar
+            }
         end
-    elseif iconData.ClickColor then
-        button.Activated:Connect(function()
-            button.BackgroundColor3 = iconData.ClickColor
-            task.wait(0.1)
-            button.BackgroundColor3 = baseColor
-        end)
-    end
-    local parentFrame = parent.Parent
-    if controlType == "Close" then
-        button.Activated:Connect(function()
-            local gui = parentFrame.Parent.Parent
-            if not gui then
-                return
+
+        function SimpleUI.NotificationManager:Dismiss(Notification)
+            if not Notification or not Notification.Parent then
+                return false
             end
-            local TweenService = self:getService("TweenService")
-            local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-            for _, obj in ipairs(gui:GetDescendants()) do
-                if obj:IsA("GuiObject") then
-                    local props = {}
-                    if obj:IsA("Frame") or obj:IsA("ScrollingFrame") or obj:IsA("TextButton") or obj:IsA("TextLabel") then
-                        props.BackgroundTransparency = 1
-                    end
-                    if obj:IsA("TextButton") or obj:IsA("TextLabel") then
-                        props.TextTransparency = 1
-                    end
-                    if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
-                        props.ImageTransparency = 1
-                    end
-                    if next(props) then
-                        local tween = TweenService:Create(obj, tweenInfo, props)
-                        tween:Play()
-                    end
+
+            local FadeInfo = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+            local Shadow = Notification:FindFirstChild("Shadow")
+            local Tweens = {}
+
+            table.insert(Tweens, TweenService:Create(Notification, FadeInfo, {
+                BackgroundTransparency = 1
+            }))
+            if Shadow then
+                table.insert(Tweens, TweenService:Create(Shadow, FadeInfo, {
+                    ImageTransparency = 1
+                }))
+            end
+
+            for _, o in ipairs(Notification:GetDescendants()) do
+                if o:IsA("TextLabel") or o:IsA("TextButton") then
+                    table.insert(Tweens, TweenService:Create(o, FadeInfo, {
+                        TextTransparency = 1,
+                        BackgroundTransparency = 1
+                    }))
+                elseif o:IsA("ImageLabel") and o ~= Shadow then
+                    table.insert(Tweens, TweenService:Create(o, FadeInfo, {
+                        ImageTransparency = 1
+                    }))
+                elseif o:IsA("Frame") and o ~= Notification then
+                    table.insert(Tweens, TweenService:Create(o, FadeInfo, {
+                        BackgroundTransparency = 1
+                    }))
                 end
             end
-            for _, obj in ipairs(gui:GetChildren()) do
-                if obj:IsA("Frame") then
-                    local tween = TweenService:Create(obj, tweenInfo, {
-                        Size = UDim2.new(obj.Size.X.Scale, obj.Size.X.Offset, 0, 0)
-                    })
-                    tween:Play()
-                end
+
+            for _, Tween in ipairs(Tweens) do
+                Tween:Play()
             end
-            task.delay(0.42, function()
-                gui:Destroy()
+
+            task.delay(0.35, function()
+                if not Notification or not Notification.Parent then
+                    return
+                end
+                TweenService:Create(Notification, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+                    {
+                        Size = UDim2.new(1, 0, 0, 0)
+                    }):Play()
+                task.wait(0.15)
+                if Notification and Notification.Parent then
+                    Notification:Destroy()
+                end
             end)
-        end)
+
+            return true
+        end
+
+        function SimpleUI.NotificationManager:DismissAll()
+            local Holder = self:GetHolder()
+            for _, Child in ipairs(Holder:GetChildren()) do
+                if Child:IsA("Frame") and Child.Name == "Notification" then
+                    self:Dismiss(Child)
+                end
+            end
+        end
     end
-    if controlType == "Minimize" then
-        button.Activated:Connect(function()
-            local gui = parentFrame.Parent.Parent
-            if not gui then
+
+    SimpleUI.MarkdownParser = {}
+    do
+        function SimpleUI.MarkdownParser:ConvertToRichText(Markdown)
+            local Text = Markdown
+            Text = Text:gsub("### (.-)\n", '<font size="18"><b>%1</b></font>\n')
+            Text = Text:gsub("## (.-)\n", '<font size="20"><b>%1</b></font>\n')
+            Text = Text:gsub("# (.-)\n", '<font size="22"><b>%1</b></font>\n')
+            Text = Text:gsub("%*%*%*(.-)%*%*%*", "<b><i>%1</i></b>")
+            Text = Text:gsub("%*%*(.-)%*%*", "<b>%1</b>")
+            Text = Text:gsub("%*(.-)%*", "<i>%1</i>")
+            Text = Text:gsub("__(.-)__", "<b>%1</b>")
+            Text = Text:gsub("_(.-)_", "<i>%1</i>")
+            Text = Text:gsub("~~(.-)~~", "<s>%1</s>")
+            Text = Text:gsub("`([^`]+)`",
+                '<font face="RobotoMono"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">%1</stroke></font>')
+            Text = Text:gsub("```(.-)```", function(Code)
                 return
-            end
-            local mainFrame = gui:FindFirstChild("MainFrame")
-            if not mainFrame then
-                return
-            end
-            local mainContainer = mainFrame:FindFirstChild("MainContainer")
-            if not mainContainer then
-                return
-            end
-            local inputBlocker = mainFrame:FindFirstChild("InputBlocker")
-            if not inputBlocker then
-                return
-            end
-            local TweenService = self:getService("TweenService")
-            if not mainContainer:GetAttribute("OpenSize") then
-                mainContainer:SetAttribute("OpenSize", mainContainer.Size)
-            end
-            local minimized = mainContainer:GetAttribute("Minimized") or false
-            mainContainer:SetAttribute("Minimized", not minimized)
-            mainContainer.ClipsDescendants = true
-            inputBlocker.Visible = minimized
-            mainContainer.AutomaticSize = Enum.AutomaticSize.None
-            TweenService:Create(mainContainer, TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-                Size = minimized and mainContainer:GetAttribute("OpenSize") or
-                    UDim2.new(mainContainer.Size.X.Scale, mainContainer.Size.X.Offset, 0, 0)
-            }):Play()
-        end)
+                    '<font face="RobotoMono" size="13"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">' ..
+                        Code .. '</stroke></font>'
+            end)
+            Text = Text:gsub("%[(.-)%]%((.-)%)", '<font color="rgb(100,150,255)"><u>%1</u></font>')
+            Text = Text:gsub("^%- (.-)\n", "• %1\n")
+            Text = Text:gsub("\n%- (.-)\n", "\n• %1\n")
+            Text = Text:gsub("\n%- (.-)", "\n• %1")
+            Text = Text:gsub("^%* (.-)\n", "• %1\n")
+            Text = Text:gsub("\n%* (.-)\n", "\n• %1\n")
+            Text = Text:gsub("\n%* (.-)", "\n• %1")
+            Text = Text:gsub("^%d+%. (.-)\n", "%1\n")
+            Text = Text:gsub("\n%d+%. (.-)\n", "\n%1\n")
+            Text = Text:gsub("%-%-%-+", "────────────────────────")
+            Text = Text:gsub("%*%*%*+", "────────────────────────")
+            return Text
+        end
     end
-    return button
 end
 
-function SimpleUI:createWindow(options)
+function SimpleUI:CreateWindow(options)
     options = options or {}
-    local theme = options.Theme or self.Themes.NeonViolet
 
-    local gui = self:createElement("ScreenGui", {
-        Name = options.Name or self:_generateIdentifier(),
+    local theme = type(options.Theme) == "string" and (self.Themes[options.Theme] or self.Themes.Obsidian) or
+                      type(options.Theme) == "table" and options.Theme or self.Themes.Obsidian
+
+    local scale = math.clamp(options.DefaultScale or self.Constants.Window.DefaultScale, self.Constants.Window.MinScale,
+        self.Constants.Window.MaxScale)
+
+    local screenGui = self.Utility:CreateInstance("ScreenGui", {
+        Name = options.Name or self.Utility:GenerateId(),
         ResetOnSpawn = false,
-        DisplayOrder = 1
+        DisplayOrder = options.DisplayOrder or 1,
+        IgnoreGuiInset = options.IgnoreGuiInset or false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     })
+    self.Utility:ParentUI(screenGui)
 
-    self:ParentUI(gui)
+    local mainFrame, uiScale, mainFrameBindings = self.WindowBuilder:CreateMainFrame(screenGui, options, theme)
+    local topBarHeight = options.TopBarHeight or self.Constants.Window.TopBarHeight
+    local footerHeight = options.Footer and (options.FooterHeight or 10) or 0
 
-    local frameData = self:merge(self.DefaultElements.MainFrame, options.MainFrame)
-    local frame = self:createElement(frameData.Class, frameData.Properties, gui)
-    frame.ClipsDescendants = false
+    local topBar, topBarSeparator, topBarSeparatorBindings = self.WindowBuilder:CreateTopBar(mainFrame, options, theme)
 
-    local uiScale = Instance.new("UIScale")
-    uiScale.Name = "WindowScale"
-    uiScale.Scale = math.clamp(options.defaultScale or 1, 0.5, 2)
-    uiScale.Parent = frame
+    local tabInfoContainer, controlsContainer, tabNameLabel, tabDescLabel, brandIconElement, brandInitialElement,
+        brandTitleLabel = self.WindowBuilder:CreateTitleSection(topBar, options, theme)
 
-    local topBarData = self:merge(self.DefaultElements.TopBar, options.TopBar)
-    local topBarProps = self:applyTheme(topBarData.Properties, topBarData.Theme, theme)
-    local topBar = self:createElement(topBarData.Class, topBarProps, frame)
+    local controlButtons = self.WindowBuilder:CreateWindowControls(controlsContainer, options, theme)
 
-    self:createElement("TextButton", {
-        Name = "InputBlocker",
-        Size = UDim2.new(1, 0, 1, -topBar.Size.Y.Offset),
-        Position = UDim2.new(0, 0, 0, topBar.Size.Y.Offset),
-        BackgroundTransparency = 1,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = frame.ZIndex,
-        Active = true,
-        Selectable = false
-    }, frame)
+    local footer, footerBindings, footerContent, separatorBindings, resizeContainer =
+        self.WindowBuilder:CreateFooter(mainFrame, options, theme)
 
-    if frameData.Children then
-        for _, child in ipairs(frameData.Children) do
-            self:createElement(child.Class, child.Properties, frame)
-        end
-    end
+    local mainContainer = self.WindowBuilder:CreateMainContainer(mainFrame, options, theme, topBarHeight, footerHeight)
 
-    self:createElement("Frame", {
-        Name = "TopBarSeparator",
-        AnchorPoint = Vector2.new(0, 1),
-        Position = UDim2.new(0, 0, 1, 0),
-        Size = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = Color3.fromRGB(225, 225, 225),
-        BackgroundTransparency = 0.80,
-        BorderSizePixel = 0,
-        ZIndex = topBar.ZIndex + 1
-    }, topBar)
+    local tabsContainer, contentsContainer, tabsSeparator, tabsSeparatorBindings =
+        self.WindowBuilder:CreateContentAreas(mainContainer, mainFrame, topBar, options)
 
-    local controlStyle = options.ControlStyle or "Windows"
-    local titleAlignment = options.TitleAlignment or (controlStyle == "Windows" and "Left" or "Right")
-    local hasIcon = options.Icon ~= nil
-    local hasSubtitle = options.Subtitle and options.Subtitle ~= ""
-
-    local titleContainerData = self:merge(self.DefaultElements.TitleContainer, options.TitleContainer)
-    local controlsContainerData = self:merge(self.DefaultElements.ControlsContainer, options.ControlsContainer)
-
-    local alignmentConfig = {
-        Left = {
-            title = {
-                pos = UDim2.new(0, 10, 0.5, 0),
-                anchor = Vector2.new(0, 0.5)
-            },
-            controls = {
-                pos = UDim2.new(1, -10, 0.5, 0),
-                anchor = Vector2.new(1, 0.5)
-            }
-        },
-        Right = {
-            title = {
-                pos = UDim2.new(1, -10, 0.5, 0),
-                anchor = Vector2.new(1, 0.5)
-            },
-            controls = {
-                pos = UDim2.new(0, 10, 0.5, 0),
-                anchor = Vector2.new(0, 0.5)
-            }
-        },
-        Center = {
-            title = {
-                pos = UDim2.new(0.5, 0, 0.5, 0),
-                anchor = Vector2.new(0.5, 0.5)
-            },
-            controls = {
-                pos = UDim2.new(1, -10, 0.5, 0),
-                anchor = Vector2.new(1, 0.5)
-            }
-        }
-    }
-
-    local config = alignmentConfig[titleAlignment] or alignmentConfig.Center
-    titleContainerData.Properties.Position = config.title.pos
-    titleContainerData.Properties.AnchorPoint = config.title.anchor
-    controlsContainerData.Properties.Position = config.controls.pos
-    controlsContainerData.Properties.AnchorPoint = config.controls.anchor
-    titleContainerData.Properties.AutomaticSize = Enum.AutomaticSize.XY
-    titleContainerData.Properties.BackgroundTransparency = 1
-
-    local titleContainer, controlsContainer
-    if titleAlignment == "Right" then
-        controlsContainer = self:createElement(controlsContainerData.Class, controlsContainerData.Properties, topBar)
-        titleContainer = self:createElement(titleContainerData.Class, titleContainerData.Properties, topBar)
-    else
-        titleContainer = self:createElement(titleContainerData.Class, titleContainerData.Properties, topBar)
-        controlsContainer = self:createElement(controlsContainerData.Class, controlsContainerData.Properties, topBar)
-    end
-
-    self:createElement("UIListLayout", {
-        FillDirection = Enum.FillDirection.Horizontal,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        VerticalAlignment = Enum.VerticalAlignment.Center,
-        Padding = UDim.new(0, 8)
-    }, titleContainer)
-
-    if hasIcon then
-        local iconData = options.Icon
-        local iconImage = iconData.Image or iconData.Url or ""
-
-        if string.match(iconImage, "^https?://") then
-            local success, result = pcall(function()
-                local fileName = "simpleui_icon_" .. tostring(tick()):gsub("%.", "_") .. ".png"
-                local imageData = game:HttpGet(iconImage)
-                writefile(fileName, imageData)
-                return getcustomasset(fileName)
-            end)
-            iconImage = (success and result) or ""
-        elseif tonumber(iconImage) then
-            iconImage = "rbxassetid://" .. iconImage
-        end
-
-        if iconImage ~= "" then
-            self:createElement("ImageLabel", {
-                Name = "TitleIcon",
-                LayoutOrder = 1,
-                Size = UDim2.new(0, iconData.Size or 16, 0, iconData.Size or 16),
-                BackgroundTransparency = 1,
-                Image = iconImage,
-                ImageColor3 = iconData.Color or Color3.fromRGB(255, 255, 255),
-                ScaleType = Enum.ScaleType.Fit,
-                BorderSizePixel = 0
-            }, titleContainer)
-        end
-    end
-
-    local titleLabelData = self:merge(self.DefaultElements.TitleLabel, options.TitleLabel)
-    local textAlignmentMap = {
-        Left = Enum.TextXAlignment.Left,
-        Right = Enum.TextXAlignment.Right,
-        Center = Enum.TextXAlignment.Center
-    }
-    local textAlignment = textAlignmentMap[titleAlignment] or Enum.TextXAlignment.Center
-
-    titleLabelData.Properties.TextXAlignment = textAlignment
-    titleLabelData.Properties.LayoutOrder = hasIcon and 2 or 1
-    titleLabelData.Properties.AutomaticSize = Enum.AutomaticSize.XY
-    titleLabelData.Properties.Size = UDim2.new(0, 0, 1, 0)
-    titleLabelData.Properties.BackgroundTransparency = 1
-
-    local titleProps, titleBindings = self:applyTheme(titleLabelData.Properties, titleLabelData.Theme, theme)
-    local titleLabel = self:createElement(titleLabelData.Class, titleProps, titleContainer)
-
-    if hasSubtitle then
-        self:createElement("TextLabel", {
-            Name = "SubtitleLabel",
-            LayoutOrder = 3,
-            Text = "| " .. tostring(options.Subtitle),
-            TextColor3 = Color3.fromRGB(155, 155, 155),
-            TextTransparency = 0.25,
-            TextSize = math.floor((titleProps.TextSize or 14) * 0.70),
-            Font = titleProps.Font or Enum.Font.Default,
-            TextXAlignment = textAlignment,
-            BackgroundTransparency = 1,
-            AutomaticSize = Enum.AutomaticSize.XY,
-            Size = UDim2.new(0, 0, 1, 0),
-            BorderSizePixel = 0,
-            TextTruncate = Enum.TextTruncate.AtEnd
-        }, titleContainer)
-    end
-
-    local controls = options.WindowControls or
-                         (controlStyle == "Windows" and {"Minimize", "Maximize", "Close"} or
-                             {"Close", "Minimize", "Maximize"})
-
-    local controlButtons = {}
-    if controls then
-        for i, controlType in ipairs(controls) do
-            local button = self:createWindowControl(controlType, controlStyle, controlsContainer, i - 1, #controls)
-            if button then
-                controlButtons[controlType] = button
-            end
-        end
-    end
-
-    local mainContainerData = self:merge(self.DefaultElements.MainContainer, options.MainContainer)
-    local mainContainerProps = self:applyTheme(mainContainerData.Properties, mainContainerData.Theme, theme)
-    local mainContainer = self:createElement(mainContainerData.Class, mainContainerProps, frame)
-
-    local function createContainerWithPadding(containerData, parent)
-        local container = self:createElement(containerData.Class, containerData.Properties, parent)
-
-        if containerData.ListLayout then
-            self:createElement("UIListLayout", {
-                SortOrder = containerData.ListLayout.SortOrder,
-                Padding = UDim.new(0, containerData.Padding and containerData.Padding.Vertical or 0),
-                HorizontalAlignment = containerData.ListLayout.HorizontalAlignment
-            }, container)
-        end
-
-        if containerData.Padding then
-            local p = containerData.Padding.Horizontal
-            self:createElement("UIPadding", {
-                PaddingTop = UDim.new(0, p),
-                PaddingBottom = UDim.new(0, p),
-                PaddingLeft = UDim.new(0, p),
-                PaddingRight = UDim.new(0, p)
-            }, container)
-        end
-
-        return container
-    end
-
-    local tabsContainerData = self:merge(self.DefaultElements.TabsContainer, options.TabsContainer)
-    local tabsContainer = createContainerWithPadding(tabsContainerData, mainContainer)
-
-    local contentsContainerData = self:merge(self.DefaultElements.ContentsContainer, options.ContentsContainer)
-    local contentsContainer = self:createElement(contentsContainerData.Class, contentsContainerData.Properties,
-        mainContainer)
-
-    if contentsContainerData.Padding then
-        local p = contentsContainerData.Padding.Horizontal
-        self:createElement("UIPadding", {
-            PaddingBottom = UDim.new(0, p),
-            PaddingLeft = UDim.new(0, p),
-            PaddingRight = UDim.new(0, p)
-        }, contentsContainer)
-    end
-
-    local windowInstance = {
+    local window = {
         Theme = theme,
+        TabMode = options.TabMode or self.Constants.Window.TabModes.Fixed,
+        TabsExpanded = true,
+        ActiveTab = nil,
+        ActivePage = nil,
+        TabCallbacks = {},
+        Scale = uiScale,
+
         Elements = {
-            ScreenGui = gui,
-            MainFrame = frame,
+            ScreenGui = screenGui,
+            MainFrame = mainFrame,
             TopBar = topBar,
-            TitleContainer = titleContainer,
+            TabInfoContainer = tabInfoContainer,
+            TitleLabel = tabNameLabel,
+            SubtitleLabel = tabDescLabel,
+            BrandIcon = brandIconElement,
+            BrandInitial = brandInitialElement,
+            BrandTitle = brandTitleLabel,
             ControlsContainer = controlsContainer,
             ControlButtons = controlButtons,
+            Footer = footer,
+            FooterContent = footerContent,
+            FooterResizeArea = resizeContainer,
             MainContainer = mainContainer,
             TabsContainer = tabsContainer,
+            TabsSeparator = tabsSeparator,
             ContentsContainer = contentsContainer,
             Tabs = {},
             Pages = {}
         },
-        ActiveTab = nil,
-        ActivePage = nil,
-        TabUpdates = {},
-        SimpleGUI = gui,
-        _uiScale = uiScale,
-        getScale = function()
+
+        GetScale = function()
             return uiScale.Scale
         end,
-        setScale = function(value, tween)
-            value = math.clamp(tonumber(value) or 1, 0.100, 3)
 
-            if tween then
-                local ts = self:getService("TweenService")
-                local info = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-                ts:Create(uiScale, info, {
+        SetScale = function(self, value, animate)
+            value = math.clamp(tonumber(value) or 1, SimpleUI.Constants.Window.MinScale,
+                SimpleUI.Constants.Window.MaxScale)
+
+            if animate then
+                TweenService:Create(uiScale, TweenInfo.new(SimpleUI.Constants.Animation.Normal, Enum.EasingStyle.Sine,
+                    Enum.EasingDirection.Out), {
                     Scale = value
                 }):Play()
             else
                 uiScale.Scale = value
             end
         end,
-        setTheme = function(self, themeName, animate)
-            SimpleUI:setWindowTheme(self, themeName, animate ~= false)
-        end,
-        getTheme = function(self)
-            return SimpleUI:getWindowTheme(self)
-        end,
-        hide = function()
-            frame.Visible = false
-        end,
-        show = function()
-            frame.Visible = true
-        end,
-        toggle = function()
-            frame.Visible = not frame.Visible
-        end,
-        destroy = function()
-            gui:Destroy()
-        end,
-        isVisible = function()
-            return frame.Visible
-        end
-    }
 
-    SimpleUI.Windows = SimpleUI.Windows or {}
-    SimpleUI.Windows[gui] = windowInstance
-
-    SimpleUI:initializeThemeRegistry(windowInstance)
-
-    if titleBindings then
-        self:registerThemeElement(windowInstance, titleLabel, titleBindings)
-    end
-
-    local topBarProps, topBarBindings = self:applyTheme(topBarData.Properties, topBarData.Theme, theme)
-    if topBarBindings then
-        self:registerThemeElement(windowInstance, topBar, topBarBindings)
-    end
-
-    local mainContainerProps, mainContainerBindings = self:applyTheme(mainContainerData.Properties,
-        mainContainerData.Theme, theme)
-    if mainContainerBindings then
-        self:registerThemeElement(windowInstance, mainContainer, mainContainerBindings)
-    end
-
-    task.defer(function()
-        local function updateContainers()
-            task.wait()
-            windowInstance.Elements.TabsContainer = self:updateScrollingContainer(windowInstance.Elements.TabsContainer)
-            if windowInstance.ActivePage then
-                windowInstance.ActivePage = self:updateScrollingContainer(windowInstance.ActivePage)
+        SetTheme = function(self, themeName, animate)
+            if type(themeName) ~= "string" then
+                return
             end
-        end
+            SimpleUI.ThemeManager:SetTheme(self, themeName, animate ~= false)
+        end,
 
-        updateContainers()
+        GetTheme = function(self)
+            return SimpleUI.ThemeManager:GetThemeName(self)
+        end,
 
-        windowInstance.Elements.TabsContainer.ChildAdded:Connect(updateContainers)
-        windowInstance.Elements.TabsContainer.ChildRemoved:Connect(updateContainers)
+        SetTabMode = function(self, mode, animate, threshold)
+            threshold = threshold or SimpleUI.Constants.Window.TabDynamicThreshold
+            local modes = SimpleUI.Constants.Window.TabModes
 
-        windowInstance.Elements.ContentsContainer.ChildAdded:Connect(function(child)
-            if child:IsA("Frame") then
-                local layout = child:FindFirstChildWhichIsA("UIListLayout")
-                if layout then
-                    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                        if child == windowInstance.ActivePage then
-                            windowInstance.ActivePage = self:updateScrollingContainer(child)
-                        end
-                    end)
+            if not modes[mode] then
+                SimpleUI.ErrorHandler:Guard(false, "SetTabMode",
+                    string.format("Invalid tab mode '%s', using Dynamic", tostring(mode)),
+                    SimpleUI.ErrorHandler.Levels.WARN)
+                mode = modes.Dynamic
+            end
+
+            self.TabMode = mode
+            local duration = SimpleUI.Constants.Animation.Smooth
+            local const = SimpleUI.Constants.Window
+
+            local function updateTopBarLayout(expanded, tweenDuration)
+                if not tabsSeparator then
+                    return
                 end
 
-                local function updatePage()
-                    if child == windowInstance.ActivePage then
-                        task.wait()
-                        windowInstance.ActivePage = self:updateScrollingContainer(child)
+                local hasBrand = options.Brand ~= nil
+                local xScale, xOffset
+
+                if expanded then
+                    xScale = const.TabsWidthOpen
+                    xOffset = const.TabSeparatorGap
+                    if tabNameLabel then
+                        TweenService:Create(tabNameLabel, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                            TextTransparency = 1
+                        }):Play()
+                    end
+                    if tabDescLabel then
+                        TweenService:Create(tabDescLabel, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                            TextTransparency = 1
+                        }):Play()
+                    end
+                    TweenService:Create(tabsSeparator,
+                        TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                            Size = UDim2.new(0, 1, 1, -topBarHeight),
+                            Position = UDim2.new(xScale, xOffset, 0, topBarHeight)
+                        }):Play()
+
+                    if brandTitleLabel then
+                        TweenService:Create(brandTitleLabel, TweenInfo.new(tweenDuration * 0.8, Enum.EasingStyle.Quad,
+                            Enum.EasingDirection.Out), {
+                            TextTransparency = 0
+                        }):Play()
+                    end
+
+                    if tabInfoContainer then
+                        TweenService:Create(tabInfoContainer, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad,
+                            Enum.EasingDirection.Out), {
+                            Position = UDim2.new(xScale, xOffset + 1, 0.5, 0)
+                        }):Play()
+                    end
+                else
+                    xOffset = const.TabsWidthClosed + const.ClosedTabHorizontalPadding + const.TabSeparatorGap
+
+                    if tabNameLabel then
+                        TweenService:Create(tabNameLabel, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                            TextTransparency = 0
+                        }):Play()
+                    end
+                    if tabDescLabel then
+                        TweenService:Create(tabDescLabel, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                            TextTransparency = 0
+                        }):Play()
+                    end
+
+                    TweenService:Create(tabsSeparator,
+                        TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                            Size = UDim2.new(0, 1, 1, hasBrand and 0 or -topBarHeight),
+                            Position = UDim2.new(0, xOffset, 0, hasBrand and 0 or topBarHeight)
+                        }):Play()
+
+                    if brandTitleLabel then
+                        TweenService:Create(brandTitleLabel, TweenInfo.new(tweenDuration * 0.5, Enum.EasingStyle.Quad,
+                            Enum.EasingDirection.In), {
+                            TextTransparency = 1
+                        }):Play()
+                    end
+
+                    if tabInfoContainer then
+                        TweenService:Create(tabInfoContainer, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad,
+                            Enum.EasingDirection.Out), {
+                            Position = UDim2.new(0, xOffset + 1, 0.5, 0)
+                        }):Play()
                     end
                 end
-
-                child.ChildAdded:Connect(updatePage)
-                child.ChildRemoved:Connect(updatePage)
             end
-        end)
-    end)
 
-    local TweenService = self:getService("TweenService")
-    local UIS = self:getService("UserInputService")
+            local function setExpanded(expanded, tweenDuration)
+                self.TabsExpanded = expanded
+                tweenDuration = tweenDuration and duration or 0
 
-    local dragging = false
-    local dragStart
-    local startPos
+                updateTopBarLayout(expanded, tweenDuration)
 
-    topBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input:GetPropertyChangedSignal("UserInputState"):Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
+                local hPad = const.HorizontalPadding
+                local tabsSize, tabsPos, contentsPos, contentsSize
+
+                if expanded then
+                    tabsSize = UDim2.new(const.TabsWidthOpen, -(hPad * 0.5), 1, 0)
+                    tabsPos = UDim2.new(0, hPad * 0.5, 0, 0)
+                    contentsPos = UDim2.new(const.TabsWidthOpen, hPad, 0, 0)
+                    contentsSize = UDim2.new(const.ContentWidthOpen, -(hPad * 2), 1, 0)
+                else
+                    local contentLeft = const.ContentLeftOffsetClosed
+                    tabsSize = UDim2.new(0, const.TabsWidthClosed, 1, 0)
+                    tabsPos = UDim2.new(0, const.ClosedTabHorizontalPadding, 0, 0)
+                    contentsPos = UDim2.new(0, contentLeft, 0, 0)
+                    contentsSize = UDim2.new(1, -(contentLeft + hPad), 1, 0)
+                end
+
+                TweenService:Create(tabsContainer,
+                    TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = tabsSize,
+                        Position = tabsPos
+                    }):Play()
+
+                TweenService:Create(contentsContainer,
+                    TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = contentsPos,
+                        Size = contentsSize
+                    }):Play()
+
+                local currentTheme = SimpleUI.ThemeManager:GetCurrentTheme(self)
+
+                for _, tabData in pairs(self.Elements.Tabs) do
+                    if type(tabData) == "table" and tabData.Container then
+                        local isActive = tabData.Container == self.ActiveTab
+
+                        TweenService:Create(tabData.Container, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                            Size = UDim2.new(1, -8, 0, expanded and 32 or 44)
+                        }):Play()
+
+                        if tabData.Icon then
+                            local iconSize = expanded and const.TabIconSizeExpanded or 24
+                            TweenService:Create(tabData.Icon, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                                Size = UDim2.new(0, iconSize, 0, iconSize)
+                            }):Play()
+                        end
+
+                        if tabData.TextLabel then
+                            if expanded then
+                                tabData.TextLabel.Visible = true
+                                TweenService:Create(tabData.TextLabel,
+                                    TweenInfo.new(tweenDuration * 0.5, Enum.EasingStyle.Quad), {
+                                        TextTransparency = 0
+                                    }):Play()
+                            else
+                                TweenService:Create(tabData.TextLabel,
+                                    TweenInfo.new(tweenDuration * 0.5, Enum.EasingStyle.Quad), {
+                                        TextTransparency = 1
+                                    }):Play()
+                                task.delay(tweenDuration * 0.5, function()
+                                    if not self.TabsExpanded then
+                                        tabData.TextLabel.Visible = false
+                                    end
+                                end)
+                            end
+                        end
+
+                        if tabData.ContentContainer then
+                            TweenService:Create(tabData.ContentContainer,
+                                TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), expanded and {
+                                    Position = UDim2.new(0, 0, 0, 0),
+                                    AnchorPoint = Vector2.new(0, 0)
+                                } or {
+                                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                                    AnchorPoint = Vector2.new(0.5, 0.5)
+                                }):Play()
+                        end
+
+                        if not isActive then
+                            TweenService:Create(tabData.Container, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad),
+                                {
+                                    BackgroundColor3 = currentTheme.Secondary,
+                                    BackgroundTransparency = expanded and (currentTheme.TransparencySecondary or 0.8) or
+                                        1
+                                }):Play()
+                        elseif not expanded then
+                            TweenService:Create(tabData.Container, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad),
+                                {
+                                    BackgroundColor3 = currentTheme.SecondaryActive:Lerp(currentTheme.Secondary, 0.3),
+                                    BackgroundTransparency = 0
+                                }):Play()
+                        end
+
+                        if tabData.AccentLine and isActive then
+                            TweenService:Create(tabData.AccentLine, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad),
+                                {
+                                    BackgroundTransparency = expanded and 1 or 0
+                                }):Play()
+                        end
+                    end
+                end
+            end
+
+            if mode == modes.Fixed then
+                setExpanded(true, animate)
+            elseif mode == modes.Closed then
+                setExpanded(false, animate)
+            elseif mode == modes.Dynamic then
+                setExpanded(false, animate)
+                local mouseInside = false
+
+                tabsContainer.MouseEnter:Connect(function()
+                    if self.TabMode ~= modes.Dynamic then
+                        return
+                    end
+                    mouseInside = true
+                    task.wait(threshold)
+                    if mouseInside and self.TabMode == modes.Dynamic then
+                        setExpanded(true, true)
+                    end
+                end)
+
+                tabsContainer.MouseLeave:Connect(function()
+                    mouseInside = false
+                    if self.TabMode == modes.Dynamic then
+                        setExpanded(false, true)
+                    end
+                end)
+            end
+        end,
+
+        AddFooterText = function(self, config)
+            if not footer or not footerContent then
+                return nil
+            end
+            config = config or {}
+
+            local currentTheme = SimpleUI.ThemeManager:GetCurrentTheme(self)
+            local properties, bindings = SimpleUI.Utility:ApplyTheme({
+                Name = config.Name or "FooterText",
+                LayoutOrder = config.Order or 1,
+                Size = UDim2.new(0, 0, 1, 0),
+                AutomaticSize = Enum.AutomaticSize.X,
+                BackgroundTransparency = 1,
+                Text = config.Text or "",
+                TextSize = config.TextSize or 14,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = footer.ZIndex + 2
+            }, {
+                Font = "FontSecondary",
+                TextColor3 = config.ColorTier or "TextSecondary"
+            }, currentTheme)
+
+            local label = SimpleUI.Utility:CreateInstance("TextLabel", properties, footerContent)
+            if bindings then
+                SimpleUI.ThemeManager:RegisterElement(self, label, bindings)
+            end
+            return label
+        end,
+
+        SetFooterText = function(self, element, newText)
+            if element and element:IsA("TextLabel") then
+                element.Text = tostring(newText)
+            end
+        end,
+
+        AddFooterButton = function(self, config)
+            if not footer or not footerContent then
+                return nil
+            end
+            config = config or {}
+
+            local currentTheme = SimpleUI.ThemeManager:GetCurrentTheme(self)
+            local buttonText = config.Text or "Button"
+            local callback = config.Callback or function()
+            end
+
+            local properties, bindings = SimpleUI.Utility:ApplyTheme({
+                Name = config.Name or buttonText,
+                LayoutOrder = config.Order or 1,
+                Size = UDim2.new(0, config.Width or 80, 1, -8),
+                Text = buttonText,
+                TextSize = config.TextSize or 14,
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+                ZIndex = footer.ZIndex + 2
+            }, {
+                Font = "FontSecondary",
+                TextColor3 = "TextPrimary",
+                BackgroundColor3 = "Tertiary"
+            }, currentTheme)
+
+            local button = SimpleUI.Utility:CreateInstance("TextButton", properties, footerContent)
+            SimpleUI.Utility:CreateInstance("UICorner", {
+                CornerRadius = UDim.new(0, SimpleUI.Constants.Corner.Medium)
+            }, button)
+
+            if not SimpleUI.Utility:IsMobile() then
+                button.MouseEnter:Connect(function()
+                    TweenService:Create(button, TweenInfo.new(0.15), {
+                        BackgroundColor3 = currentTheme.TertiaryHover
+                    }):Play()
+                end)
+                button.MouseLeave:Connect(function()
+                    TweenService:Create(button, TweenInfo.new(0.15), {
+                        BackgroundColor3 = currentTheme.Tertiary
+                    }):Play()
+                end)
+            end
+
+            button.Activated:Connect(function()
+                TweenService:Create(button, TweenInfo.new(0.1), {
+                    BackgroundColor3 = currentTheme.TertiaryPressed
+                }):Play()
+                task.wait(0.1)
+                TweenService:Create(button, TweenInfo.new(0.1), {
+                    BackgroundColor3 = currentTheme.Tertiary
+                }):Play()
+                SimpleUI.ErrorHandler:Try(function()
+                    SimpleUI.Security:SafeCallback(callback())
+                end)
+            end)
+
+            if bindings then
+                SimpleUI.ThemeManager:RegisterElement(self, button, bindings)
+            end
+            return button
+        end,
+
+        ClearFooter = function(self)
+            if footerContent then
+                for _, child in ipairs(footerContent:GetChildren()) do
+                    if not child:IsA("UIListLayout") then
+                        child:Destroy()
+                    end
+                end
+            end
+        end,
+
+        SetFooterAlignment = function(self, alignment)
+            if footerContent then
+                local layout = footerContent:FindFirstChildOfClass("UIListLayout")
+                if layout then
+                    layout.HorizontalAlignment = alignment
+                end
+            end
+        end,
+
+        Hide = function(self)
+            mainFrame.Visible = false
+        end,
+
+        Show = function(self)
+            mainFrame.Visible = true
+        end,
+
+        Toggle = function(self)
+            mainFrame.Visible = not mainFrame.Visible
+        end,
+
+        Destroy = function(self)
+            SimpleUI.Security:DisconnectAll()
+            SimpleUI.Windows[screenGui] = nil
+            screenGui:Destroy()
+        end,
+
+        IsVisible = function(self)
+            return mainFrame.Visible
+        end,
+
+        SetOpacity = function(self, value, animate)
+            value = math.clamp(tonumber(value) or 1, 0, 1)
+            local tweenDuration = animate and SimpleUI.Constants.Animation.Normal or 0
+
+            for _, element in ipairs({topBar, mainContainer, footer}) do
+                if element then
+                    local originalTransparency = element:GetAttribute("OriginalTransparency")
+                    if not originalTransparency then
+                        originalTransparency = element.BackgroundTransparency
+                        element:SetAttribute("OriginalTransparency", originalTransparency)
+                    end
+
+                    local newTransparency = 1 - ((1 - originalTransparency) * value)
+
+                    if animate then
+                        TweenService:Create(element, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                            BackgroundTransparency = newTransparency
+                        }):Play()
+                    else
+                        element.BackgroundTransparency = newTransparency
+                    end
+                end
+            end
+        end,
+
+        EnableBlur = function(self, intensity)
+            pcall(function()
+                intensity = math.clamp(tonumber(intensity) or 24, 0, 56)
+                local existing = Lighting:FindFirstChild("SimpleUIBlur")
+                if existing then
+                    existing.Size = intensity
+                else
+                    local blur = Instance.new("BlurEffect")
+                    blur.Name = "SimpleUIBlur"
+                    blur.Size = intensity
+                    blur.Parent = Lighting
+                end
+            end)
+        end,
+
+        DisableBlur = function(self)
+            pcall(function()
+                local existing = Lighting:FindFirstChild("SimpleUIBlur")
+                if existing then
+                    existing:Destroy()
                 end
             end)
         end
-    end)
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
+    }
 
-    UIS.InputChanged:Connect(function(input)
-        if dragging and
-            (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local currentPos = input.Position
-            local delta = currentPos - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y)
-        end
-    end)
+    self.Windows[screenGui] = window
+    self.ThemeManager:Initialize(window)
 
-    return windowInstance
+    if mainFrameBindings then
+        self.ThemeManager:RegisterElement(window, mainFrame, mainFrameBindings)
+    end
+    if footer and footerBindings then
+        self.ThemeManager:RegisterElement(window, footer, footerBindings)
+    end
+    if separatorBindings and separatorBindings.Element then
+        self.ThemeManager:RegisterElement(window, separatorBindings.Element, separatorBindings.Bindings)
+    end
+    if topBarSeparatorBindings then
+        self.ThemeManager:RegisterElement(window, topBarSeparator, topBarSeparatorBindings)
+    end
+    if tabsSeparatorBindings then
+        self.ThemeManager:RegisterElement(window, tabsSeparator, tabsSeparatorBindings)
+    end
+
+    if tabNameLabel then
+        self.ThemeManager:RegisterElement(window, tabNameLabel, {
+            TextColor3 = "TextPrimary",
+            Font = "FontPrimary"
+        })
+    end
+
+    if tabDescLabel then
+        self.ThemeManager:RegisterElement(window, tabDescLabel, {
+            TextColor3 = "TextSecondary",
+            Font = "FontSecondary"
+        })
+    end
+
+    if brandTitleLabel then
+        self.ThemeManager:RegisterElement(window, brandTitleLabel, {
+            TextColor3 = "TextPrimary",
+            Font = "FontPrimary"
+        })
+    end
+
+    if brandInitialElement then
+        self.ThemeManager:RegisterElement(window, brandInitialElement, {
+            TextColor3 = "TextPrimary"
+        })
+    end
+
+    self.WindowControlBuilder:RegisterIconBindings(window, controlButtons, options)
+
+    self.WindowBuilder:SetupDragging(topBar, mainFrame)
+    self.WindowBuilder:SetupResizing(mainFrame, uiScale, options, window.Elements.FooterResizeArea)
+    self.WindowBuilder:SetupScrollUpdates(window)
+
+    for _, methodName in ipairs({"Destroy", "SetTheme", "SetScale", "Hide", "Show", "Toggle", "IsVisible", "SetTitle",
+                                 "SetSubtitle", "AddFooterButton", "ClearFooter", "SetFooterAlignment", "SetOpacity",
+                                 "EnableBlur", "DisableBlur", "SetTabMode", "PopulateFooter"}) do
+        if window[methodName] then
+            window[methodName] = self.Security:WrapFunction(window[methodName])
+        end
+    end
+
+    if footer and options.FooterItems then
+        self.WindowBuilder:PopulateFooter(window, options, theme)
+    end
+
+    if options.StartHidden then
+        mainFrame.Visible = false
+    end
+
+    if options.TabMode then
+        window:SetTabMode(options.TabMode, true, options.TabDynamicThreshold)
+    end
+
+    if options.InitialOpacity then
+        window:SetOpacity(options.InitialOpacity, false)
+    end
+
+    return window
 end
 
-function SimpleUI:createPage(window, name, options)
-    if not window or not window.Elements or not window.Elements.ContentsContainer then
+function SimpleUI:CreateTab(Window, Name, Options)
+    if not Window or not Window.Elements or not Window.Elements.TabsContainer then
         return
     end
-    options = options or {}
-    local pageData = self:merge(self.DefaultElements.Page, options)
-    pageData.Properties.Name = name .. "Page"
-    local page = self:createElement(pageData.Class, pageData.Properties, window.Elements.ContentsContainer)
-    if pageData.ListLayout then
-        self:createElement("UIListLayout", {
-            SortOrder = pageData.ListLayout.SortOrder,
-            Padding = pageData.ListLayout.Padding
-        }, page)
-    end
-    if pageData.Padding then
-        local p = pageData.Padding.Horizontal
-        self:createElement("UIPadding", {
-            PaddingTop = UDim.new(0, p),
-            PaddingBottom = UDim.new(0, p),
-            PaddingLeft = UDim.new(0, p),
-            PaddingRight = UDim.new(0, p)
-        }, page)
-    end
-    window.Elements.Pages[name] = page
-    task.defer(function()
-        if window.ActivePage then
-            window.ActivePage = SimpleUI:updateScrollingContainer(window.ActivePage)
-        end
-    end)
-    return page
-end
+    Options = Options or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(Window)
+    local IsMobile = self.Utility:IsMobile()
+    local Tab = self.Utility:CreateInstance("TextButton", {
+        Name = Name,
+        Size = UDim2.new(1, -8, 0, Window.TabsExpanded and 32 or 44),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = self.Constants.ZIndex.Content,
+        LayoutOrder = #Window.Elements.Tabs
+    }, Window.Elements.TabsContainer)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
+    }, Tab)
+    local AccentLine = self.Utility:CreateInstance("Frame", {
+        Name = "AccentLine",
+        Size = UDim2.new(0, 2, 0, 24),
+        Position = UDim2.new(0, -4, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundColor3 = Theme.TabAccent or Theme.Accent,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = self.Constants.ZIndex.Control + 2
+    }, Tab)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(1, 0)
+    }, AccentLine)
+    local ContentContainer = self.Utility:CreateInstance("Frame", {
+        Name = "ContentContainer",
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        AnchorPoint = Vector2.new(0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = self.Constants.ZIndex.Content + 1
+    }, Tab)
+    self.Utility:CreateInstance("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 8)
+    }, ContentContainer)
+    self.Utility:CreateInstance("UIPadding", {
+        PaddingLeft = UDim.new(0, self.Constants.Padding.Large),
+        PaddingRight = UDim.new(0, self.Constants.Padding.Large)
+    }, ContentContainer)
 
-function SimpleUI:createTab(window, name, options)
-    if not window or not window.Elements or not window.Elements.TabsContainer then
-        return
-    end
-    options = options or {}
-    local theme = self:getTheme(window.Elements.TabsContainer)
-    local tabData = self:merge(self.DefaultElements.Tab, options)
-    local mobile = self:isMobile()
-    tabData.Properties.Name = name
-    tabData.Properties.Text = name
-    tabData.Properties.LayoutOrder = #window.Elements.Tabs
-    local tabProps, tabBindings = self:applyTheme(tabData.Properties, tabData.Theme, theme)
-    local tab = self:createElement(tabData.Class, tabProps, window.Elements.TabsContainer)
+    local Icon = nil
+    local IconSize = 0
 
-    if tabBindings then
-        self:registerThemeElement(window, tab, tabBindings)
-    end
-    if tabData.Corner then
-        self:createElement("UICorner", {
-            CornerRadius = tabData.Corner.CornerRadius
-        }, tab)
-    end
-    local paddingLeft = 8
-    local textOffset = 0
-    local icon = nil
-    if options.Icon and type(options.Icon) == "table" and options.Icon.Image then
-        local iconData = options.Icon
-        local iconSize = iconData.Size or UDim2.new(0, 16, 0, 16)
-        local iconWidth = iconSize.X.Offset
-        icon = self:createElement("ImageLabel", {
+    if Options.Icon and type(Options.Icon) == "table" and Options.Icon.Image then
+        IconSize = Window.TabsExpanded and self.Constants.Window.TabIconSizeExpanded or 24
+
+        local IconData = self.IconManager:WrapIcon(Options.Icon)
+
+        Icon = self.Utility:CreateInstance("ImageLabel", {
             Name = "TabIcon",
-            Image = iconData.Image,
-            ImageColor3 = iconData.ImageColor3 or Color3.fromRGB(255, 255, 255),
-            Size = iconSize,
-            ImageRectOffset = iconData.ImageRectOffset or Vector2.new(0, 0),
-            ImageRectSize = iconData.ImageRectSize or Vector2.new(0, 0),
-            ImageTransparency = iconData.ImageTransparency or 0,
+            Image = IconData.Url,
+            ImageColor3 = Theme.TextInactive,
+            Size = UDim2.new(0, IconSize, 0, IconSize),
+            ImageTransparency = 0,
+            ImageRectOffset = IconData.ImageRectOffset,
+            ImageRectSize = IconData.ImageRectSize,
             BackgroundTransparency = 1,
-            AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, -20, 0.5, 0),
-            ZIndex = 4
-        }, tab)
-        textOffset = iconWidth + 6
-        paddingLeft = paddingLeft + textOffset
+            LayoutOrder = 1,
+            ZIndex = self.Constants.ZIndex.Control
+        }, ContentContainer)
     end
-    self:createElement("UIPadding", {
-        PaddingLeft = UDim.new(0, paddingLeft),
-        PaddingRight = UDim.new(0, 2)
-    }, tab)
-    local page = self:createPage(window, name)
-    local isActive, isHovering, isPressed = false, false, false
-    local function update()
-        local currentTheme = SimpleUI:getCurrentTheme(window)
-        if isActive then
-            tab.BackgroundColor3 = currentTheme.SecondaryColorActive
-            tab.TextColor3 = currentTheme.TextActive
-        elseif isPressed then
-            tab.BackgroundColor3 = currentTheme.SecondaryColorMouse1Down
-            tab.TextColor3 = currentTheme.TextInactive
-        elseif isHovering then
-            tab.BackgroundColor3 = currentTheme.SecondaryColorHover
-            tab.TextColor3 = currentTheme.TextInactive
-        else
-            tab.BackgroundColor3 = currentTheme.SecondaryColor
-            tab.TextColor3 = currentTheme.TextInactive
+
+    local TextLabel = self.Utility:CreateInstance("TextLabel", {
+        Name = "TabText",
+        Text = Name,
+        TextSize = 15,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, -(IconSize > 0 and (IconSize + 8) or 0), 1, 0),
+        AutomaticSize = Enum.AutomaticSize.None,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        Font = Theme.FontSecondary,
+        TextColor3 = Theme.TextInactive,
+        LayoutOrder = 2,
+        ZIndex = self.Constants.ZIndex.Control
+    }, ContentContainer)
+
+    local Page = self:CreatePage(Window, Name, Options)
+
+    local IsActive, IsHovering = false, false
+
+    local function UpdateActiveBrandDisplay(TabName, TabOptions)
+        local TabNameLabel = Window.Elements.TitleLabel
+        local TabDescLabel = Window.Elements.SubtitleLabel
+
+        if TabNameLabel then
+            TabNameLabel.Text = TabName
+        end
+        if TabDescLabel then
+            TabDescLabel.Text = TabOptions.Description or ""
         end
     end
-    if not mobile then
-        tab.MouseEnter:Connect(function()
-            if not isActive then
-                isHovering = true
-                update()
+
+    local function UpdateTabState()
+        local CurrentTheme = self.ThemeManager:GetCurrentTheme(Window)
+        local IsCollapsed = not Window.TabsExpanded
+        if IsActive then
+            Tab.BackgroundColor3 = CurrentTheme.SecondaryActive
+            Tab.BackgroundTransparency = 0
+            TextLabel.TextColor3 = CurrentTheme.TextActive
+            if Icon then
+                Icon.ImageColor3 = CurrentTheme.TabIconActive or CurrentTheme.TextActive
+            end
+            if IsCollapsed then
+                TweenService:Create(AccentLine, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                    BackgroundTransparency = 0
+                }):Play()
+            else
+                AccentLine.BackgroundTransparency = 1
+            end
+            UpdateActiveBrandDisplay(Name, Options)
+        elseif IsHovering then
+            Tab.BackgroundColor3 = CurrentTheme.Secondary
+            Tab.BackgroundTransparency = 0
+            TextLabel.TextColor3 = CurrentTheme.TextPrimary
+            if Icon then
+                Icon.ImageColor3 = CurrentTheme.TabIconHover or CurrentTheme.TextPrimary
+            end
+            AccentLine.BackgroundTransparency = 1
+        else
+            if IsCollapsed then
+                Tab.BackgroundColor3 = CurrentTheme.Secondary
+                Tab.BackgroundTransparency = 1
+            else
+                Tab.BackgroundColor3 = CurrentTheme.Secondary
+                Tab.BackgroundTransparency = CurrentTheme.TransparencySecondary or 0.8
+            end
+            TextLabel.TextColor3 = CurrentTheme.TextInactive
+            if Icon then
+                Icon.ImageColor3 = CurrentTheme.TabIconInactive or CurrentTheme.TextInactive
+            end
+            AccentLine.BackgroundTransparency = 1
+        end
+    end
+
+    if not IsMobile then
+        Tab.MouseEnter:Connect(function()
+            if not IsActive then
+                IsHovering = true
+                UpdateTabState()
             end
         end)
-        tab.MouseLeave:Connect(function()
-            if not isActive then
-                isHovering = false
-                isPressed = false
-                update()
-            end
-        end)
-        tab.MouseButton1Down:Connect(function()
-            if not isActive then
-                isPressed = true
-                update()
-            end
-        end)
-        tab.MouseButton1Up:Connect(function()
-            if not isActive then
-                isPressed = false
-                update()
+        Tab.MouseLeave:Connect(function()
+            if not IsActive then
+                IsHovering = false
+                UpdateTabState()
             end
         end)
     end
-    tab.Activated:Connect(function()
-        if isActive then
+    Tab.Activated:Connect(function()
+        if IsActive then
             return
         end
-        if window.ActiveTab and window.ActiveTab ~= tab then
-            local prevUpdate = window.TabUpdates[window.ActiveTab]
-            if prevUpdate then
-                prevUpdate(false)
+        if Window.ActiveTab and Window.ActiveTab ~= Tab then
+            local PreviousCallback = Window.TabCallbacks[Window.ActiveTab]
+            if PreviousCallback then
+                PreviousCallback(false)
             end
-            if window.ActivePage then
-                window.ActivePage.Visible = false
+            if Window.ActivePage then
+                local pageToHide = Window.ActivePage
+                if type(pageToHide) == "table" and pageToHide.Container then
+                    pageToHide = pageToHide.Container
+                end
+                pageToHide.Visible = false
             end
         end
-        isActive = true
-        window.ActiveTab = tab
-        local currentPage = window.Elements.ContentsContainer:FindFirstChild(name .. "Page")
-        if currentPage then
-            page = currentPage
-            page = self:updateScrollingContainer(page)
-            window.Elements.Pages[name] = page
+        IsActive = true
+        Window.ActiveTab = Tab
+        local CurrentPage = Window.Elements.ContentsContainer:FindFirstChild(Name .. "Page")
+        if CurrentPage then
+            Page = CurrentPage
+            if type(Page) == "table" and Page._isDualScroll then
+                Page.Left = self.ScrollManager:Update(Page.Left)
+                Page.Right = self.ScrollManager:Update(Page.Right)
+            else
+                Page = self.ScrollManager:Update(Page)
+            end
+            Window.Elements.Pages[Name] = Page
         end
-        window.ActivePage = page
-        page.Visible = true
-        update()
+        Window.ActivePage = Page
+        local pageToShow = Window.ActivePage
+        if type(pageToShow) == "table" and pageToShow.Container then
+            pageToShow = pageToShow.Container
+        end
+        pageToShow.Visible = true
+        UpdateTabState()
     end)
-    window.TabUpdates[tab] = function(active)
-        isActive = active
-        isHovering = false
-        isPressed = false
-        update()
+    Window.TabCallbacks[Tab] = function(Active)
+        IsActive = Active
+        IsHovering = false
+        UpdateTabState()
     end
-    window.Elements.Tabs[name] = tab
-    if not window.ActiveTab then
-        isActive = true
-        window.ActiveTab = tab
-        window.ActivePage = page
-        page.Visible = true
-    end
-    update()
-    return {
-        tab = tab,
-        page = page,
-        icon = icon
+    local ThemeBindings = {
+        [AccentLine] = {
+            BackgroundColor3 = "TabAccent"
+        },
+        [Tab] = {
+            BackgroundColor3 = function(Element, Theme)
+                UpdateTabState()
+            end,
+            BackgroundTransparency = function(Element, Theme)
+                UpdateTabState()
+            end
+        },
+        [TextLabel] = {
+            TextColor3 = function(Element, Theme)
+                UpdateTabState()
+            end,
+            Font = "FontSecondary"
+        }
     }
-end
-
-function SimpleUI:createComponentContainer(config, theme)
-    local container = self:createElement("Frame", {
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundColor3 = theme[config.colorTier or "SecondaryColor"],
-        BackgroundTransparency = theme.SecondaryTransparency,
-        BorderSizePixel = 0,
-        ZIndex = 4
-    }, config.parent)
-
-    if config.minHeight then
-        local constraint = Instance.new("UISizeConstraint")
-        constraint.MinSize = Vector2.new(0, config.minHeight)
-        constraint.Parent = container
-    end
-
-    if config.corner then
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, config.corner)
-        corner.Parent = container
-    end
-
-    local padding = config.padding or {}
-    if type(padding) == "number" then
-        padding = {
-            top = padding,
-            bottom = padding,
-            left = padding,
-            right = padding
+    if Icon then
+        ThemeBindings[Icon] = {
+            ImageColor3 = function(Element, Theme)
+                if IsActive then
+                    Element.ImageColor3 = Theme.TabIconActive or Theme.TextActive
+                elseif IsHovering then
+                    Element.ImageColor3 = Theme.TabIconHover or Theme.TextPrimary
+                else
+                    Element.ImageColor3 = Theme.TabIconInactive or Theme.TextInactive
+                end
+            end
         }
     end
-
-    local uiPadding = Instance.new("UIPadding")
-    uiPadding.PaddingTop = UDim.new(0, padding.top or 8)
-    uiPadding.PaddingBottom = UDim.new(0, padding.bottom or 8)
-    uiPadding.PaddingLeft = UDim.new(0, padding.left or 10)
-    uiPadding.PaddingRight = UDim.new(0, padding.right or 0)
-    uiPadding.Parent = container
-
-    local textZone, interactiveZone, layout
-
-    if config.layout == "textLeft" then
-        textZone = self:createElement("Frame", {
-            Size = UDim2.new(config.textWidth or 0.65, 0, 1, 0),
-            Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
-            ZIndex = 5
-        }, container)
-
-        layout = Instance.new("UIListLayout")
-        layout.FillDirection = Enum.FillDirection.Vertical
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        layout.VerticalAlignment = config.hasDescription and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Center
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Padding = UDim.new(0, 5)
-        layout.Parent = textZone
-
-        interactiveZone = container
-
-    elseif config.layout == "stacked" then
-        local contentFrame = self:createElement("Frame", {
-            Size = UDim2.new(1, 0, 0, 0),
-            AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundTransparency = 1,
-            ZIndex = 5
-        }, container)
-
-        layout = Instance.new("UIListLayout")
-        layout.FillDirection = Enum.FillDirection.Vertical
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        layout.VerticalAlignment = Enum.VerticalAlignment.Top
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Padding = UDim.new(0, config.spacing or 4)
-        layout.Parent = contentFrame
-
-        if not config.hasDescription then
-            contentFrame.Position = UDim2.new(0, 0, 0.5, 0)
-            contentFrame.AnchorPoint = Vector2.new(0, 0.5)
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
+    end
+    Window.Elements.Tabs[Name] = {
+        Container = Tab,
+        Icon = Icon,
+        ContentContainer = ContentContainer,
+        TextLabel = TextLabel,
+        AccentLine = AccentLine,
+        Page = Page
+    }
+    if not Window.ActiveTab then
+        IsActive = true
+        Window.ActiveTab = Tab
+        Window.ActivePage = Page
+        local pageToShow = Window.ActivePage
+        if type(pageToShow) == "table" and pageToShow.Container then
+            pageToShow = pageToShow.Container
         end
-
-        textZone = contentFrame
-        interactiveZone = contentFrame
-
+        pageToShow.Visible = true
+        Tab.BackgroundColor3 = Theme.SecondaryActive
+        Tab.BackgroundTransparency = 0
+        TextLabel.TextColor3 = Theme.TextActive
+        if Icon then
+            Icon.ImageColor3 = Theme.TabIconActive or Theme.TextActive
+        end
     else
-        textZone = container
-        interactiveZone = container
+        Tab.BackgroundColor3 = Theme.Secondary
+        Tab.BackgroundTransparency = Theme.TransparencySecondary or 0.8
+        TextLabel.TextColor3 = Theme.TextInactive
+        if Icon then
+            Icon.ImageColor3 = Theme.TabIconInactive or Theme.TextInactive
+        end
     end
 
+    UpdateTabState()
+
     return {
-        container = container,
-        textZone = textZone,
-        interactiveZone = interactiveZone,
-        layout = layout
+        Tab = Tab,
+        Page = Page,
+        Icon = Icon,
+        AccentLine = AccentLine
     }
 end
 
-function SimpleUI:createLabel(parent, text, theme, config)
-    config = config or {}
-    return self:createElement("TextLabel", {
-        Size = UDim2.new(1, config.widthOffset or 0, 0, 0),
-        BackgroundTransparency = 1,
-        Text = text or "",
-        TextColor3 = theme[config.colorTier or "TextPrimary"],
-        TextSize = config.size or 14,
-        Font = theme[config.font or "SecondaryFont"],
-        TextXAlignment = config.align or Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        LayoutOrder = config.order or 1,
-        ZIndex = 5
-    }, parent)
+function SimpleUI:CreatePage(Window, Name, Options)
+    if not Window or not Window.Elements or not Window.Elements.ContentsContainer then
+        return
+    end
+    Options = Options or {}
+    local IsDualScroll = Options.DualScroll or false
+
+    if not IsDualScroll then
+        local Page = self.Utility:CreateInstance("Frame", {
+            Name = Name .. "Page",
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = self.Constants.ZIndex.Content,
+            ClipsDescendants = false
+        }, Window.Elements.ContentsContainer)
+        self.Utility:CreateInstance("UIListLayout", {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, self.Constants.Spacing.Loose)
+        }, Page)
+        self.Utility:CreateInstance("UIPadding", {
+            PaddingTop = UDim.new(0, 2),
+            PaddingBottom = UDim.new(0, 0),
+            PaddingLeft = UDim.new(0, 2),
+            PaddingRight = UDim.new(0, 2)
+        }, Page)
+        Window.Elements.Pages[Name] = Page
+        task.defer(function()
+            if Window.ActivePage then
+                local pageToUpdate = Window.ActivePage
+                if type(pageToUpdate) == "table" and pageToUpdate.Container then
+                    pageToUpdate = pageToUpdate.Container
+                end
+                Window.ActivePage = self.ScrollManager:Update(pageToUpdate)
+            end
+        end)
+        return Page
+    else
+        local PageContainer = self.Utility:CreateInstance("Frame", {
+            Name = Name .. "Page",
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = self.Constants.ZIndex.Content,
+            ClipsDescendants = false
+        }, Window.Elements.ContentsContainer)
+
+        self.Utility:CreateInstance("UIPadding", {
+            PaddingTop = UDim.new(0, 2),
+            PaddingBottom = UDim.new(0, 0),
+            PaddingLeft = UDim.new(0, 2),
+            PaddingRight = UDim.new(0, 2)
+        }, PageContainer)
+
+        self.Utility:CreateInstance("UIListLayout", {
+            FillDirection = Enum.FillDirection.Horizontal,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 8)
+        }, PageContainer)
+
+        local LeftPage = self.Utility:CreateInstance("Frame", {
+            Name = Name .. "PageLeft",
+            Size = UDim2.new(0.5, -4, 1, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = self.Constants.ZIndex.Content,
+            ClipsDescendants = false,
+            LayoutOrder = 1
+        }, PageContainer)
+
+        self.Utility:CreateInstance("UIListLayout", {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, self.Constants.Spacing.Loose)
+        }, LeftPage)
+
+        self.Utility:CreateInstance("UIPadding", {
+            PaddingTop = UDim.new(0, 2),
+            PaddingBottom = UDim.new(0, 2),
+            PaddingLeft = UDim.new(0, 2),
+            PaddingRight = UDim.new(0, 2)
+        }, LeftPage)
+
+        local RightPage = self.Utility:CreateInstance("Frame", {
+            Name = Name .. "PageRight",
+            Size = UDim2.new(0.5, -4, 1, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = self.Constants.ZIndex.Content,
+            ClipsDescendants = false,
+            LayoutOrder = 2
+        }, PageContainer)
+
+        self.Utility:CreateInstance("UIListLayout", {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, self.Constants.Spacing.Loose)
+        }, RightPage)
+
+        self.Utility:CreateInstance("UIPadding", {
+            PaddingTop = UDim.new(0, 2),
+            PaddingBottom = UDim.new(0, 2),
+            PaddingLeft = UDim.new(0, 2),
+            PaddingRight = UDim.new(0, 2)
+        }, RightPage)
+
+        local PageWrapper = {
+            Container = PageContainer,
+            Left = LeftPage,
+            Right = RightPage,
+            _isDualScroll = true
+        }
+
+        Window.Elements.Pages[Name] = PageWrapper
+
+        task.defer(function()
+            PageWrapper.Left = self.ScrollManager:Update(PageWrapper.Left)
+            PageWrapper.Right = self.ScrollManager:Update(PageWrapper.Right)
+        end)
+
+        return PageWrapper
+    end
 end
 
-function SimpleUI:createDescription(parent, text, theme, order)
-    if not text or text == "" then
+function SimpleUI:CreateSection(Page, Text, Options)
+    if not Page then
+        return
+    end
+    Options = Options or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local Style = Options.Style or "solid"
+
+    if Style == "box" then
+        return self.SectionManager:CreateBoxSection(Page, Text, Options, Theme, Window)
+    else
+        return self.SectionManager:CreateSimpleSection(Page, Text, Options, Theme, Window, Style)
+    end
+end
+
+function SimpleUI:CreateButton(Page, Text, Callback, Options)
+    local EH = self.ErrorHandler
+    if not EH:ValidateInstance(Page, "GuiObject", "CreateButton") then
         return nil
     end
-    return self:createLabel(parent, text, theme, {
-        colorTier = "TextSecondary",
-        size = 14,
-        order = order or 2
-    })
-end
-
-function SimpleUI:createSection(page, text, options)
-    if not page then
-        return
+    if not EH:ValidateType(Text, "string", "Text", "CreateButton") then
+        Text = "Button"
     end
-    options = options or {}
-    local theme = self:getTheme(page)
-    local window = self:getWindowFromElement(page)
-    local data = self:merge(self.DefaultElements.Section, options)
-    local props = self:applyTheme(data.Properties, data.Theme, theme)
-    props.Name = "Section"
-    local section = self:createElement(data.Class, props, page)
-    local labelProps = self:applyTheme(data.Label.Properties, data.Label.Theme, theme)
-    labelProps.Text = text or labelProps.Text
-    labelProps.TextSize = options.TextSize or (labelProps.TextSize + 1)
-    local label = self:createElement("TextLabel", labelProps, section)
-    local underlineProps = self:applyTheme(data.Underline.Properties, data.Underline.Theme, theme)
-    local underlineThickness = options.UnderlineThickness or 1
-    local underlineWidth = options.UnderlineWidth
-    underlineProps.Size = underlineWidth and UDim2.new(0, underlineWidth, 0, underlineThickness) or
-                              UDim2.new(1, 0, 0, underlineThickness)
-    underlineProps.Position = UDim2.new(0, 0, 1, -underlineThickness + 1)
-    local underline = self:createElement("Frame", underlineProps, section)
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(1, 0)
-    }, underline)
-
-    local themeRegistry = {
-        [label] = {
-            TextColor3 = "TextActive",
-            Font = "PrimaryFont"
-        },
-        [underline] = {
-            BackgroundColor3 = "AccentColor"
-        }
-    }
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    local api = {}
-    function api:setText(t)
-        label.Text = t
+    if Callback then
+        Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateButton") == false) and nil or Callback
     end
-    function api:setTextSize(s)
-        label.TextSize = s
-    end
-    function api:setUnderlineWidth(w)
-        underline.Size = w and UDim2.new(0, w, 0, underlineThickness) or UDim2.new(1, 0, 0, underlineThickness)
-    end
-    function api:setVisible(v)
-        section.Visible = v
-    end
-    function api:getElements()
-        return {
-            Section = section,
-            Label = label,
-            Underline = underline
-        }
-    end
-    return api
-end
+    Options = Options or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local IsMobile = self.Utility:IsMobile()
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local HasDescription = Options.Description and Options.Description ~= ""
 
-function SimpleUI:createButton(page, text, callback, options)
-    if not page then
-        return
-    end
-    options = options or {}
-    local theme = self:getTheme(page)
-    local mobile = self:isMobile()
-    local window = self:getWindowFromElement(page)
-
-    local hasDescription = options.Description and options.Description ~= ""
-
-    local zones = self:createComponentContainer({
-        parent = page,
-        layout = "stacked",
-        minHeight = 35,
-        padding = hasDescription and {
-            top = 10,
-            bottom = 10,
-            left = 10,
-            right = 0
+    local Zones = self.ComponentBuilder:CreateContainer({
+        Parent = Page,
+        Layout = "TextLeft",
+        TextWidth = 0.85,
+        MinHeight = 35,
+        Padding = HasDescription and {
+            Top = self.Constants.Padding.Large,
+            Bottom = self.Constants.Padding.Large,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
         } or {
-            top = 0,
-            bottom = 0,
-            left = 10,
-            right = 0
+            Top = 2,
+            Bottom = 2,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
         },
-        spacing = hasDescription and 2 or 0,
-        hasDescription = hasDescription,
-        corner = 4,
-        colorTier = "SecondaryColor"
-    }, theme)
+        Spacing = HasDescription and self.Constants.Spacing.Tight or 0,
+        HasDescription = HasDescription,
+        CornerRadius = self.Constants.Corner.Medium,
+        ColorTier = "Secondary"
+    }, Theme)
 
-    local title = self:createLabel(zones.textZone, text, theme, {
-        colorTier = "TextPrimary",
-        size = 15,
-        order = 1,
-        widthOffset = -30
+    local Title = self.ComponentBuilder:CreateLabel(Zones.TextZone, Text, Theme, {
+        ColorTier = "TextPrimary",
+        Size = 15,
+        Order = 1
     })
 
-    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
+    local Description = HasDescription and
+                            self.ComponentBuilder:CreateDescription(Zones.TextZone, Options.Description, Theme, 2) or
+                            nil
 
-    local arrow = self:createElement("ImageLabel", {
+    local ArrowContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0.15, -self.Constants.Padding.Large, 1, 0),
+        Position = UDim2.new(0.85, 0, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Zones.Container)
+
+    local Arrow = self.Utility:CreateInstance("ImageLabel", {
         Size = UDim2.new(0, 16, 0, 16),
         Position = UDim2.new(1, -10, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
@@ -2349,2501 +5001,2235 @@ function SimpleUI:createButton(page, text, callback, options)
         Image = "rbxassetid://113826256227095",
         ImageRectOffset = Vector2.new(448, 192),
         ImageRectSize = Vector2.new(64, 64),
-        ImageColor3 = theme.TextPrimary,
-        ZIndex = 5
-    }, zones.container)
+        ImageColor3 = Theme.TextPrimary,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, ArrowContainer)
 
-    local themeRegistry = {
-        [zones.container] = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
+    local ThemeBindings = {
+        [Zones.Container] = {
+            BackgroundColor3 = "Secondary",
+            BackgroundTransparency = "TransparencySecondary"
         },
-        [title] = {
+        [Title] = {
             TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
+            Font = "FontSecondary"
         },
-        [arrow] = {
+        [Arrow] = {
             ImageColor3 = "TextPrimary"
         }
     }
-
-    if description then
-        themeRegistry[description] = {
+    if Description then
+        ThemeBindings[Description] = {
             TextColor3 = "TextSecondary",
-            Font = "SecondaryFont"
+            Font = "FontSecondary"
         }
     end
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    local state, held = "Base", false
-
-    local function setColor(s)
-        local currentTheme = window and self:getCurrentTheme(window) or theme
-        if s == "Base" then
-            zones.container.BackgroundColor3 = currentTheme.SecondaryColor
-        elseif s == "Hover" then
-            zones.container.BackgroundColor3 = currentTheme.SecondaryColorHover
-        elseif s == "Button1Down" then
-            zones.container.BackgroundColor3 = currentTheme.SecondaryColorMouse1Down
-        end
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
     end
 
-    local button = self:createElement("TextButton", {
+    local State = "Base"
+    local IsHeld = false
+
+    local function UpdateButtonState(NewState)
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        local ColorGoal = CurrentTheme.Secondary
+        local ArrowOffset = 0
+
+        if NewState == "Hover" then
+            ColorGoal = CurrentTheme.SecondaryHover
+            ArrowOffset = -2
+        elseif NewState == "Pressed" then
+            ColorGoal = CurrentTheme.SecondaryPressed
+            ArrowOffset = 2
+        end
+
+        TweenService:Create(Zones.Container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = ColorGoal
+        }):Play()
+
+        TweenService:Create(Arrow, TweenInfo.new(0.15, Enum.EasingStyle.Back, NewState == "Pressed" and
+            Enum.EasingDirection.In or Enum.EasingDirection.Out), {
+            Position = UDim2.new(1, -10 + ArrowOffset, 0.5, 0)
+        }):Play()
+    end
+
+    local InteractButton = self.Utility:CreateInstance("TextButton", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 6
-    }, zones.container)
+        ZIndex = self.Constants.ZIndex.Modal
+    }, Zones.Container)
 
-    if not mobile then
-        button.MouseEnter:Connect(function()
-            if not held then
-                state = "Hover"
-                setColor(state)
+    if not IsMobile then
+        InteractButton.MouseEnter:Connect(function()
+            if not IsHeld then
+                State = "Hover"
+                UpdateButtonState(State)
             end
         end)
-        button.MouseLeave:Connect(function()
-            if held then
-                held = false
+        InteractButton.MouseLeave:Connect(function()
+            if IsHeld then
+                IsHeld = false
             end
-            state = "Base"
-            setColor(state)
+            State = "Base"
+            UpdateButtonState(State)
         end)
-        button.MouseButton1Down:Connect(function()
-            held = true
-            state = "Button1Down"
-            setColor(state)
+        InteractButton.MouseButton1Down:Connect(function()
+            IsHeld = true
+            State = "Pressed"
+            UpdateButtonState(State)
         end)
-        button.MouseButton1Up:Connect(function()
-            if held then
-                held = false
-                state = "Hover"
-                setColor(state)
-                if callback then
-                    task.spawn(callback)
+        InteractButton.MouseButton1Up:Connect(function()
+            if IsHeld then
+                IsHeld = false
+                State = "Hover"
+                UpdateButtonState(State)
+                if Callback then
+                    EH:Try(Callback)
                 end
             end
         end)
     else
-        button.Activated:Connect(function()
-            state = "Button1Down"
-            setColor(state)
-            task.delay(0.1, function()
-                state = "Base"
-                setColor(state)
+        InteractButton.Activated:Connect(function()
+            State = "Pressed"
+            UpdateButtonState(State)
+            task.delay(0.15, function()
+                State = "Base"
+                UpdateButtonState(State)
             end)
-            if callback then
-                task.spawn(callback)
+            if Callback then
+                EH:Try(Callback)
             end
         end)
     end
 
-    setColor("Base")
-
-    local api = {}
-
-    function api:setTitle(t)
-        title.Text = t
-    end
-
-    function api:setDescription(t)
-        local hadDescription = description ~= nil and description.Visible
-        local hasDescription = t and t ~= ""
-
-        if description and t then
-            description.Text = t
-            description.Visible = true
-        elseif description and not t then
-            description.Visible = false
-        elseif not description and t then
-            description = self:createDescription(zones.textZone, t, theme, 2)
-            if window then
-                self:registerThemeElement(window, description, {
-                    TextColor3 = "TextSecondary",
-                    Font = "SecondaryFont"
-                })
+    return {
+        SetTitle = function(self, NewText)
+            if EH:ValidateType(NewText, "string", "NewText", "Button:SetTitle") then
+                Title.Text = NewText
             end
-        end
-
-        if hadDescription ~= hasDescription then
-            local padding = zones.container:FindFirstChildOfClass("UIPadding")
-            if padding then
-                if hasDescription then
-                    padding.PaddingTop = UDim.new(0, 10)
-                    padding.PaddingBottom = UDim.new(0, 10)
-                    zones.layout.Padding = UDim.new(0, 2)
-                    zones.textZone.Position = UDim2.new(0, 0, 0, 0)
-                    zones.textZone.AnchorPoint = Vector2.new(0, 0)
-                else
-                    padding.PaddingTop = UDim.new(0, 0)
-                    padding.PaddingBottom = UDim.new(0, 0)
-                    zones.layout.Padding = UDim.new(0, 0)
-                    zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
-                    zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
+        end,
+        SetDescription = function(self, NewDescription)
+            local HadDescription = Description ~= nil and Description.Visible
+            local HasNewDescription = NewDescription and NewDescription ~= ""
+            if Description and NewDescription then
+                Description.Text = NewDescription
+                Description.Visible = true
+            elseif Description and not NewDescription then
+                Description.Visible = false
+            elseif not Description and NewDescription then
+                Description = SimpleUI.ComponentBuilder:CreateDescription(Zones.TextZone, NewDescription, Theme, 2)
+                if Window then
+                    SimpleUI.ThemeManager:RegisterElement(Window, Description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "FontSecondary"
+                    })
                 end
             end
+            if HadDescription ~= HasNewDescription then
+                SimpleUI.ComponentBuilder:UpdateDescriptionPadding(Zones, HasNewDescription)
+            end
+        end,
+        SetCallback = function(self, NewCallback)
+            if EH:ValidateType(NewCallback, "function", "NewCallback", "Button:SetCallback") then
+                Callback = NewCallback
+            end
+        end,
+        SetVisible = function(self, Visible)
+            if EH:ValidateType(Visible, "boolean", "Visible", "Button:SetVisible") then
+                Zones.Container.Visible = Visible
+            end
+        end,
+        GetElements = function(self)
+            return {
+                Container = Zones.Container,
+                Title = Title,
+                Description = Description,
+                Arrow = Arrow
+            }
+        end,
+        GetState = function(self)
+            return State
         end
-    end
-
-    function api:setCallback(cb)
-        callback = cb
-    end
-
-    function api:setVisible(v)
-        zones.container.Visible = v
-    end
-
-    function api:getElements()
-        return {
-            Container = zones.container,
-            Title = title,
-            Description = description,
-            Arrow = arrow
-        }
-    end
-
-    function api:getState()
-        return state
-    end
-
-    return api
+    }
 end
 
-function SimpleUI:createToggle(page, text, defaultValue, callback, options)
-    if not page then
-        return
+function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
+    local EH = self.ErrorHandler
+    if not EH:ValidateInstance(Page, "GuiObject", "CreateToggle") then
+        return nil
     end
-    options = options or {}
-    local theme = self:getTheme(page)
-    local window = self:getWindowFromElement(page)
-    local hasDescription = options.Description and options.Description ~= ""
+    if not EH:ValidateType(Text, "string", "Text", "CreateToggle") then
+        Text = "Toggle"
+    end
+    if DefaultValue ~= nil and not EH:ValidateType(DefaultValue, "boolean", "DefaultValue", "CreateToggle") then
+        DefaultValue = false
+    end
+    if Callback then
+        Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateToggle") == false) and nil or Callback
+    end
+    Options = Options or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local HasDescription = Options.Description and Options.Description ~= ""
 
-    local zones = self:createComponentContainer({
-        parent = page,
-        layout = "textLeft",
-        textWidth = 0.7,
-        minHeight = 35,
-        padding = hasDescription and {
-            top = 10,
-            bottom = 10,
-            left = 10,
-            right = 0
+    local Zones = self.ComponentBuilder:CreateContainer({
+        Parent = Page,
+        Layout = "TextLeft",
+        TextWidth = 0.75,
+        MinHeight = 35,
+        Padding = HasDescription and {
+            Top = self.Constants.Padding.Large,
+            Bottom = self.Constants.Padding.Large,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
         } or {
-            top = 0,
-            bottom = 0,
-            left = 10,
-            right = 0
+            Top = 2,
+            Bottom = 2,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
         },
-        spacing = hasDescription and 2 or 0,
-        hasDescription = hasDescription,
-        corner = 4,
-        colorTier = "SecondaryColor"
-    }, theme)
+        Spacing = HasDescription and self.Constants.Spacing.Tight or 0,
+        HasDescription = HasDescription,
+        CornerRadius = self.Constants.Corner.Medium,
+        ColorTier = "Secondary"
+    }, Theme)
 
-    local label = self:createLabel(zones.textZone, text, theme, {
-        colorTier = "TextPrimary",
-        size = 14,
-        order = 1
+    local Label = self.ComponentBuilder:CreateLabel(Zones.TextZone, Text, Theme, {
+        ColorTier = "TextPrimary",
+        Size = 14,
+        Order = 1
     })
 
-    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
+    local Description = HasDescription and
+                            self.ComponentBuilder:CreateDescription(Zones.TextZone, Options.Description, Theme, 2) or
+                            nil
 
-    local switch = self:createElement("TextButton", {
-        Size = UDim2.new(0, 40, 0, 20),
-        Position = UDim2.new(1, -50, 0.5, 0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundColor3 = theme.SecondaryColorMouse1Down,
+    local SwitchContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0.25, -self.Constants.Padding.Large, 1, 0),
+        Position = UDim2.new(0.75, 0, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Zones.Container)
+
+    local Switch = self.Utility:CreateInstance("TextButton", {
+        Size = UDim2.new(0, 44, 0, 22),
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = Theme.SecondaryPressed,
         BorderSizePixel = 0,
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 5
-    }, zones.container)
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, SwitchContainer)
 
-    self:createElement("UICorner", {
+    self.Utility:CreateInstance("UICorner", {
         CornerRadius = UDim.new(1, 0)
-    }, switch)
+    }, Switch)
 
-    local indicator = self:createElement("Frame", {
-        Size = UDim2.new(0, 16, 0, 16),
+    local Indicator = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0, 18, 0, 18),
         Position = UDim2.new(0, 2, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundColor3 = theme.TextInactive,
+        BackgroundColor3 = Theme.TextInactive,
         BorderSizePixel = 0,
-        ZIndex = 6
-    }, switch)
+        ZIndex = self.Constants.ZIndex.Modal
+    }, Switch)
 
-    self:createElement("UICorner", {
+    self.Utility:CreateInstance("UICorner", {
         CornerRadius = UDim.new(1, 0)
-    }, indicator)
+    }, Indicator)
 
-    local state = defaultValue or false
-    local lastToggleTime = 0
-    local TOGGLE_COOLDOWN = 0.450
-    local tweenService = self:getService("TweenService")
+    local State = DefaultValue or false
 
-    local function updateToggle(animate)
-        local currentTheme = window and self:getCurrentTheme(window) or theme
-        local posGoal = state and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
-        local colorGoal = state and currentTheme.AccentColor or currentTheme.SecondaryColorMouse1Down
-        local indicatorColorGoal = state and currentTheme.TextActive or currentTheme.TextInactive
+    local function UpdateToggle(Animate)
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        local PositionGoal = State and UDim2.new(1, -20, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
+        local ColorGoal = State and CurrentTheme.Accent or CurrentTheme.SecondaryPressed
+        local IndicatorColorGoal = State and CurrentTheme.TextActive or CurrentTheme.TextInactive
 
-        if animate then
-            tweenService:Create(indicator, TweenInfo.new(0.2), {
-                Position = posGoal
+        if Animate then
+            TweenService:Create(Indicator, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = PositionGoal
             }):Play()
-            tweenService:Create(switch, TweenInfo.new(0.2), {
-                BackgroundColor3 = colorGoal
+            TweenService:Create(Switch, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                BackgroundColor3 = ColorGoal
             }):Play()
-            tweenService:Create(indicator, TweenInfo.new(0.2), {
-                BackgroundColor3 = indicatorColorGoal
+            TweenService:Create(Indicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                BackgroundColor3 = IndicatorColorGoal
             }):Play()
         else
-            indicator.Position = posGoal
-            switch.BackgroundColor3 = colorGoal
-            indicator.BackgroundColor3 = indicatorColorGoal
+            Indicator.Position = PositionGoal
+            Switch.BackgroundColor3 = ColorGoal
+            Indicator.BackgroundColor3 = IndicatorColorGoal
         end
     end
 
-    local themeRegistry = {
-        [zones.container] = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
+    local ThemeBindings = {
+        [Zones.Container] = {
+            BackgroundColor3 = "Secondary",
+            BackgroundTransparency = "TransparencySecondary"
         },
-        [label] = {
+        [Label] = {
             TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
+            Font = "FontSecondary"
         },
-        [switch] = {
+        [Switch] = {
             BackgroundColor3 = function()
-                updateToggle(false)
+                UpdateToggle(false)
             end
         },
-        [indicator] = {
+        [Indicator] = {
             BackgroundColor3 = function()
-                updateToggle(false)
+                UpdateToggle(false)
             end
         }
     }
-
-    if description then
-        themeRegistry[description] = {
+    if Description then
+        ThemeBindings[Description] = {
             TextColor3 = "TextSecondary",
-            Font = "SecondaryFont"
+            Font = "FontSecondary"
         }
     end
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    updateToggle(false)
-
-    if state and callback then
-        callback(state)
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
     end
 
-    switch.Activated:Connect(function()
-        local now = tick()
-        if now - lastToggleTime < TOGGLE_COOLDOWN then
-            return
-        end
-        lastToggleTime = now
-        state = not state
-        updateToggle(true)
-        if callback then
-            callback(state)
+    UpdateToggle(false)
+
+    if State and Callback then
+        EH:Try(function()
+            Callback(State)
+        end)
+    end
+
+    Switch.Activated:Connect(function()
+        State = not State
+        UpdateToggle(true)
+        if Callback then
+            EH:Try(function()
+                Callback(State)
+            end)
         end
     end)
 
     return {
-        container = zones.container,
-        getState = function()
-            return state
+        GetState = function(self)
+            return State
         end,
-        setState = function(val)
-            state = val
-            updateToggle(true)
+        SetState = function(self, Value)
+            if EH:ValidateType(Value, "boolean", "Value", "Toggle:SetState") then
+                State = Value
+                UpdateToggle(true)
+            end
         end,
-        setDescription = function(t)
-            local hadDescription = description ~= nil and description.Visible
-            local hasDescription = t and t ~= ""
-
-            if description and t then
-                description.Text = t
-                description.Visible = true
-            elseif description and not t then
-                description.Visible = false
-            elseif not description and t then
-                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
-                if window then
-                    SimpleUI:registerThemeElement(window, description, {
+        SetDescription = function(self, NewDescription)
+            local HadDescription = Description ~= nil and Description.Visible
+            local HasNewDescription = NewDescription and NewDescription ~= ""
+            if Description and NewDescription then
+                Description.Text = NewDescription
+                Description.Visible = true
+            elseif Description and not NewDescription then
+                Description.Visible = false
+            elseif not Description and NewDescription then
+                Description = SimpleUI.ComponentBuilder:CreateDescription(Zones.TextZone, NewDescription, Theme, 2)
+                if Window then
+                    SimpleUI.ThemeManager:RegisterElement(Window, Description, {
                         TextColor3 = "TextSecondary",
-                        Font = "SecondaryFont"
+                        Font = "FontSecondary"
                     })
                 end
             end
-
-            if hadDescription ~= hasDescription then
-                local padding = zones.container:FindFirstChildOfClass("UIPadding")
-                if padding then
-                    if hasDescription then
-                        padding.PaddingTop = UDim.new(0, 10)
-                        padding.PaddingBottom = UDim.new(0, 10)
-                        zones.layout.Padding = UDim.new(0, 2)
-                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
-                    else
-                        padding.PaddingTop = UDim.new(0, 0)
-                        padding.PaddingBottom = UDim.new(0, 0)
-                        zones.layout.Padding = UDim.new(0, 0)
-                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
-                    end
-                end
+            if HadDescription ~= HasNewDescription then
+                SimpleUI.ComponentBuilder:UpdateDescriptionPadding(Zones, HasNewDescription)
             end
+        end,
+        GetElements = function(self)
+            return {
+                Container = Zones.Container,
+                Label = Label,
+                Description = Description,
+                Switch = Switch,
+                Indicator = Indicator
+            }
         end
     }
 end
 
-function SimpleUI:createDropdown(page, text, options, defaultValue, callback, dropdownOptions)
-    if not page then
-        return
+function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
+    local EH = self.ErrorHandler
+    if not EH:ValidateInstance(Page, "GuiObject", "CreateTextInput") then
+        return nil
     end
-    dropdownOptions = dropdownOptions or {}
-    local theme = self:getTheme(page)
-    local mobile = self:isMobile()
-    local window = self:getWindowFromElement(page)
-    local multiSelect = dropdownOptions.MultiSelect or false
-    local changedEvent = Instance.new("BindableEvent")
-    local hasDescription = dropdownOptions.Description and dropdownOptions.Description ~= ""
+    if not EH:ValidateType(Text, "string", "Text", "CreateTextInput") then
+        Text = "Input"
+    end
+    if DefaultValue and not EH:ValidateType(DefaultValue, "string", "DefaultValue", "CreateTextInput") then
+        DefaultValue = ""
+    end
+    if Callback then
+        Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateTextInput") == false) and nil or Callback
+    end
 
-    local zones = self:createComponentContainer({
-        parent = page,
-        layout = "textLeft",
-        textWidth = 0.5,
-        minHeight = 35,
-        padding = hasDescription and {
-            top = 10,
-            bottom = 10,
-            left = 10,
-            right = 0
+    Options = Options or {}
+    local InputType = Options.Type or "Text"
+    local ValidTypes = {
+        Text = true,
+        Numbers = true,
+        Decimals = true,
+        Alphanumeric = true
+    }
+    if not ValidTypes[InputType] then
+        InputType = "Text"
+    end
+
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local IsMobile = self.Utility:IsMobile()
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local HasDescription = Options.Description and Options.Description ~= ""
+
+    local Zones = self.ComponentBuilder:CreateContainer({
+        Parent = Page,
+        Layout = "TextLeft",
+        TextWidth = 0.55,
+        MinHeight = 35,
+        Padding = HasDescription and {
+            Top = self.Constants.Padding.Large,
+            Bottom = self.Constants.Padding.Large,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
         } or {
-            top = 0,
-            bottom = 0,
-            left = 10,
-            right = 0
+            Top = 2,
+            Bottom = 2,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
         },
-        spacing = hasDescription and 2 or 0,
-        hasDescription = hasDescription,
-        corner = 4,
-        colorTier = "SecondaryColor"
-    }, theme)
+        Spacing = HasDescription and self.Constants.Spacing.Tight or 0,
+        HasDescription = HasDescription,
+        CornerRadius = self.Constants.Corner.Medium,
+        ColorTier = "Secondary"
+    }, Theme)
 
-    local label = self:createLabel(zones.textZone, text, theme, {
-        colorTier = "TextPrimary",
-        size = 14,
-        order = 1
+    local Label = self.ComponentBuilder:CreateLabel(Zones.TextZone, Text, Theme, {
+        ColorTier = "TextPrimary",
+        Size = 14,
+        Order = 1
     })
 
-    local description =
-        hasDescription and self:createDescription(zones.textZone, dropdownOptions.Description, theme, 2) or nil
+    local Description = HasDescription and
+                            self.ComponentBuilder:CreateDescription(Zones.TextZone, Options.Description, Theme, 2) or
+                            nil
 
-    local display = self:createElement("TextButton", {
-        Size = UDim2.new(0, 160, 0, 30),
+    local InputContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0.45, -self.Constants.Padding.Large, 1, 0),
+        Position = UDim2.new(0.55, 0, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Zones.Container)
+
+    local InputBox = self.Utility:CreateInstance("TextBox", {
+        Size = UDim2.new(1, -10, 0, 32),
         Position = UDim2.new(1, -10, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = theme.TertiaryColor,
+        BackgroundColor3 = Theme.Tertiary,
+        BorderSizePixel = 0,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        Text = DefaultValue or "",
+        PlaceholderText = Options.Placeholder or "Enter text...",
+        TextColor3 = Theme.TextPrimary,
+        PlaceholderColor3 = Theme.TextSecondary,
+        TextSize = 13,
+        Font = Theme.FontSecondary,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, InputContainer)
+
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
+    }, InputBox)
+
+    self.Utility:CreateInstance("UIPadding", {
+        PaddingLeft = UDim.new(0, self.Constants.Padding.Medium),
+        PaddingRight = UDim.new(0, self.Constants.Padding.Medium)
+    }, InputBox)
+
+    local Underline = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 2),
+        Position = UDim2.new(0, 0, 1, -2),
+        BackgroundColor3 = Theme.Tertiary,
+        BorderSizePixel = 0,
+        ZIndex = self.Constants.ZIndex.Modal
+    }, InputBox)
+
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(1, 0)
+    }, Underline)
+
+    local ErrorLabel = self.Utility:CreateInstance("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Text = "",
+        TextColor3 = Color3.fromRGB(255, 100, 100),
+        TextSize = 11,
+        Font = Theme.FontSecondary,
+        TextXAlignment = Enum.TextXAlignment.Right,
+        TextWrapped = true,
+        Visible = false,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, InputContainer)
+
+    local ThemeBindings = {
+        [Zones.Container] = {
+            BackgroundColor3 = "Secondary",
+            BackgroundTransparency = "TransparencySecondary"
+        },
+        [Label] = {
+            TextColor3 = "TextPrimary",
+            Font = "FontSecondary"
+        },
+        [InputBox] = {
+            TextColor3 = "TextPrimary",
+            PlaceholderColor3 = "TextSecondary",
+            BackgroundColor3 = "Tertiary",
+            Font = "FontSecondary"
+        },
+        [Underline] = {
+            BackgroundColor3 = "Tertiary"
+        }
+    }
+    if Description then
+        ThemeBindings[Description] = {
+            TextColor3 = "TextSecondary",
+            Font = "FontSecondary"
+        }
+    end
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
+    end
+
+    local IsFocused = false
+    local LastValidValue = DefaultValue or ""
+
+    local ValidationPatterns = {
+        Numbers = "^%-?%d+$",
+        Decimals = "^%-?%d*%.?%d*$",
+        Alphanumeric = "^[%a%d]+$"
+    }
+
+    local function validateInput(inputValue)
+        if InputType == "Text" then
+            return true
+        end
+        if inputValue == "" or (InputType == "Decimals" and inputValue == "-") then
+            return true
+        end
+
+        local pattern = ValidationPatterns[InputType]
+        return pattern and string.match(inputValue, pattern) ~= nil
+    end
+
+    local function showError(message)
+        ErrorLabel.Text = message
+        ErrorLabel.Visible = true
+        TweenService:Create(InputBox, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = Color3.fromRGB(100, 40, 40)
+        }):Play()
+    end
+
+    local function clearError()
+        ErrorLabel.Visible = false
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        TweenService:Create(InputBox, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = CurrentTheme.Tertiary
+        }):Play()
+    end
+
+    local function updateHover(state)
+        if IsFocused then
+            return
+        end
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        TweenService:Create(InputBox, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = state and CurrentTheme.TertiaryHover or CurrentTheme.Tertiary
+        }):Play()
+    end
+
+    InputBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local currentText = InputBox.Text
+        if not validateInput(currentText) then
+            InputBox.Text = LastValidValue
+            showError("Invalid " .. InputType)
+        else
+            LastValidValue = currentText
+            if IsFocused then
+                clearError()
+            end
+        end
+    end)
+
+    InputBox.Focused:Connect(function()
+        IsFocused = true
+        clearError()
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        TweenService:Create(Underline, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = CurrentTheme.Accent,
+            Size = UDim2.new(1, 0, 0, 3)
+        }):Play()
+        TweenService:Create(InputBox, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = CurrentTheme.TertiaryHover
+        }):Play()
+    end)
+
+    InputBox.FocusLost:Connect(function()
+        IsFocused = false
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        TweenService:Create(Underline, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = CurrentTheme.TertiaryPressed,
+            Size = UDim2.new(1, 0, 0, 2)
+        }):Play()
+        updateHover(false)
+        if validateInput(InputBox.Text) and Callback then
+            EH:Try(function()
+                Callback(InputBox.Text)
+            end)
+        else
+            InputBox.Text = LastValidValue
+        end
+    end)
+
+    if not IsMobile then
+        InputBox.MouseEnter:Connect(function()
+            updateHover(true)
+        end)
+        InputBox.MouseLeave:Connect(function()
+            updateHover(false)
+        end)
+    end
+
+    return {
+        GetValue = function(self)
+            return InputBox.Text
+        end,
+        SetValue = function(self, Value)
+            if EH:ValidateType(Value, "string", "Value", "TextInput:SetValue") and validateInput(Value) then
+                InputBox.Text = Value
+                LastValidValue = Value
+                clearError()
+            end
+        end,
+        SetPlaceholder = function(self, Placeholder)
+            if EH:ValidateType(Placeholder, "string", "Placeholder", "TextInput:SetPlaceholder") then
+                InputBox.PlaceholderText = Placeholder
+            end
+        end,
+        Clear = function(self)
+            InputBox.Text = ""
+            LastValidValue = ""
+            clearError()
+        end,
+        GetInputType = function(self)
+            return InputType
+        end,
+        SetInputType = function(self, NewType)
+            if ValidTypes[NewType] then
+                InputType = NewType
+                clearError()
+            end
+        end,
+        SetDescription = function(self, NewDescription)
+            local HadDescription = Description ~= nil and Description.Visible
+            local HasNewDescription = NewDescription and NewDescription ~= ""
+            if Description and NewDescription then
+                Description.Text = NewDescription
+                Description.Visible = true
+            elseif Description and not NewDescription then
+                Description.Visible = false
+            elseif not Description and NewDescription then
+                Description = SimpleUI.ComponentBuilder:CreateDescription(Zones.TextZone, NewDescription, Theme, 2)
+                if Window then
+                    SimpleUI.ThemeManager:RegisterElement(Window, Description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "FontSecondary"
+                    })
+                end
+            end
+            if HadDescription ~= HasNewDescription then
+                SimpleUI.ComponentBuilder:UpdateDescriptionPadding(Zones, HasNewDescription)
+            end
+        end,
+        GetElements = function(self)
+            return {
+                Container = Zones.Container,
+                Label = Label,
+                Description = Description,
+                InputBox = InputBox,
+                Underline = Underline,
+                ErrorLabel = ErrorLabel
+            }
+        end
+    }
+end
+
+function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
+    local EH = self.ErrorHandler
+    if not EH:ValidateInstance(Page, "GuiObject", "CreateKeybind") then
+        return nil
+    end
+    if not EH:ValidateType(Text, "string", "Text", "CreateKeybind") then
+        Text = "Keybind"
+    end
+    if DefaultKey and typeof(DefaultKey) ~= "EnumItem" then
+        EH:Guard(false, "CreateKeybind", "DefaultKey must be a KeyCode Enum", EH.Levels.WARN)
+        DefaultKey = nil
+    elseif DefaultKey and DefaultKey.EnumType ~= Enum.KeyCode then
+        EH:Guard(false, "CreateKeybind", "DefaultKey must be a KeyCode (not " .. tostring(DefaultKey.EnumType) .. ")",
+            EH.Levels.WARN)
+        DefaultKey = nil
+    end
+    if Callback then
+        Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateKeybind") == false) and nil or Callback
+    end
+    Options = Options or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local IsMobile = self.Utility:IsMobile()
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local HasDescription = Options.Description and Options.Description ~= ""
+
+    local Zones = self.ComponentBuilder:CreateContainer({
+        Parent = Page,
+        Layout = "TextLeft",
+        TextWidth = 0.65,
+        MinHeight = 35,
+        Padding = HasDescription and {
+            Top = self.Constants.Padding.Large,
+            Bottom = self.Constants.Padding.Large,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
+        } or {
+            Top = 2,
+            Bottom = 2,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
+        },
+        Spacing = HasDescription and self.Constants.Spacing.Tight or 0,
+        HasDescription = HasDescription,
+        CornerRadius = self.Constants.Corner.Medium,
+        ColorTier = "Secondary"
+    }, Theme)
+
+    local Label = self.ComponentBuilder:CreateLabel(Zones.TextZone, Text, Theme, {
+        ColorTier = "TextPrimary",
+        Size = 14,
+        Order = 1
+    })
+
+    local Description = HasDescription and
+                            self.ComponentBuilder:CreateDescription(Zones.TextZone, Options.Description, Theme, 2) or
+                            nil
+
+    local DisplayContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0.35, -self.Constants.Padding.Large, 1, 0),
+        Position = UDim2.new(0.65, 0, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Zones.Container)
+
+    local Display = self.Utility:CreateInstance("TextButton", {
+        Size = UDim2.new(1, -10, 0, 32),
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = Theme.Tertiary,
         BorderSizePixel = 0,
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 5
-    }, zones.container)
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, DisplayContainer)
 
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(0, 4)
-    }, display)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
+    }, Display)
 
-    local displayLabel = self:createElement("TextLabel", {
-        Size = UDim2.new(1, -28, 1, 0),
-        Position = UDim2.new(0, 8, 0, 0),
+    self.Utility:CreateInstance("UIPadding", {
+        PaddingLeft = UDim.new(0, self.Constants.Padding.Medium),
+        PaddingRight = UDim.new(0, self.Constants.Padding.Medium)
+    }, Display)
+
+    local DisplayLabel = self.Utility:CreateInstance("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "",
-        TextColor3 = theme.TextPrimary,
+        TextColor3 = Theme.TextPrimary,
         TextSize = 13,
-        Font = theme.SecondaryFont,
+        Font = Theme.FontSecondary,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ZIndex = self.Constants.ZIndex.Modal
+    }, Display)
+
+    local ThemeBindings = {
+        [Zones.Container] = {
+            BackgroundColor3 = "Secondary",
+            BackgroundTransparency = "TransparencySecondary"
+        },
+        [Label] = {
+            TextColor3 = "TextPrimary",
+            Font = "FontSecondary"
+        },
+        [DisplayLabel] = {
+            TextColor3 = "TextPrimary",
+            Font = "FontSecondary"
+        }
+    }
+    if Description then
+        ThemeBindings[Description] = {
+            TextColor3 = "TextSecondary",
+            Font = "FontSecondary"
+        }
+    end
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
+    end
+
+    local CurrentKey = DefaultKey
+    local IsListening = false
+    local BindConnection
+    local InputConnection
+
+    local function UpdateDisplay()
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        if IsListening then
+            DisplayLabel.Text = "Press a key..."
+            TweenService:Create(Display, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                BackgroundColor3 = CurrentTheme.Accent
+            }):Play()
+            TweenService:Create(DisplayLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                TextColor3 = CurrentTheme.TextActive
+            }):Play()
+        else
+            DisplayLabel.Text = CurrentKey and CurrentKey.Name or "None"
+            TweenService:Create(Display, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                BackgroundColor3 = CurrentTheme.Tertiary
+            }):Play()
+            TweenService:Create(DisplayLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+                TextColor3 = CurrentTheme.TextPrimary
+            }):Play()
+        end
+    end
+
+    local function SetupBind()
+        if BindConnection then
+            BindConnection:Disconnect()
+        end
+        if CurrentKey and Callback then
+            BindConnection = UserInputService.InputBegan:Connect(
+                function(Input, GameProcessed)
+                    if not GameProcessed and Input.KeyCode == CurrentKey then
+                        EH:Try(function()
+                            Callback(CurrentKey)
+                        end)
+                    end
+                end)
+        end
+    end
+
+    Display.Activated:Connect(function()
+        if IsListening then
+            return
+        end
+        IsListening = true
+        UpdateDisplay()
+        InputConnection = UserInputService.InputBegan:Connect(
+            function(Input, GameProcessed)
+                if Input.UserInputType == Enum.UserInputType.Keyboard then
+                    CurrentKey = Input.KeyCode
+                    IsListening = false
+                    if InputConnection then
+                        InputConnection:Disconnect()
+                        InputConnection = nil
+                    end
+                    UpdateDisplay()
+                    SetupBind()
+                end
+            end)
+    end)
+
+    if not IsMobile then
+        Display.MouseEnter:Connect(function()
+            if not IsListening then
+                local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+                TweenService:Create(Display, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+                    BackgroundColor3 = CurrentTheme.TertiaryHover
+                }):Play()
+            end
+        end)
+        Display.MouseLeave:Connect(function()
+            if not IsListening then
+                local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+                TweenService:Create(Display, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+                    BackgroundColor3 = CurrentTheme.Tertiary
+                }):Play()
+            end
+        end)
+    end
+
+    UpdateDisplay()
+    SetupBind()
+
+    if Window then
+        self.ThemeManager:RegisterElement(Window, Display, {
+            BackgroundColor3 = function(Element, Theme)
+                if not IsListening then
+                    Element.BackgroundColor3 = Theme.Tertiary
+                end
+            end
+        })
+    end
+
+    return {
+        GetKey = function(self)
+            return CurrentKey
+        end,
+        SetKey = function(self, Key)
+            if Key and typeof(Key) ~= "EnumItem" then
+                EH:Guard(false, "Keybind:SetKey", "Key must be a KeyCode Enum", EH.Levels.WARN)
+                return
+            end
+            CurrentKey = Key
+            UpdateDisplay()
+            SetupBind()
+        end,
+        Clear = function(self)
+            CurrentKey = nil
+            UpdateDisplay()
+            if BindConnection then
+                BindConnection:Disconnect()
+                BindConnection = nil
+            end
+        end,
+        SetDescription = function(self, NewDescription)
+            local HadDescription = Description ~= nil and Description.Visible
+            local HasNewDescription = NewDescription and NewDescription ~= ""
+            if Description and NewDescription then
+                Description.Text = NewDescription
+                Description.Visible = true
+            elseif Description and not NewDescription then
+                Description.Visible = false
+            elseif not Description and NewDescription then
+                Description = SimpleUI.ComponentBuilder:CreateDescription(Zones.TextZone, NewDescription, Theme, 2)
+                if Window then
+                    SimpleUI.ThemeManager:RegisterElement(Window, Description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "FontSecondary"
+                    })
+                end
+            end
+            if HadDescription ~= HasNewDescription then
+                SimpleUI.ComponentBuilder:UpdateDescriptionPadding(Zones, HasNewDescription)
+            end
+        end,
+        GetElements = function(self)
+            return {
+                Container = Zones.Container,
+                Label = Label,
+                Description = Description,
+                Display = Display,
+                DisplayLabel = DisplayLabel
+            }
+        end
+    }
+end
+
+function SimpleUI:CreateSlider(Page, Text, Min, Max, DefaultValue, Callback, Options)
+    local EH = self.ErrorHandler
+    if not EH:ValidateInstance(Page, "GuiObject", "CreateSlider") then
+        return nil
+    end
+    if not EH:ValidateType(Text, "string", "Text", "CreateSlider") then
+        Text = "Slider"
+    end
+    if not EH:ValidateType(Min, "number", "Min", "CreateSlider") then
+        Min = 0
+    end
+    if not EH:ValidateType(Max, "number", "Max", "CreateSlider") then
+        Max = 100
+    end
+    if Min >= Max then
+        EH:Guard(false, "CreateSlider", "Min must be less than Max, swapping values", EH.Levels.WARN)
+        Min, Max = Max, Min
+    end
+    if DefaultValue then
+        if not EH:ValidateType(DefaultValue, "number", "DefaultValue", "CreateSlider") then
+            DefaultValue = Min
+        else
+            DefaultValue = math.clamp(DefaultValue, Min, Max)
+        end
+    else
+        DefaultValue = Min
+    end
+    if Callback then
+        Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateSlider") == false) and nil or Callback
+    end
+    Options = Options or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local Increment = Options.Increment or 1
+    if not EH:ValidateType(Increment, "number", "Increment", "CreateSlider") then
+        Increment = 1
+    elseif Increment <= 0 then
+        EH:Guard(false, "CreateSlider", "Increment must be positive, using 1", EH.Levels.WARN)
+        Increment = 1
+    end
+    local HasDescription = Options.Description and Options.Description ~= ""
+    local Zones = self.ComponentBuilder:CreateContainer({
+        Parent = Page,
+        Layout = "Stacked",
+        MinHeight = 50,
+        Padding = HasDescription and {
+            Top = self.Constants.Padding.Large,
+            Bottom = self.Constants.Padding.Large,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
+        } or {
+            Top = 2,
+            Bottom = 2,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
+        },
+        Spacing = HasDescription and self.Constants.Spacing.Normal or self.Constants.Spacing.Tight,
+        HasDescription = HasDescription,
+        CornerRadius = self.Constants.Corner.Medium,
+        ColorTier = "Secondary"
+    }, Theme)
+    local LabelContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 20),
+        BackgroundTransparency = 1,
+        LayoutOrder = 1,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Zones.TextZone)
+    local Label = self.ComponentBuilder:CreateLabel(LabelContainer, Text, Theme, {
+        ColorTier = "TextPrimary",
+        Size = 14,
+        WidthOffset = -60
+    })
+    local ValueLabel = self.Utility:CreateInstance("TextLabel", {
+        Size = UDim2.new(0, 50, 1, 0),
+        Position = UDim2.new(1, 0, 0, 0),
+        AnchorPoint = Vector2.new(1, 0),
+        BackgroundTransparency = 1,
+        Text = tostring(DefaultValue or Min),
+        TextColor3 = Theme.TextSecondary,
+        TextSize = 13,
+        Font = Theme.FontSecondary,
+        TextXAlignment = Enum.TextXAlignment.Right,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, LabelContainer)
+    local Description = HasDescription and
+                            self.ComponentBuilder:CreateDescription(Zones.TextZone, Options.Description, Theme, 2) or
+                            nil
+    local TrackContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 24),
+        BackgroundTransparency = 1,
+        LayoutOrder = 3,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Zones.TextZone)
+    local Track = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 4),
+        Position = UDim2.new(0, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundColor3 = Theme.TertiaryPressed,
+        BorderSizePixel = 0,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, TrackContainer)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(1, 0)
+    }, Track)
+    local Fill = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0, 0, 1, 0),
+        BackgroundColor3 = Theme.Accent,
+        BorderSizePixel = 0,
+        ZIndex = self.Constants.ZIndex.Modal
+    }, Track)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(1, 0)
+    }, Fill)
+    local Thumb = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(0, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Theme.TextActive,
+        BorderSizePixel = 0,
+        ZIndex = self.Constants.ZIndex.Notification
+    }, Track)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(1, 0)
+    }, Thumb)
+    local ThemeBindings = {
+        [Zones.Container] = {
+            BackgroundColor3 = "Secondary",
+            BackgroundTransparency = "TransparencySecondary"
+        },
+        [Label] = {
+            TextColor3 = "TextPrimary",
+            Font = "FontSecondary"
+        },
+        [ValueLabel] = {
+            TextColor3 = "TextSecondary",
+            Font = "FontSecondary"
+        },
+        [Track] = {
+            BackgroundColor3 = "TertiaryPressed"
+        },
+        [Fill] = {
+            BackgroundColor3 = "Accent"
+        },
+        [Thumb] = {
+            BackgroundColor3 = "TextActive"
+        }
+    }
+    if Description then
+        ThemeBindings[Description] = {
+            TextColor3 = "TextSecondary",
+            Font = "FontSecondary"
+        }
+    end
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
+    end
+    local IsDragging = false
+    local Value = DefaultValue or Min
+    local function RoundToIncrement(Number)
+        return math.floor(Number / Increment + 0.5) * Increment
+    end
+    local function UpdateSlider(NewValue)
+        Value = math.clamp(RoundToIncrement(NewValue), Min, Max)
+        local Percent = (Value - Min) / (Max - Min)
+        Fill.Size = UDim2.new(Percent, 0, 1, 0)
+        Thumb.Position = UDim2.new(Percent, 0, 0.5, 0)
+        ValueLabel.Text = tostring(Value)
+        if Callback then
+            EH:Try(function()
+                Callback(Value)
+            end)
+        end
+    end
+    local function HandleInput(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+            IsDragging = true
+            local Percent = math.clamp((Input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
+            UpdateSlider(Min + (Max - Min) * Percent)
+        end
+    end
+    Track.InputBegan:Connect(HandleInput)
+    Thumb.InputBegan:Connect(HandleInput)
+    UserInputService.InputChanged:Connect(function(Input)
+        if IsDragging and
+            (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+            local Percent = math.clamp((Input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
+            UpdateSlider(Min + (Max - Min) * Percent)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(Input)
+        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+            IsDragging = false
+        end
+    end)
+    UpdateSlider(Value)
+    return {
+        GetValue = function(self)
+            return Value
+        end,
+        SetValue = function(self, NewValue)
+            if EH:ValidateType(NewValue, "number", "NewValue", "Slider:SetValue") then
+                UpdateSlider(NewValue)
+            end
+        end,
+        SetMin = function(self, NewMin)
+            if EH:ValidateType(NewMin, "number", "NewMin", "Slider:SetMin") then
+                if NewMin < Max then
+                    Min = NewMin
+                    UpdateSlider(Value)
+                else
+                    EH:Guard(false, "Slider:SetMin", "Min must be less than Max", EH.Levels.WARN)
+                end
+            end
+        end,
+        SetMax = function(self, NewMax)
+            if EH:ValidateType(NewMax, "number", "NewMax", "Slider:SetMax") then
+                if NewMax > Min then
+                    Max = NewMax
+                    UpdateSlider(Value)
+                else
+                    EH:Guard(false, "Slider:SetMax", "Max must be greater than Min", EH.Levels.WARN)
+                end
+            end
+        end,
+        SetDescription = function(self, NewDescription)
+            local HadDescription = Description ~= nil and Description.Visible
+            local HasNewDescription = NewDescription and NewDescription ~= ""
+            if Description and NewDescription then
+                Description.Text = NewDescription
+                Description.Visible = true
+            elseif Description and not NewDescription then
+                Description.Visible = false
+            elseif not Description and NewDescription then
+                Description = SimpleUI.ComponentBuilder:CreateDescription(Zones.TextZone, NewDescription, Theme, 2)
+                if Window then
+                    SimpleUI.ThemeManager:RegisterElement(Window, Description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "FontSecondary"
+                    })
+                end
+            end
+            if HadDescription ~= HasNewDescription then
+                SimpleUI.ComponentBuilder:UpdateDescriptionPadding(Zones, HasNewDescription)
+            end
+        end,
+        GetElements = function(self)
+            return {
+                Container = Zones.Container,
+                Label = Label,
+                ValueLabel = ValueLabel,
+                Description = Description,
+                Track = Track,
+                Fill = Fill,
+                Thumb = Thumb
+            }
+        end
+    }
+end
+
+function SimpleUI:CreateParagraph(Page, Title, Fields, Options)
+    local EH = self.ErrorHandler
+    if not EH:ValidateInstance(Page, "GuiObject", "CreateParagraph") then
+        return nil
+    end
+    if not EH:ValidateType(Title, "string", "Title", "CreateParagraph") then
+        Title = "Paragraph"
+    end
+    if Fields and not EH:ValidateType(Fields, "table", "Fields", "CreateParagraph") then
+        Fields = {}
+    end
+    Options = Options or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local Container = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = Theme.Secondary,
+        BackgroundTransparency = Theme.TransparencySecondary,
+        BorderSizePixel = 0,
+        ZIndex = self.Constants.ZIndex.Control
+    }, Page)
+    if not Container then
+        EH:Guard(false, "CreateParagraph", "Failed to create container", EH.Levels.ERROR)
+        return nil
+    end
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
+    }, Container)
+    self.Utility:CreateInstance("UIPadding", {
+        PaddingTop = UDim.new(0, self.Constants.Padding.Large),
+        PaddingBottom = UDim.new(0, self.Constants.Padding.Large),
+        PaddingLeft = UDim.new(0, self.Constants.Padding.Large),
+        PaddingRight = UDim.new(0, self.Constants.Padding.Large)
+    }, Container)
+    local ContentFrame = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Container)
+    self.Utility:CreateInstance("UIListLayout", {
+        FillDirection = Enum.FillDirection.Vertical,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+        VerticalAlignment = Enum.VerticalAlignment.Top,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, self.Constants.Spacing.Normal)
+    }, ContentFrame)
+    local TitleLabelProperties, TitleBindings = self.Utility:ApplyTheme({
+        Size = UDim2.new(1, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = Title or "Paragraph",
+        TextSize = 16,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        TextWrapped = true,
+        LayoutOrder = 0,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, {
+        TextColor3 = "TextActive",
+        Font = "FontPrimary"
+    }, Theme)
+    local TitleLabel = self.Utility:CreateInstance("TextLabel", TitleLabelProperties, ContentFrame)
+    local ThemeBindings = {
+        [Container] = {
+            BackgroundColor3 = "Secondary",
+            BackgroundTransparency = "TransparencySecondary"
+        },
+        [TitleLabel] = TitleBindings
+    }
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
+    end
+    local FieldElements = {}
+    local FieldCounter = 0
+    local function CreateField(FieldData, LayoutOrder)
+        if type(FieldData) ~= "table" and type(FieldData) ~= "string" then
+            EH:Guard(false, "Paragraph:CreateField", "Invalid field data type", EH.Levels.WARN)
+            return nil
+        end
+        FieldCounter = FieldCounter + 1
+        local FieldId = "Field_" .. FieldCounter
+        local IsSubField = FieldData.IsSubField or false
+        local FieldText = type(FieldData) == "string" and FieldData or (FieldData.Text or "")
+        if not EH:ValidateType(FieldText, "string", "FieldText", "Paragraph:CreateField") then
+            FieldText = ""
+        end
+        local FieldProperties, FieldBindings = self.Utility:ApplyTheme({
+            Size = UDim2.new(1, IsSubField and -20 or 0, 0, 0),
+            Position = IsSubField and UDim2.new(0, 20, 0, 0) or UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            Text = FieldText,
+            TextSize = IsSubField and 13 or 14,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            AutomaticSize = Enum.AutomaticSize.Y,
+            TextWrapped = true,
+            LayoutOrder = LayoutOrder or (FieldCounter + 1),
+            ZIndex = self.Constants.ZIndex.Overlay
+        }, {
+            TextColor3 = IsSubField and "TextSecondary" or "TextPrimary",
+            Font = "FontSecondary"
+        }, Theme)
+        local Field = self.Utility:CreateInstance("TextLabel", FieldProperties, ContentFrame)
+        if not Field then
+            EH:Guard(false, "Paragraph:CreateField", "Failed to create field", EH.Levels.WARN)
+            return nil
+        end
+        if Window then
+            self.ThemeManager:RegisterElement(Window, Field, FieldBindings)
+        end
+        FieldElements[FieldId] = {
+            Element = Field,
+            Data = type(FieldData) == "table" and FieldData or {
+                Text = FieldData,
+                IsSubField = false
+            },
+            Id = FieldId
+        }
+        return FieldId, Field
+    end
+    if Fields and type(Fields) == "table" then
+        for Index, FieldData in ipairs(Fields) do
+            EH:Try(function()
+                CreateField(FieldData, Index)
+            end)
+        end
+    end
+    return {
+        AddField = function(self, Text, IsSubField, Position)
+            if not EH:ValidateType(Text, "string", "Text", "Paragraph:AddField") then
+                return nil
+            end
+            return EH:Try(function()
+                return CreateField({
+                    Text = Text,
+                    IsSubField = IsSubField or false
+                }, Position or (FieldCounter + 2))
+            end)
+        end,
+        RemoveField = function(self, FieldId)
+            if not EH:ValidateType(FieldId, "string", "FieldId", "Paragraph:RemoveField") then
+                return false
+            end
+            if not FieldElements[FieldId] then
+                EH:Guard(false, "Paragraph:RemoveField", string.format("Field '%s' not found", FieldId), EH.Levels.WARN)
+                return false
+            end
+            return EH:Try(function()
+                FieldElements[FieldId].Element:Destroy()
+                FieldElements[FieldId] = nil
+                return true
+            end, function()
+                return false
+            end)
+        end,
+        SetField = function(self, FieldId, Text)
+            if not EH:ValidateType(FieldId, "string", "FieldId", "Paragraph:SetField") then
+                return false
+            end
+            if not EH:ValidateType(Text, "string", "Text", "Paragraph:SetField") then
+                return false
+            end
+            if not FieldElements[FieldId] then
+                EH:Guard(false, "Paragraph:SetField", string.format("Field '%s' not found", FieldId), EH.Levels.WARN)
+                return false
+            end
+            return EH:Try(function()
+                FieldElements[FieldId].Element.Text = Text
+                FieldElements[FieldId].Data.Text = Text
+                return true
+            end, function()
+                return false
+            end)
+        end,
+        GetField = function(self, FieldId)
+            if not EH:ValidateType(FieldId, "string", "FieldId", "Paragraph:GetField") then
+                return nil
+            end
+            return FieldElements[FieldId] and FieldElements[FieldId].Data.Text or nil
+        end,
+        FindField = function(self, SearchText)
+            if not EH:ValidateType(SearchText, "string", "SearchText", "Paragraph:FindField") then
+                return nil
+            end
+            for Id, FieldData in pairs(FieldElements) do
+                if FieldData.Data.Text:find(SearchText, 1, true) then
+                    return Id, FieldData.Data.Text
+                end
+            end
+            return nil
+        end,
+        GetAllFields = function(self)
+            local Result = {}
+            for Id, FieldData in pairs(FieldElements) do
+                table.insert(Result, {
+                    Id = Id,
+                    Text = FieldData.Data.Text,
+                    IsSubField = FieldData.Data.IsSubField
+                })
+            end
+            return Result
+        end,
+        SetFields = function(self, NewFields)
+            if not EH:ValidateType(NewFields, "table", "NewFields", "Paragraph:SetFields") then
+                return false
+            end
+            return EH:Try(function()
+                for Id, FieldData in pairs(FieldElements) do
+                    FieldData.Element:Destroy()
+                end
+                FieldElements = {}
+                FieldCounter = 0
+                if NewFields and type(NewFields) == "table" then
+                    for Index, FieldData in ipairs(NewFields) do
+                        CreateField(FieldData, Index)
+                    end
+                end
+                return true
+            end, function()
+                return false
+            end)
+        end,
+        ClearFields = function(self)
+            return EH:Try(function()
+                for Id, FieldData in pairs(FieldElements) do
+                    FieldData.Element:Destroy()
+                end
+                FieldElements = {}
+                FieldCounter = 0
+                return true
+            end, function()
+                return false
+            end)
+        end,
+        SetTitle = function(self, NewTitle)
+            if not EH:ValidateType(NewTitle, "string", "NewTitle", "Paragraph:SetTitle") then
+                return false
+            end
+            TitleLabel.Text = NewTitle
+            return true
+        end,
+        GetFieldCount = function(self)
+            local Count = 0
+            for _ in pairs(FieldElements) do
+                Count = Count + 1
+            end
+            return Count
+        end,
+        GetElements = function(self)
+            return {
+                Container = Container,
+                ContentFrame = ContentFrame,
+                TitleLabel = TitleLabel,
+                Fields = FieldElements
+            }
+        end
+    }
+end
+
+function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, DropdownOptions)
+    local EH = self.ErrorHandler
+    if not EH:ValidateInstance(Page, "GuiObject", "CreateDropdown") then
+        return nil
+    end
+    if not EH:ValidateType(Text, "string", "Text", "CreateDropdown") then
+        Text = "Dropdown"
+    end
+    if not EH:ValidateType(Options, "table", "Options", "CreateDropdown") then
+        Options = {}
+    end
+    if #Options == 0 then
+        EH:Guard(false, "CreateDropdown", "Options array is empty", EH.Levels.WARN)
+    end
+    if Callback and not EH:ValidateType(Callback, "function", "Callback", "CreateDropdown") then
+        Callback = nil
+    end
+    DropdownOptions = DropdownOptions or {}
+    local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
+    local IsMobile = self.Utility:IsMobile()
+    local Window = self.Utility:GetWindowFromElement(Page)
+    local IsMultiSelect = DropdownOptions.MultiSelect or false
+    local ChangedEvent = Instance.new("BindableEvent")
+    local HasDescription = DropdownOptions.Description and DropdownOptions.Description ~= ""
+
+    local Zones = self.ComponentBuilder:CreateContainer({
+        Parent = Page,
+        Layout = "TextLeft",
+        TextWidth = 0.55,
+        MinHeight = 35,
+        Padding = HasDescription and {
+            Top = self.Constants.Padding.Large,
+            Bottom = self.Constants.Padding.Large,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
+        } or {
+            Top = 2,
+            Bottom = 2,
+            Left = self.Constants.Padding.Large,
+            Right = self.Constants.Padding.Small
+        },
+        Spacing = HasDescription and self.Constants.Spacing.Tight or 0,
+        HasDescription = HasDescription,
+        CornerRadius = self.Constants.Corner.Medium,
+        ColorTier = "Secondary"
+    }, Theme)
+
+    local Label = self.ComponentBuilder:CreateLabel(Zones.TextZone, Text, Theme, {
+        ColorTier = "TextPrimary",
+        Size = 14,
+        Order = 1
+    })
+
+    local Description = HasDescription and
+                            self.ComponentBuilder:CreateDescription(Zones.TextZone, DropdownOptions.Description, Theme,
+            2) or nil
+
+    local DisplayContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0.45, -self.Constants.Padding.Large, 1, 0),
+        Position = UDim2.new(0.55, 0, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, Zones.Container)
+
+    local Display = self.Utility:CreateInstance("TextButton", {
+        Size = UDim2.new(1, -10, 0, 32),
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = Theme.Tertiary,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = self.Constants.ZIndex.Overlay
+    }, DisplayContainer)
+
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
+    }, Display)
+
+    local DisplayLabel = self.Utility:CreateInstance("TextLabel", {
+        Size = UDim2.new(1, -32, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        TextColor3 = Theme.TextPrimary,
+        TextSize = 13,
+        Font = Theme.FontSecondary,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 6
-    }, display)
+        ZIndex = self.Constants.ZIndex.Modal
+    }, Display)
 
-    local arrow = self:createElement("ImageLabel", {
-        Size = UDim2.new(0, 12, 0, 12),
-        Position = UDim2.new(1, -8, 0.5, 0),
+    local Arrow = self.Utility:CreateInstance("ImageLabel", {
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(1, -10, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
         BackgroundTransparency = 1,
         Image = "rbxassetid://10709790948",
-        ImageColor3 = theme.TextPrimary,
-        ZIndex = 6
-    }, display)
+        ImageColor3 = Theme.TextPrimary,
+        ZIndex = self.Constants.ZIndex.Modal
+    }, Display)
 
-    local themeRegistry = {
-        [zones.container] = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
+    local ThemeBindings = {
+        [Zones.Container] = {
+            BackgroundColor3 = "Secondary",
+            BackgroundTransparency = "TransparencySecondary"
         },
-        [label] = {
+        [Label] = {
             TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
+            Font = "FontSecondary"
         },
-        [display] = {
-            BackgroundColor3 = "TertiaryColor"
+        [Display] = {
+            BackgroundColor3 = "Tertiary"
         },
-
-        [displayLabel] = {
+        [DisplayLabel] = {
             TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
+            Font = "FontSecondary"
         },
-        [arrow] = {
+        [Arrow] = {
             ImageColor3 = "TextPrimary"
         }
     }
-
-    if description then
-        themeRegistry[description] = {
+    if Description then
+        ThemeBindings[Description] = {
             TextColor3 = "TextSecondary",
-            Font = "SecondaryFont"
+            Font = "FontSecondary"
         }
     end
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    local displayState = "Base"
-    local isOpen = false
-
-    local function updateDisplayColor()
-        local currentTheme = window and self:getCurrentTheme(window) or theme
-        if displayState == "Base" then
-            display.BackgroundColor3 = currentTheme.TertiaryColor
-        elseif displayState == "Hover" then
-            display.BackgroundColor3 = currentTheme.TertiaryColorHover
-        elseif displayState == "Active" then
-            display.BackgroundColor3 = currentTheme.TertiaryColorActive
-        elseif displayState == "Mouse1Down" then
-            display.BackgroundColor3 = currentTheme.TertiaryColorMouse1Down
-        end
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
     end
 
-    if not mobile then
-        display.MouseEnter:Connect(function()
-            if not isOpen then
-                displayState = "Hover"
-                updateDisplayColor()
-            end
-        end)
-        display.MouseLeave:Connect(function()
-            displayState = "Base"
-            updateDisplayColor()
-        end)
-        display.MouseButton1Down:Connect(function()
-            displayState = "Mouse1Down"
-            updateDisplayColor()
-        end)
-        display.MouseButton1Up:Connect(function()
-            displayState = "Hover"
-            updateDisplayColor()
-        end)
-    end
-
-    local gui = page
-    while gui do
-        if gui:IsA("ScreenGui") then
+    local ScreenGui = Page
+    while ScreenGui do
+        if ScreenGui:IsA("ScreenGui") then
             break
         end
-        gui = gui.Parent
+        ScreenGui = ScreenGui.Parent
+    end
+    if not ScreenGui then
+        EH:Guard(false, "CreateDropdown", "Failed to find ScreenGui parent", EH.Levels.ERROR)
+        return nil
     end
 
-    local listContainer = self:createElement("Frame", {
-        Size = UDim2.new(0, 160, 0, 0),
-        BackgroundColor3 = theme.TertiaryColor,
-        BackgroundTransparency = theme.PrimaryTransparency,
+    local ListContainer = self.Utility:CreateInstance("Frame", {
+        Size = UDim2.new(0, Display.AbsoluteSize.X, 0, 0),
+        BackgroundColor3 = Theme.Tertiary,
+        BackgroundTransparency = Theme.TransparencyPrimary,
         BorderSizePixel = 0,
         Visible = false,
-        ZIndex = 250,
+        ZIndex = self.Constants.ZIndex.Modal,
         ClipsDescendants = true
-    }, gui)
+    }, ScreenGui)
 
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(0, 4)
-    }, listContainer)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
+    }, ListContainer)
 
-    local searchBox = self:createElement("TextBox", {
-        Size = UDim2.new(1, -8, 0, 28),
+    local SearchBox = self.Utility:CreateInstance("TextBox", {
+        Size = UDim2.new(1, -8, 0, 30),
         Position = UDim2.new(0, 4, 0, 4),
-        BackgroundColor3 = theme.TertiaryColor,
+        BackgroundColor3 = Theme.Tertiary,
         BorderSizePixel = 0,
         Text = "",
         PlaceholderText = "Search...",
-        TextColor3 = theme.TextPrimary,
-        PlaceholderColor3 = theme.TextSecondary,
+        TextColor3 = Theme.TextPrimary,
+        PlaceholderColor3 = Theme.TextSecondary,
         TextSize = 13,
-        Font = theme.SecondaryFont,
+        Font = Theme.FontSecondary,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false,
         Visible = false,
-        ZIndex = 251
-    }, listContainer)
+        ZIndex = self.Constants.ZIndex.Modal + 1
+    }, ListContainer)
 
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(0, 4)
-    }, searchBox)
+    self.Utility:CreateInstance("UICorner", {
+        CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
+    }, SearchBox)
 
-    self:createElement("UIPadding", {
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8)
-    }, searchBox)
+    self.Utility:CreateInstance("UIPadding", {
+        PaddingLeft = UDim.new(0, self.Constants.Padding.Medium),
+        PaddingRight = UDim.new(0, self.Constants.Padding.Medium)
+    }, SearchBox)
 
-    if window then
-        self:registerMultipleThemeElements(window, {
-            [listContainer] = {
-                BackgroundColor3 = "TertiaryColor",
-                BackgroundTransparency = "PrimaryTransparency"
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, {
+            [ListContainer] = {
+                BackgroundColor3 = "Tertiary",
+                BackgroundTransparency = "TransparencyPrimary"
             },
-
-            [searchBox] = {
-                BackgroundColor3 = "TertiaryColor",
+            [SearchBox] = {
+                BackgroundColor3 = "Tertiary",
                 TextColor3 = "TextPrimary",
                 PlaceholderColor3 = "TextSecondary",
-                Font = "SecondaryFont"
+                Font = "FontSecondary"
             }
         })
     end
 
-    local scrollList = self:createElement("ScrollingFrame", {
-        Size = UDim2.new(1, 0, 1, -36),
-        Position = UDim2.new(0, 0, 0, 36),
+    local ScrollList = self.Utility:CreateInstance("ScrollingFrame", {
+        Size = UDim2.new(1, 0, 1, -38),
+        Position = UDim2.new(0, 0, 0, 38),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ScrollBarThickness = 0,
-        ScrollBarImageColor3 = theme.TextSecondary,
+        ScrollBarImageColor3 = Theme.TextSecondary,
         CanvasSize = UDim2.new(0, 0, 0, 0),
-        ZIndex = 251,
+        ZIndex = self.Constants.ZIndex.Modal + 1,
         AutomaticCanvasSize = Enum.AutomaticSize.Y
-    }, listContainer)
+    }, ListContainer)
 
-    local listLayout = self:createElement("UIListLayout", {
+    self.Utility:CreateInstance("UIListLayout", {
         FillDirection = Enum.FillDirection.Vertical,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         VerticalAlignment = Enum.VerticalAlignment.Top,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    }, scrollList)
+        Padding = UDim.new(0, self.Constants.Spacing.Tight)
+    }, ScrollList)
 
-    self:createElement("UIPadding", {
-        PaddingTop = UDim.new(0, 4),
-        PaddingBottom = UDim.new(0, 4),
-        PaddingLeft = UDim.new(0, 4),
-        PaddingRight = UDim.new(0, 4)
-    }, scrollList)
+    self.Utility:CreateInstance("UIPadding", {
+        PaddingTop = UDim.new(0, self.Constants.Spacing.Normal),
+        PaddingBottom = UDim.new(0, self.Constants.Spacing.Normal),
+        PaddingLeft = UDim.new(0, self.Constants.Spacing.Normal),
+        PaddingRight = UDim.new(0, self.Constants.Spacing.Normal)
+    }, ScrollList)
 
-    local normalizedOptions = {}
-    local optionDataMap = {}
-    for i, opt in ipairs(options) do
-        if type(opt) == "table" then
-            local displayText = opt.text or opt.Text or opt.label or opt.Label or tostring(opt)
-            normalizedOptions[i] = displayText
-            optionDataMap[displayText] = opt
-        else
-            normalizedOptions[i] = tostring(opt)
-            optionDataMap[tostring(opt)] = opt
+    local NormalizedOptions, OptionDataMap = self.DropdownManager:NormalizeOptions(Options)
+    local SelectedValues = self.DropdownManager:InitializeSelection(DefaultValue, IsMultiSelect, OptionDataMap)
+    local IsOpen = false
+    local IsToggling = false
+    local InputBlocker = nil
+    local TargetHeight = 0
+    local HasSearch = false
+    local InputConnection
+    local DisplayState = "Base"
+
+    local function UpdateDisplayColor()
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        local ColorGoal = CurrentTheme.Tertiary
+        local ArrowRotation = 0
+
+        if DisplayState == "Hover" then
+            ColorGoal = CurrentTheme.TertiaryHover
+        elseif DisplayState == "Active" then
+            ColorGoal = CurrentTheme.TertiaryActive
+            ArrowRotation = 180
+        elseif DisplayState == "Pressed" then
+            ColorGoal = CurrentTheme.TertiaryPressed
         end
+
+        TweenService:Create(Display, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = ColorGoal
+        }):Play()
+
+        TweenService:Create(Arrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+            Rotation = ArrowRotation
+        }):Play()
     end
 
-    local selectedValues = {}
-    if multiSelect then
-        if type(defaultValue) == "table" then
-            for _, v in ipairs(defaultValue) do
-                local normalized = type(v) == "table" and (v.text or v.Text or v.label or v.Label or tostring(v)) or
-                                       tostring(v)
-                selectedValues[normalized] = true
+    if not IsMobile then
+        Display.MouseEnter:Connect(function()
+            if not IsOpen then
+                DisplayState = "Hover"
+                UpdateDisplayColor()
             end
-        end
-    else
-        if defaultValue then
-            selectedValues = type(defaultValue) == "table" and
-                                 (defaultValue.text or defaultValue.Text or defaultValue.label or defaultValue.Label or
-                                     tostring(defaultValue)) or tostring(defaultValue)
-        else
-            selectedValues = nil
-        end
+        end)
+        Display.MouseLeave:Connect(function()
+            if not IsOpen then
+                DisplayState = "Base"
+                UpdateDisplayColor()
+            end
+        end)
+        Display.MouseButton1Down:Connect(function()
+            DisplayState = "Pressed"
+            UpdateDisplayColor()
+        end)
+        Display.MouseButton1Up:Connect(function()
+            if not IsOpen then
+                DisplayState = "Hover"
+            end
+            UpdateDisplayColor()
+        end)
     end
 
-    local isToggling = false
-    local inputBlocker = nil
-    local targetHeight = 0
-    local hasSearch = false
-    local userInputService = self:getService("UserInputService")
-    local tweenService = self:getService("TweenService")
-    local inputConnection
-
-    local function closeDropdown()
-        if inputBlocker then
-            inputBlocker:Destroy()
-            inputBlocker = nil
+    local function CloseDropdown()
+        if InputBlocker then
+            InputBlocker:Destroy()
+            InputBlocker = nil
         end
-        if not isOpen then
+        if not IsOpen then
             return
         end
-        isOpen = false
-        tweenService:Create(listContainer, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 160, 0, 0)
+        IsOpen = false
+        DisplayState = "Base"
+        UpdateDisplayColor()
+
+        TweenService:Create(ListContainer, TweenInfo.new(self.Constants.Animation.Fast, Enum.EasingStyle.Quad,
+            Enum.EasingDirection.In), {
+            Size = UDim2.new(0, Display.AbsoluteSize.X, 0, 0)
         }):Play()
-        task.wait(0.15)
-        listContainer.Visible = false
-        searchBox.Text = ""
-        isOpen = false
-        if inputConnection then
-            inputConnection:Disconnect()
-            inputConnection = nil
+        task.wait(self.Constants.Animation.Fast)
+        ListContainer.Visible = false
+        SearchBox.Text = ""
+
+        if InputConnection then
+            InputConnection:Disconnect()
+            InputConnection = nil
         end
     end
 
-    local function updateDisplay()
-        if multiSelect then
-            local selected = {}
-            for v, enabled in pairs(selectedValues) do
-                if enabled then
-                    table.insert(selected, v)
-                end
-            end
-            displayLabel.Text = #selected > 0 and table.concat(selected, ", ") or "Select"
-        else
-            displayLabel.Text = selectedValues or "Select"
-        end
+    local function UpdateDisplay()
+        self.DropdownManager:UpdateDisplayText(DisplayLabel, SelectedValues, IsMultiSelect)
     end
 
-    local function filterOptions(query)
-        query = query:lower()
-        for _, child in ipairs(scrollList:GetChildren()) do
-            if child:IsA("Frame") then
-                local opt = child:FindFirstChild("TextButton")
-                if opt then
-                    if query == "" or opt.Text:lower():find(query, 1, true) then
-                        child.Visible = true
+    local function FilterOptions(Query)
+        Query = Query:lower()
+        for _, Child in ipairs(ScrollList:GetChildren()) do
+            if Child:IsA("Frame") then
+                local OptionButton = Child:FindFirstChild("TextButton")
+                if OptionButton then
+                    if Query == "" or OptionButton.Text:lower():find(Query, 1, true) then
+                        Child.Visible = true
                     else
-                        child.Visible = false
+                        Child.Visible = false
                     end
                 end
             end
         end
     end
 
-    local function updateListPosition()
-        local displayPos = display.AbsolutePosition
-        local displaySize = display.AbsoluteSize
-        local screenSize = gui.AbsoluteSize
-        local baseMaxHeight = 150
-        local contentHeight = listLayout.AbsoluteContentSize.Y + 8
-        hasSearch = contentHeight > baseMaxHeight
-        searchBox.Visible = hasSearch
-        if hasSearch then
-            scrollList.Size = UDim2.new(1, 0, 1, -36)
-            scrollList.Position = UDim2.new(0, 0, 0, 36)
+    local function UpdateListPosition()
+        local DisplayPos = Display.AbsolutePosition
+        local DisplaySize = Display.AbsoluteSize
+        local ScreenSize = ScreenGui.AbsoluteSize
+        local BaseMaxHeight = 160
+        local Layout = ScrollList:FindFirstChildOfClass("UIListLayout")
+        local ContentHeight = Layout and Layout.AbsoluteContentSize.Y + 16 or 0
+        HasSearch = ContentHeight > BaseMaxHeight
+        SearchBox.Visible = HasSearch
+
+        if HasSearch then
+            ScrollList.Size = UDim2.new(1, 0, 1, -38)
+            ScrollList.Position = UDim2.new(0, 0, 0, 38)
         else
-            scrollList.Size = UDim2.new(1, 0, 1, 0)
-            scrollList.Position = UDim2.new(0, 0, 0, 0)
+            ScrollList.Size = UDim2.new(1, 0, 1, 0)
+            ScrollList.Position = UDim2.new(0, 0, 0, 0)
         end
-        targetHeight = math.min(baseMaxHeight, contentHeight) + (hasSearch and 36 or 0)
-        local yPos = displayPos.Y + displaySize.Y + 4
-        if yPos + targetHeight > screenSize.Y then
-            yPos = displayPos.Y - targetHeight - 4
+
+        TargetHeight = math.min(BaseMaxHeight, ContentHeight) + (HasSearch and 38 or 0)
+
+        local YPos = DisplayPos.Y + DisplaySize.Y + 4
+        if YPos + TargetHeight > ScreenSize.Y then
+            YPos = DisplayPos.Y - TargetHeight - 4
         end
-        listContainer.Position = UDim2.new(0, displayPos.X, 0, yPos)
+
+        ListContainer.Size = UDim2.new(0, DisplaySize.X, 0, 0)
+        ListContainer.Position = UDim2.new(0, DisplayPos.X, 0, YPos)
     end
 
-    local function createOption(optionText, index)
-        local currentTheme = window and self:getCurrentTheme(window) or theme
-
-        local optionContainer = self:createElement("Frame", {
-            Size = UDim2.new(1, -8, 0, 28),
+    local function CreateOption(OptionText, Index)
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        local OptionContainer = self.Utility:CreateInstance("Frame", {
+            Size = UDim2.new(1, -8, 0, 30),
             BackgroundTransparency = 1,
-            ZIndex = 252,
-            LayoutOrder = index
-        }, scrollList)
+            ZIndex = self.Constants.ZIndex.Modal + 2,
+            LayoutOrder = Index
+        }, ScrollList)
 
-        local option = self:createElement("TextButton", {
+        local OptionButton = self.Utility:CreateInstance("TextButton", {
             Size = UDim2.new(1, 0, 1, 0),
             Position = UDim2.new(0, 0, 0, 0),
-            BackgroundColor3 = currentTheme.TertiaryColor,
+            BackgroundColor3 = CurrentTheme.Tertiary,
             BorderSizePixel = 0,
-            Text = optionText,
-            TextColor3 = currentTheme.TextPrimary,
+            Text = OptionText,
+            TextColor3 = CurrentTheme.TextPrimary,
             TextSize = 13,
-            Font = currentTheme.SecondaryFont,
+            Font = CurrentTheme.FontSecondary,
             TextTruncate = Enum.TextTruncate.SplitWord,
             TextXAlignment = Enum.TextXAlignment.Left,
             AutoButtonColor = false,
-            ZIndex = 253
-        }, optionContainer)
+            ZIndex = self.Constants.ZIndex.Modal + 3
+        }, OptionContainer)
 
-        self:createElement("UICorner", {
-            CornerRadius = UDim.new(0, 3)
-        }, option)
+        self.Utility:CreateInstance("UICorner", {
+            CornerRadius = UDim.new(0, self.Constants.Corner.Small)
+        }, OptionButton)
 
-        self:createElement("UIPadding", {
+        self.Utility:CreateInstance("UIPadding", {
             PaddingLeft = UDim.new(0, 14),
-            PaddingRight = UDim.new(0, 8)
-        }, option)
+            PaddingRight = UDim.new(0, self.Constants.Padding.Medium)
+        }, OptionButton)
 
-        local indicator = self:createElement("Frame", {
+        local Indicator = self.Utility:CreateInstance("Frame", {
             Size = UDim2.new(0, 4, 0.5, 0),
             Position = UDim2.new(0, 2, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundColor3 = currentTheme.AccentColor,
+            BackgroundColor3 = CurrentTheme.Accent,
             BorderSizePixel = 0,
             Visible = false,
-            ZIndex = 254
-        }, optionContainer)
+            ZIndex = self.Constants.ZIndex.Modal + 4
+        }, OptionContainer)
 
-        self:createElement("UICorner", {
+        self.Utility:CreateInstance("UICorner", {
             CornerRadius = UDim.new(1, 0)
-        }, indicator)
+        }, Indicator)
 
-        if window then
-            self:registerThemeElement(window, option, {
-                BackgroundColor3 = "TertiaryColor",
+        if Window then
+            self.ThemeManager:RegisterElement(Window, OptionButton, {
+                BackgroundColor3 = "Tertiary",
                 TextColor3 = "TextPrimary",
-                Font = "SecondaryFont"
+                Font = "FontSecondary"
             })
-            self:registerThemeElement(window, indicator, {
-                BackgroundColor3 = "AccentColor"
+            self.ThemeManager:RegisterElement(Window, Indicator, {
+                BackgroundColor3 = "Accent"
             })
         end
 
-        if multiSelect then
-            local function updateIndicator()
-                indicator.Visible = selectedValues[optionText] or false
+        if IsMultiSelect then
+            local function UpdateIndicator()
+                Indicator.Visible = SelectedValues[OptionText] or false
             end
-            option.Activated:Connect(function()
-                selectedValues[optionText] = not selectedValues[optionText]
-                updateIndicator()
-                updateDisplay()
-                local selected = {}
-                for v, enabled in pairs(selectedValues) do
-                    if enabled then
-                        table.insert(selected, optionDataMap[v])
-                    end
+            OptionButton.Activated:Connect(function()
+                SelectedValues[OptionText] = not SelectedValues[OptionText]
+                UpdateIndicator()
+                UpdateDisplay()
+                local Selected = SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap)
+                if Callback then
+                    EH:Try(function()
+                        Callback(Selected)
+                    end)
                 end
-                if callback then
-                    callback(selected)
-                end
-                changedEvent:Fire(selected)
+                ChangedEvent:Fire(Selected)
             end)
-            updateIndicator()
+            UpdateIndicator()
         else
-            indicator.Visible = selectedValues == optionText
-            option.Activated:Connect(function()
-                for _, child in ipairs(scrollList:GetChildren()) do
-                    if child:IsA("Frame") then
-                        local ind = child:FindFirstChild("Frame")
-                        if ind then
-                            ind.Visible = false
+            Indicator.Visible = SelectedValues == OptionText
+            OptionButton.Activated:Connect(function()
+                for _, Child in ipairs(ScrollList:GetChildren()) do
+                    if Child:IsA("Frame") then
+                        local Ind = Child:FindFirstChild("Frame")
+                        if Ind then
+                            Ind.Visible = false
                         end
                     end
                 end
-                selectedValues = optionText
-                indicator.Visible = true
-                updateDisplay()
-                closeDropdown()
-                if callback then
-                    callback(optionDataMap[optionText])
+                SelectedValues = OptionText
+                Indicator.Visible = true
+                UpdateDisplay()
+                CloseDropdown()
+                local Selected = SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap)
+                if Callback then
+                    EH:Try(function()
+                        Callback(Selected)
+                    end)
                 end
-                changedEvent:Fire(optionDataMap[optionText])
+                ChangedEvent:Fire(Selected)
             end)
         end
 
-        if not mobile then
-            option.MouseEnter:Connect(function()
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                option.BackgroundColor3 = currentTheme.TertiaryColorHover
+        if not IsMobile then
+            OptionButton.MouseEnter:Connect(function()
+                local CurrentTheme = Window and SimpleUI.ThemeManager:GetCurrentTheme(Window) or Theme
+                TweenService:Create(OptionButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+                    BackgroundColor3 = CurrentTheme.TertiaryHover
+                }):Play()
             end)
-            option.MouseLeave:Connect(function()
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                option.BackgroundColor3 = currentTheme.TertiaryColor
+            OptionButton.MouseLeave:Connect(function()
+                local CurrentTheme = Window and SimpleUI.ThemeManager:GetCurrentTheme(Window) or Theme
+                TweenService:Create(OptionButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+                    BackgroundColor3 = CurrentTheme.Tertiary
+                }):Play()
             end)
-            option.MouseButton1Down:Connect(function()
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                option.BackgroundColor3 = currentTheme.TertiaryColorMouse1Down
+            OptionButton.MouseButton1Down:Connect(function()
+                local CurrentTheme = Window and SimpleUI.ThemeManager:GetCurrentTheme(Window) or Theme
+                OptionButton.BackgroundColor3 = CurrentTheme.TertiaryPressed
             end)
-            option.MouseButton1Up:Connect(function()
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                option.BackgroundColor3 = currentTheme.TertiaryColorHover
+            OptionButton.MouseButton1Up:Connect(function()
+                local CurrentTheme = Window and SimpleUI.ThemeManager:GetCurrentTheme(Window) or Theme
+                OptionButton.BackgroundColor3 = CurrentTheme.TertiaryHover
             end)
         end
     end
 
-    for i, option in ipairs(normalizedOptions) do
-        createOption(option, i)
+    for Index, OptionText in ipairs(NormalizedOptions) do
+        CreateOption(OptionText, Index)
     end
 
-    searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        filterOptions(searchBox.Text)
+    SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        FilterOptions(SearchBox.Text)
     end)
 
-    updateDisplay()
-    updateDisplayColor()
+    UpdateDisplay()
+    UpdateDisplayColor()
 
-    display.Activated:Connect(function()
-        if isToggling then
+    Display.Activated:Connect(function()
+        if IsToggling then
             return
         end
-        isToggling = true
-        if isOpen then
-            closeDropdown()
+        IsToggling = true
+        if IsOpen then
+            CloseDropdown()
         else
-            isOpen = true
-            inputBlocker = Instance.new("TextButton")
-            inputBlocker.Name = "DropdownInputBlocker"
-            inputBlocker.Size = UDim2.fromScale(1, 1)
-            inputBlocker.Position = UDim2.fromScale(0, 0)
-            inputBlocker.Text = ""
-            inputBlocker.BackgroundTransparency = 1
-            inputBlocker.AutoButtonColor = false
-            inputBlocker.ZIndex = 249
-            inputBlocker.Parent = gui
-            inputBlocker.Activated:Connect(function()
-                displayState = "Base"
-                updateDisplayColor()
-                closeDropdown()
+            IsOpen = true
+            InputBlocker = EH:Try(function()
+                return self.Utility:CreateInstance("TextButton", {
+                    Name = "DropdownInputBlocker",
+                    Size = UDim2.fromScale(1, 1),
+                    Position = UDim2.fromScale(0, 0),
+                    Text = "",
+                    BackgroundTransparency = 1,
+                    AutoButtonColor = false,
+                    ZIndex = self.Constants.ZIndex.Modal - 1
+                }, ScreenGui)
             end)
-            displayState = "Active"
-            updateDisplayColor()
-            updateListPosition()
-            listContainer.Size = UDim2.new(0, 160, 0, 0)
-            listContainer.Visible = true
-            tweenService:Create(listContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 160, 0, targetHeight)
+            if InputBlocker then
+                InputBlocker.Activated:Connect(function()
+                    CloseDropdown()
+                end)
+            end
+            DisplayState = "Active"
+            UpdateDisplayColor()
+            UpdateListPosition()
+            ListContainer.Visible = true
+            TweenService:Create(ListContainer, TweenInfo.new(self.Constants.Animation.Normal, Enum.EasingStyle.Quad,
+                Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, Display.AbsoluteSize.X, 0, TargetHeight)
             }):Play()
             task.wait()
-            inputConnection = userInputService.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType ==
+            InputConnection = UserInputService.InputBegan:Connect(function(Input)
+                if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType ==
                     Enum.UserInputType.Touch then
-                    local mousePos = input.Position
-                    local listPos = listContainer.AbsolutePosition
-                    local listSize = listContainer.AbsoluteSize
-                    local displayPos = display.AbsolutePosition
-                    local displaySize = display.AbsoluteSize
-                    local inList = mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X and mousePos.Y >=
-                                       listPos.Y and mousePos.Y <= listPos.Y + listSize.Y
-                    local inDisplay = mousePos.X >= displayPos.X and mousePos.X <= displayPos.X + displaySize.X and
-                                          mousePos.Y >= displayPos.Y and mousePos.Y <= displayPos.Y + displaySize.Y
-                    if not inList and not inDisplay and not isToggling then
-                        displayState = "Base"
-                        updateDisplayColor()
-                        closeDropdown()
+                    local MousePos = Input.Position
+                    local ListPos = ListContainer.AbsolutePosition
+                    local ListSize = ListContainer.AbsoluteSize
+                    local DisplayPos = Display.AbsolutePosition
+                    local DisplaySize = Display.AbsoluteSize
+                    local InList = MousePos.X >= ListPos.X and MousePos.X <= ListPos.X + ListSize.X and MousePos.Y >=
+                                       ListPos.Y and MousePos.Y <= ListPos.Y + ListSize.Y
+                    local InDisplay = MousePos.X >= DisplayPos.X and MousePos.X <= DisplayPos.X + DisplaySize.X and
+                                          MousePos.Y >= DisplayPos.Y and MousePos.Y <= DisplayPos.Y + DisplaySize.Y
+                    if not InList and not InDisplay and not IsToggling then
+                        CloseDropdown()
                     end
                 end
             end)
         end
         task.wait(0.1)
-        isToggling = false
+        IsToggling = false
     end)
 
     return {
-        container = zones.container,
-        getValue = function()
-            if multiSelect then
-                local selected = {}
-                for v, enabled in pairs(selectedValues) do
-                    if enabled then
-                        table.insert(selected, optionDataMap[v])
-                    end
-                end
-                return selected
-            else
-                return optionDataMap[selectedValues]
-            end
+        GetValue = function(self)
+            return SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap)
         end,
-        setValue = function(val)
-            if multiSelect then
-                selectedValues = {}
-                if type(val) == "table" then
-                    for _, v in ipairs(val) do
-                        local normalized = type(v) == "table" and
-                                               (v.text or v.Text or v.label or v.Label or tostring(v)) or tostring(v)
-                        if optionDataMap[normalized] then
-                            selectedValues[normalized] = true
+        SetValue = function(self, Value)
+            if IsMultiSelect then
+                SelectedValues = {}
+                if EH:ValidateType(Value, "table", "Value", "Dropdown:SetValue") then
+                    for _, V in ipairs(Value) do
+                        local Normalized = type(V) == "table" and
+                                               (V.Text or V.text or V.Label or V.label or tostring(V)) or tostring(V)
+                        if OptionDataMap[Normalized] then
+                            SelectedValues[Normalized] = true
                         end
                     end
                 end
             else
-                local normalized = type(val) == "table" and
-                                       (val.text or val.Text or val.label or val.Label or tostring(val)) or
-                                       tostring(val)
-                if optionDataMap[normalized] then
-                    selectedValues = normalized
+                local Normalized = type(Value) == "table" and
+                                       (Value.Text or Value.text or Value.Label or Value.label or tostring(Value)) or
+                                       tostring(Value)
+                if OptionDataMap[Normalized] then
+                    SelectedValues = Normalized
                 end
             end
-            for _, child in ipairs(scrollList:GetChildren()) do
-                if child:IsA("Frame") then
-                    local ind = child:FindFirstChild("Frame")
-                    local opt = child:FindFirstChild("TextButton")
-                    if ind and opt then
-                        if multiSelect then
-                            ind.Visible = selectedValues[opt.Text] or false
+            for _, Child in ipairs(ScrollList:GetChildren()) do
+                if Child:IsA("Frame") then
+                    local Ind = Child:FindFirstChild("Frame")
+                    local Opt = Child:FindFirstChild("TextButton")
+                    if Ind and Opt then
+                        if IsMultiSelect then
+                            Ind.Visible = SelectedValues[Opt.Text] or false
                         else
-                            ind.Visible = selectedValues == opt.Text
+                            Ind.Visible = SelectedValues == Opt.Text
                         end
                     end
                 end
             end
-            updateDisplay()
-            changedEvent:Fire(val)
-            if callback then
-                if multiSelect then
-                    local selected = {}
-                    for v, enabled in pairs(selectedValues) do
-                        if enabled then
-                            table.insert(selected, optionDataMap[v])
-                        end
-                    end
-                    callback(selected)
-                else
-                    callback(optionDataMap[selectedValues])
-                end
+            UpdateDisplay()
+            ChangedEvent:Fire(Value)
+            if Callback then
+                EH:Try(function()
+                    Callback(SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap))
+                end)
             end
         end,
-        setOptions = function(newOptions)
-            for _, child in ipairs(scrollList:GetChildren()) do
-                if child:IsA("Frame") then
-                    child:Destroy()
-                end
-            end
-            options = newOptions
-            normalizedOptions = {}
-            optionDataMap = {}
-            for i, opt in ipairs(options) do
-                if type(opt) == "table" then
-                    local displayText = opt.text or opt.Text or opt.label or opt.Label or tostring(opt)
-                    normalizedOptions[i] = displayText
-                    optionDataMap[displayText] = opt
-                else
-                    normalizedOptions[i] = tostring(opt)
-                    optionDataMap[tostring(opt)] = opt
-                end
-            end
-            for i, option in ipairs(normalizedOptions) do
-                createOption(option, i)
-            end
-            if multiSelect then
-                local validSelected = {}
-                for v, enabled in pairs(selectedValues) do
-                    if optionDataMap[v] then
-                        validSelected[v] = enabled
-                    end
-                end
-                selectedValues = validSelected
-            else
-                if not optionDataMap[selectedValues] and normalizedOptions[1] then
-                    selectedValues = nil
-                end
-            end
-            updateDisplay()
-        end,
-        setDescription = function(t)
-            local hadDescription = description ~= nil and description.Visible
-            local hasDescription = t and t ~= ""
-
-            if description and t then
-                description.Text = t
-                description.Visible = true
-            elseif description and not t then
-                description.Visible = false
-            elseif not description and t then
-                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
-                if window then
-                    SimpleUI:registerThemeElement(window, description, {
-                        TextColor3 = "TextSecondary",
-                        Font = "SecondaryFont"
-                    })
-                end
-            end
-
-            if hadDescription ~= hasDescription then
-                local padding = zones.container:FindFirstChildOfClass("UIPadding")
-                if padding then
-                    if hasDescription then
-                        padding.PaddingTop = UDim.new(0, 10)
-                        padding.PaddingBottom = UDim.new(0, 10)
-                        zones.layout.Padding = UDim.new(0, 2)
-                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
-                    else
-                        padding.PaddingTop = UDim.new(0, 0)
-                        padding.PaddingBottom = UDim.new(0, 0)
-                        zones.layout.Padding = UDim.new(0, 0)
-                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
-                    end
-                end
-            end
-        end,
-        close = closeDropdown,
-        Changed = changedEvent.Event
-    }
-end
-
-function SimpleUI:createSlider(page, text, min, max, defaultValue, callback, options)
-    if not page then
-        return
-    end
-    options = options or {}
-    local theme = self:getTheme(page)
-    local window = self:getWindowFromElement(page)
-    local increment = options.Increment or 1
-    local hasDescription = options.Description and options.Description ~= ""
-
-    local zones = self:createComponentContainer({
-        parent = page,
-        layout = "stacked",
-        minHeight = 50,
-        padding = hasDescription and {
-            top = 10,
-            bottom = 10,
-            left = 10,
-            right = 10
-        } or {
-            top = 8,
-            bottom = 8,
-            left = 10,
-            right = 10
-        },
-        spacing = hasDescription and 4 or 2,
-        hasDescription = hasDescription,
-        corner = 4,
-        colorTier = "SecondaryColor"
-    }, theme)
-
-    local labelContainer = self:createElement("Frame", {
-        Size = UDim2.new(1, 0, 0, 20),
-        BackgroundTransparency = 1,
-        LayoutOrder = 1,
-        ZIndex = 5
-    }, zones.textZone)
-
-    local label = self:createLabel(labelContainer, text, theme, {
-        colorTier = "TextPrimary",
-        size = 14,
-        widthOffset = -60
-    })
-
-    local valueLabel = self:createElement("TextLabel", {
-        Size = UDim2.new(0, 50, 1, 0),
-        Position = UDim2.new(1, 0, 0, 0),
-        AnchorPoint = Vector2.new(1, 0),
-        BackgroundTransparency = 1,
-        Text = tostring(defaultValue or min),
-        TextColor3 = theme.TextSecondary,
-        TextSize = 13,
-        Font = theme.SecondaryFont,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        ZIndex = 5
-    }, labelContainer)
-
-    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
-
-    local trackContainer = self:createElement("Frame", {
-        Size = UDim2.new(1, 0, 0, 24),
-        BackgroundTransparency = 1,
-        LayoutOrder = 3,
-        ZIndex = 5
-    }, zones.textZone)
-
-    local track = self:createElement("Frame", {
-        Size = UDim2.new(1, 0, 0, 4),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundColor3 = theme.TertiaryColorMouse1Down,
-        BorderSizePixel = 0,
-        ZIndex = 5
-    }, trackContainer)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(1, 0)
-    }, track)
-
-    local fill = self:createElement("Frame", {
-        Size = UDim2.new(0, 0, 1, 0),
-        BackgroundColor3 = theme.AccentColor,
-        BorderSizePixel = 0,
-        ZIndex = 6
-    }, track)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(1, 0)
-    }, fill)
-
-    local thumb = self:createElement("Frame", {
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = theme.TextActive,
-        BorderSizePixel = 0,
-        ZIndex = 7
-    }, track)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(1, 0)
-    }, thumb)
-
-    local themeRegistry = {
-        [zones.container] = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        [label] = {
-            TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
-        },
-        [valueLabel] = {
-            TextColor3 = "TextSecondary",
-            Font = "SecondaryFont"
-        },
-        [track] = {
-            BackgroundColor3 = "TertiaryColorMouse1Down"
-        },
-        [fill] = {
-            BackgroundColor3 = "AccentColor"
-        },
-        [thumb] = {
-            BackgroundColor3 = "TextActive"
-        }
-    }
-
-    if description then
-        themeRegistry[description] = {
-            TextColor3 = "TextSecondary",
-            Font = "SecondaryFont"
-        }
-    end
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    local dragging = false
-    local value = defaultValue or min
-
-    local function round(num)
-        return math.floor(num / increment + 0.5) * increment
-    end
-
-    local function updateSlider(val)
-        value = math.clamp(round(val), min, max)
-        local percent = (value - min) / (max - min)
-        fill.Size = UDim2.new(percent, 0, 1, 0)
-        thumb.Position = UDim2.new(percent, 0, 0.5, 0)
-        valueLabel.Text = tostring(value)
-        if callback then
-            callback(value)
-        end
-    end
-
-    local function onInput(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            local percent = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-            updateSlider(min + (max - min) * percent)
-        end
-    end
-
-    track.InputBegan:Connect(onInput)
-    thumb.InputBegan:Connect(onInput)
-
-    local uis = self:getService("UserInputService")
-    uis.InputChanged:Connect(function(input)
-        if dragging and
-            (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local percent = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-            updateSlider(min + (max - min) * percent)
-        end
-    end)
-
-    uis.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-
-    updateSlider(value)
-
-    return {
-        container = zones.container,
-        getValue = function()
-            return value
-        end,
-        setValue = function(val)
-            updateSlider(val)
-        end,
-        setMin = function(newMin)
-            min = newMin
-            updateSlider(value)
-        end,
-        setMax = function(newMax)
-            max = newMax
-            updateSlider(value)
-        end,
-        setDescription = function(t)
-            local hadDescription = description ~= nil and description.Visible
-            local hasDescription = t and t ~= ""
-
-            if description and t then
-                description.Text = t
-                description.Visible = true
-            elseif description and not t then
-                description.Visible = false
-            elseif not description and t then
-                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
-                if window then
-                    SimpleUI:registerThemeElement(window, description, {
-                        TextColor3 = "TextSecondary",
-                        Font = "SecondaryFont"
-                    })
-                end
-            end
-
-            if hadDescription ~= hasDescription then
-                local padding = zones.container:FindFirstChildOfClass("UIPadding")
-                if padding then
-                    if hasDescription then
-                        padding.PaddingTop = UDim.new(0, 10)
-                        padding.PaddingBottom = UDim.new(0, 10)
-                        zones.layout.Padding = UDim.new(0, 4)
-                    else
-                        padding.PaddingTop = UDim.new(0, 8)
-                        padding.PaddingBottom = UDim.new(0, 8)
-                        zones.layout.Padding = UDim.new(0, 2)
-                    end
-                end
-            end
-        end
-    }
-end
-
-function SimpleUI:createTextInput(page, text, defaultValue, callback, options)
-    if not page then
-        return
-    end
-    options = options or {}
-    local theme = self:getTheme(page)
-    local mobile = self:isMobile()
-    local window = self:getWindowFromElement(page)
-    local hasDescription = options.Description and options.Description ~= ""
-
-    local zones = self:createComponentContainer({
-        parent = page,
-        layout = "textLeft",
-        textWidth = 0.6,
-        minHeight = 35,
-        padding = hasDescription and {
-            top = 10,
-            bottom = 10,
-            left = 10,
-            right = 0
-        } or {
-            top = 0,
-            bottom = 0,
-            left = 10,
-            right = 0
-        },
-        spacing = hasDescription and 2 or 0,
-        hasDescription = hasDescription,
-        corner = 4,
-        colorTier = "SecondaryColor"
-    }, theme)
-
-    local label = self:createLabel(zones.textZone, text, theme, {
-        colorTier = "TextPrimary",
-        size = 14,
-        order = 1
-    })
-
-    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
-
-    local inputBox = self:createElement("TextBox", {
-        Size = UDim2.new(0.35, 0, 0, 30),
-        Position = UDim2.new(1, -10, 0.5, 0),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = theme.TertiaryColor,
-        BorderSizePixel = 0,
-        TextTruncate = Enum.TextTruncate.AtEnd,
-        Text = defaultValue or "",
-        PlaceholderText = "Enter text...",
-        TextColor3 = theme.TextPrimary,
-        PlaceholderColor3 = theme.TextSecondary,
-        TextSize = 13,
-        Font = theme.SecondaryFont,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ClearTextOnFocus = false,
-        ZIndex = 5
-    }, zones.container)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(0, 4)
-    }, inputBox)
-
-    self:createElement("UIPadding", {
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8)
-    }, inputBox)
-
-    local underline = self:createElement("Frame", {
-        Size = UDim2.new(1, 0, 0, 2),
-        Position = UDim2.new(0, 0, 1, -2),
-        BackgroundColor3 = theme.TertiaryColor,
-        BorderSizePixel = 0,
-        ZIndex = 6
-    }, inputBox)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(1, 0)
-    }, underline)
-
-    local themeRegistry = {
-        [zones.container] = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        [label] = {
-            TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
-        },
-        [inputBox] = {
-            TextColor3 = "TextPrimary",
-            PlaceholderColor3 = "TextSecondary",
-            BackgroundColor3 = "TertiaryColor",
-            Font = "SecondaryFont"
-        },
-        [underline] = {
-            BackgroundColor3 = "TertiaryColor"
-        }
-    }
-
-    if description then
-        themeRegistry[description] = {
-            TextColor3 = "TextSecondary",
-            Font = "SecondaryFont"
-        }
-    end
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    local isFocused = false
-    local tween = self:getService("TweenService")
-
-    inputBox.Focused:Connect(function()
-        isFocused = true
-        local currentTheme = window and self:getCurrentTheme(window) or theme
-        tween:Create(underline, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundColor3 = currentTheme.AccentColor
-        }):Play()
-    end)
-
-    inputBox.FocusLost:Connect(function()
-        isFocused = false
-        local currentTheme = window and self:getCurrentTheme(window) or theme
-        tween:Create(underline, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundColor3 = currentTheme.TertiaryColorMouse1Down
-        }):Play()
-        if callback then
-            callback(inputBox.Text)
-        end
-    end)
-
-    if not mobile then
-        inputBox.MouseEnter:Connect(function()
-            if not isFocused then
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                inputBox.BackgroundColor3 = currentTheme.TertiaryColorHover
-            end
-        end)
-        inputBox.MouseLeave:Connect(function()
-            if not isFocused then
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                inputBox.BackgroundColor3 = currentTheme.TertiaryColor
-            end
-        end)
-    end
-
-    return {
-        container = zones.container,
-        getValue = function()
-            return inputBox.Text
-        end,
-        setValue = function(val)
-            inputBox.Text = val or ""
-        end,
-        setPlaceholder = function(p)
-            inputBox.PlaceholderText = p or ""
-        end,
-        clear = function()
-            inputBox.Text = ""
-        end,
-        setDescription = function(t)
-            local hadDescription = description ~= nil and description.Visible
-            local hasDescription = t and t ~= ""
-
-            if description and t then
-                description.Text = t
-                description.Visible = true
-            elseif description and not t then
-                description.Visible = false
-            elseif not description and t then
-                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
-                if window then
-                    SimpleUI:registerThemeElement(window, description, {
-                        TextColor3 = "TextSecondary",
-                        Font = "SecondaryFont"
-                    })
-                end
-            end
-
-            if hadDescription ~= hasDescription then
-                local padding = zones.container:FindFirstChildOfClass("UIPadding")
-                if padding then
-                    if hasDescription then
-                        padding.PaddingTop = UDim.new(0, 10)
-                        padding.PaddingBottom = UDim.new(0, 10)
-                        zones.layout.Padding = UDim.new(0, 2)
-                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
-                    else
-                        padding.PaddingTop = UDim.new(0, 0)
-                        padding.PaddingBottom = UDim.new(0, 0)
-                        zones.layout.Padding = UDim.new(0, 0)
-                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
-                    end
-                end
-            end
-        end
-    }
-end
-
-function SimpleUI:createKeybind(page, text, defaultKey, callback, options)
-    if not page then
-        return
-    end
-    options = options or {}
-    local theme = self:getTheme(page)
-    local mobile = self:isMobile()
-    local window = self:getWindowFromElement(page)
-    local hasDescription = options.Description and options.Description ~= ""
-
-    local zones = self:createComponentContainer({
-        parent = page,
-        layout = "textLeft",
-        textWidth = 0.65,
-        minHeight = 35,
-        padding = hasDescription and {
-            top = 10,
-            bottom = 10,
-            left = 10,
-            right = 0
-        } or {
-            top = 0,
-            bottom = 0,
-            left = 10,
-            right = 0
-        },
-        spacing = hasDescription and 2 or 0,
-        hasDescription = hasDescription,
-        corner = 4,
-        colorTier = "SecondaryColor"
-    }, theme)
-
-    local label = self:createLabel(zones.textZone, text, theme, {
-        colorTier = "TextPrimary",
-        size = 14,
-        order = 1
-    })
-
-    local description = hasDescription and self:createDescription(zones.textZone, options.Description, theme, 2) or nil
-
-    local display = self:createElement("TextButton", {
-        Size = UDim2.new(0.3, 0, 0, 30),
-        Position = UDim2.new(1, -10, 0.5, 0),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = theme.TertiaryColor,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 5
-    }, zones.container)
-
-    self:createElement("UICorner", {
-        CornerRadius = UDim.new(0, 4)
-    }, display)
-
-    self:createElement("UIPadding", {
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8)
-    }, display)
-
-    local displayLabel = self:createElement("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "",
-        TextColor3 = theme.TextPrimary,
-        TextSize = 13,
-        Font = theme.SecondaryFont,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        ZIndex = 6
-    }, display)
-
-    local themeRegistry = {
-        [zones.container] = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        [label] = {
-            TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
-        },
-        [displayLabel] = {
-            TextColor3 = "TextPrimary",
-            Font = "SecondaryFont"
-        }
-    }
-
-    if description then
-        themeRegistry[description] = {
-            TextColor3 = "TextSecondary",
-            Font = "SecondaryFont"
-        }
-    end
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    local currentKey = defaultKey
-    local listening = false
-    local uis = self:getService("UserInputService")
-    local bindConnection
-    local inputConnection
-
-    local function updateDisplay()
-        local currentTheme = window and self:getCurrentTheme(window) or theme
-        if listening then
-            displayLabel.Text = "Press a key.."
-            display.BackgroundColor3 = currentTheme.AccentColor
-        else
-            displayLabel.Text = "Key: " .. (currentKey and currentKey.Name or "Select Keybind...")
-            display.BackgroundColor3 = currentTheme.TertiaryColor
-        end
-    end
-
-    local function setupBind()
-        if bindConnection then
-            bindConnection:Disconnect()
-        end
-        if currentKey and callback then
-            bindConnection = uis.InputBegan:Connect(function(input, gameProcessed)
-                if not gameProcessed and input.KeyCode == currentKey then
-                    callback(currentKey)
-                end
-            end)
-        end
-    end
-
-    display.Activated:Connect(function()
-        if listening then
-            return
-        end
-        listening = true
-        updateDisplay()
-        inputConnection = uis.InputBegan:Connect(function(input, gameProcessed)
-            if input.UserInputType == Enum.UserInputType.Keyboard then
-                currentKey = input.KeyCode
-                listening = false
-                if inputConnection then
-                    inputConnection:Disconnect()
-                    inputConnection = nil
-                end
-                updateDisplay()
-                setupBind()
-            end
-        end)
-    end)
-
-    if not mobile then
-        display.MouseEnter:Connect(function()
-            if not listening then
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                display.BackgroundColor3 = currentTheme.TertiaryColorHover
-            end
-        end)
-        display.MouseLeave:Connect(function()
-            if not listening then
-                local currentTheme = window and self:getCurrentTheme(window) or theme
-                display.BackgroundColor3 = currentTheme.TertiaryColor
-            end
-        end)
-    end
-
-    updateDisplay()
-    setupBind()
-
-    self:registerThemeElement(window, display, {
-        BackgroundColor3 = function(el, theme)
-            el.BackgroundColor3 = listening and theme.AccentColor or theme.TertiaryColor
-        end
-    })
-
-    return {
-        container = zones.container,
-        getKey = function()
-            return currentKey
-        end,
-        setKey = function(key)
-            currentKey = key
-            updateDisplay()
-            setupBind()
-        end,
-        clear = function()
-            currentKey = nil
-            updateDisplay()
-            if bindConnection then
-                bindConnection:Disconnect()
-                bindConnection = nil
-            end
-        end,
-        setDescription = function(t)
-            local hadDescription = description ~= nil and description.Visible
-            local hasDescription = t and t ~= ""
-
-            if description and t then
-                description.Text = t
-                description.Visible = true
-            elseif description and not t then
-                description.Visible = false
-            elseif not description and t then
-                description = SimpleUI:createDescription(zones.textZone, t, theme, 2)
-                if window then
-                    SimpleUI:registerThemeElement(window, description, {
-                        TextColor3 = "TextSecondary",
-                        Font = "SecondaryFont"
-                    })
-                end
-            end
-
-            if hadDescription ~= hasDescription then
-                local padding = zones.container:FindFirstChildOfClass("UIPadding")
-                if padding then
-                    if hasDescription then
-                        padding.PaddingTop = UDim.new(0, 10)
-                        padding.PaddingBottom = UDim.new(0, 10)
-                        zones.layout.Padding = UDim.new(0, 2)
-                        zones.textZone.Position = UDim2.new(0, 0, 0, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0)
-                    else
-                        padding.PaddingTop = UDim.new(0, 0)
-                        padding.PaddingBottom = UDim.new(0, 0)
-                        zones.layout.Padding = UDim.new(0, 0)
-                        zones.textZone.Position = UDim2.new(0, 0, 0.5, 0)
-                        zones.textZone.AnchorPoint = Vector2.new(0, 0.5)
-                    end
-                end
-            end
-        end
-    }
-
-end
-
-function SimpleUI:createParagraph(page, title, fields, options)
-    if not page then
-        return
-    end
-    options = options or {}
-    local theme = self:getTheme(page)
-    local window = self:getWindowFromElement(page)
-
-    local container = self:createElement("Frame", {
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundColor3 = theme.SecondaryColor,
-        BackgroundTransparency = theme.SecondaryTransparency,
-        BorderSizePixel = 0,
-        ZIndex = 4
-    }, page)
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = container
-
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 10)
-    padding.PaddingBottom = UDim.new(0, 10)
-    padding.PaddingLeft = UDim.new(0, 10)
-    padding.PaddingRight = UDim.new(0, 10)
-    padding.Parent = container
-
-    local contentFrame = self:createElement("Frame", {
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 1,
-        ZIndex = 5
-    }, container)
-
-    local layout = Instance.new("UIListLayout")
-    layout.FillDirection = Enum.FillDirection.Vertical
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    layout.VerticalAlignment = Enum.VerticalAlignment.Top
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 4)
-    layout.Parent = contentFrame
-
-    local titleLabel = self:createElement("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 0),
-        BackgroundTransparency = 1,
-        Text = title or "Paragraph",
-        TextSize = 16,
-        TextColor3 = theme.TextActive,
-        Font = theme.PrimaryFont,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        AutomaticSize = Enum.AutomaticSize.Y,
-        TextWrapped = true,
-        LayoutOrder = 0,
-        ZIndex = 5
-    }, contentFrame)
-
-    local themeRegistry = {
-        [container] = {
-            BackgroundColor3 = "SecondaryColor",
-            BackgroundTransparency = "SecondaryTransparency"
-        },
-        [titleLabel] = {
-            TextColor3 = "TextActive",
-            Font = "PrimaryFont"
-        }
-    }
-
-    self:registerMultipleThemeElements(window, themeRegistry)
-
-    local fieldElements = {}
-    local fieldCounter = 0
-
-    local function createField(fieldData, layoutOrder)
-        fieldCounter = fieldCounter + 1
-        local fieldId = "field_" .. fieldCounter
-        local isSubField = fieldData.isSubField or false
-
-        local field = self:createElement("TextLabel", {
-            Size = UDim2.new(1, isSubField and -20 or 0, 0, 0),
-            Position = isSubField and UDim2.new(0, 20, 0, 0) or UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = fieldData.text or "",
-            TextSize = isSubField and 13 or 14,
-            TextColor3 = isSubField and theme.TextSecondary or theme.TextPrimary,
-            Font = theme.SecondaryFont,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            TextWrapped = true,
-            LayoutOrder = layoutOrder or (fieldCounter + 1),
-            ZIndex = 5
-        }, contentFrame)
-
-        if window then
-            SimpleUI:registerThemeElement(window, field, {
-                TextColor3 = isSubField and "TextSecondary" or "TextPrimary",
-                Font = "SecondaryFont"
-            })
-        end
-
-        fieldElements[fieldId] = {
-            element = field,
-            data = fieldData,
-            id = fieldId
-        }
-        return fieldId, field
-    end
-
-    if fields and type(fields) == "table" then
-        for i, fieldData in ipairs(fields) do
-            createField(type(fieldData) == "string" and {
-                text = fieldData
-            } or fieldData, i)
-        end
-    end
-
-    return {
-        container = container,
-        addField = function(text, isSubField, position)
-            return createField({
-                text = text,
-                isSubField = isSubField or false
-            }, position or (fieldCounter + 2))
-        end,
-        removeField = function(fieldId)
-            if not fieldElements[fieldId] then
-                return false
-            end
-            fieldElements[fieldId].element:Destroy()
-            fieldElements[fieldId] = nil
-            return true
-        end,
-        setField = function(fieldId, text)
-            if not fieldElements[fieldId] then
-                return false
-            end
-            fieldElements[fieldId].element.Text = text
-            fieldElements[fieldId].data.text = text
-            return true
-        end,
-        getField = function(fieldId)
-            return fieldElements[fieldId] and fieldElements[fieldId].data.text or nil
-        end,
-        findField = function(searchText)
-            for id, fieldData in pairs(fieldElements) do
-                if fieldData.data.text:find(searchText, 1, true) then
-                    return id, fieldData.data.text
-                end
-            end
-            return nil
-        end,
-        getAllFields = function()
-            local result = {}
-            for id, fieldData in pairs(fieldElements) do
-                table.insert(result, {
-                    id = id,
-                    text = fieldData.data.text,
-                    isSubField = fieldData.data.isSubField
-                })
-            end
-            return result
-        end,
-        setFields = function(newFields)
-            for id, fieldData in pairs(fieldElements) do
-                fieldData.element:Destroy()
-            end
-            fieldElements, fieldCounter = {}, 0
-            if newFields and type(newFields) == "table" then
-                for i, fieldData in ipairs(newFields) do
-                    createField(type(fieldData) == "string" and {
-                        text = fieldData
-                    } or fieldData, i)
-                end
-            end
-        end,
-        clearFields = function()
-            for id, fieldData in pairs(fieldElements) do
-                fieldData.element:Destroy()
-            end
-            fieldElements, fieldCounter = {}, 0
-        end,
-        setTitle = function(newTitle)
-            titleLabel.Text = newTitle
-        end,
-        getFieldCount = function()
-            local count = 0
-            for _ in pairs(fieldElements) do
-                count = count + 1
-            end
-            return count
-        end,
-        sortFields = function(comparator)
-            local fieldsArray = {}
-            for id, fieldData in pairs(fieldElements) do
-                table.insert(fieldsArray, {
-                    id = id,
-                    data = fieldData.data,
-                    element = fieldData.element
-                })
-            end
-            table.sort(fieldsArray, comparator or function(a, b)
-                return a.element.LayoutOrder < b.element.LayoutOrder
-            end)
-            for i, field in ipairs(fieldsArray) do
-                field.element.LayoutOrder = i
-            end
-        end,
-        setFieldColor = function(fieldId, color)
-            if not fieldElements[fieldId] then
-                return false
-            end
-            fieldElements[fieldId].element.TextColor3 = color
-            return true
-        end,
-        setFieldSize = function(fieldId, textSize)
-            if not fieldElements[fieldId] then
-                return false
-            end
-            fieldElements[fieldId].element.TextSize = textSize
-            return true
-        end
-    }
-end
-
-function SimpleUI:createNotification(options)
-    options = options or {}
-    local Players = self:getService("Players")
-    local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-    local containerName = "SimpleUI_NotificationContainer"
-    local isMobile = self:isMobile()
-
-    local container = playerGui:FindFirstChild(containerName)
-
-    if not container then
-        container = self:createElement("ScreenGui", {
-            Name = containerName,
-            ResetOnSpawn = false,
-            ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-            DisplayOrder = 999
-        })
-
-        self:ParentUI(container)
-
-        local holderSize = isMobile and UDim2.new(0, 280, 1, 0) or UDim2.new(0, 320, 1, 0)
-        local holderPosition = isMobile and UDim2.new(0.5, 0, 0, 10) or UDim2.new(1, -15, 0, 15)
-        local holderAnchor = isMobile and Vector2.new(0.5, 0) or Vector2.new(1, 0)
-
-        local holder = self:createElement("Frame", {
-            Name = "Holder",
-            Position = holderPosition,
-            AnchorPoint = holderAnchor,
-            Size = holderSize,
-            BackgroundTransparency = 1
-        }, container)
-
-        self:createElement("UIListLayout", {
-            Name = "Layout",
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            VerticalAlignment = Enum.VerticalAlignment.Top,
-            HorizontalAlignment = isMobile and Enum.HorizontalAlignment.Center or Enum.HorizontalAlignment.Right,
-            Padding = UDim.new(0, isMobile and 6 or 8)
-        }, holder)
-    end
-
-    local holder = container:FindFirstChild("Holder")
-    local theme = options.Theme or self.Themes.Default
-    local notifType = options.Type or "Default"
-
-    local typeColors = {
-        Default = Color3.fromRGB(200, 200, 200),
-        Info = Color3.fromRGB(30, 144, 255),
-        Success = Color3.fromRGB(40, 167, 69),
-        Warning = Color3.fromRGB(255, 193, 7),
-        Error = Color3.fromRGB(220, 53, 69)
-    }
-
-    local typeIcons = {
-        Default = "rbxassetid://10709775704",
-        Info = "rbxassetid://10723415903",
-        Success = "rbxassetid://10734951367",
-        Warning = "rbxassetid://10734951173",
-        Error = "rbxassetid://10747384037"
-    }
-
-    local accentColor = typeColors[notifType] or typeColors.Default
-    local duration = options.Duration or 5
-
-    local notification = self:createElement("Frame", {
-        Name = "Notification",
-        Size = UDim2.new(1, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(28, 28, 32),
-        BorderSizePixel = 0,
-        ClipsDescendants = false,
-        LayoutOrder = tick()
-    }, holder)
-
-    self:createElement("Frame", {
-        Name = "AccentBar",
-        Size = UDim2.new(0, 2, 1, 0),
-        BackgroundColor3 = accentColor,
-        BorderSizePixel = 0
-    }, notification)
-
-    local shadow = self:createElement("ImageLabel", {
-        Name = "Shadow",
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(1, 20, 1, 20),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://7717391613",
-        ImageColor3 = Color3.fromRGB(0, 0, 0),
-        ImageTransparency = 0.75,
-        ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(100, 100, 100, 100),
-        ZIndex = 0
-    }, notification)
-
-    local basePadding = isMobile and 8 or 10
-    local sidePadding = isMobile and 10 or 12
-
-    local content = self:createElement("Frame", {
-        Name = "Content",
-        Position = UDim2.new(0, 2, 0, 0),
-        Size = UDim2.new(1, -2, 1, 0),
-        BackgroundTransparency = 1
-    }, notification)
-
-    self:createElement("UIPadding", {
-        PaddingTop = UDim.new(0, basePadding),
-        PaddingBottom = UDim.new(0, basePadding),
-        PaddingLeft = UDim.new(0, sidePadding),
-        PaddingRight = UDim.new(0, sidePadding)
-    }, content)
-
-    local hasIcon = options.Icon == nil
-    local iconImage = options.Icon or typeIcons[notifType]
-    local iconSize = isMobile and 18 or (options.IconSize or 20)
-
-    local iconFrame
-    if hasIcon and iconImage then
-        iconFrame = self:createElement("ImageLabel", {
-            Name = "Icon",
-            Size = UDim2.new(0, iconSize, 0, iconSize),
-            Position = UDim2.new(0, 0, 0.5, 0),
-            AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundTransparency = 1,
-            Image = iconImage,
-            ImageColor3 = options.IconColor or accentColor,
-            ScaleType = Enum.ScaleType.Fit
-        }, content)
-    end
-
-    local showClose = options.Closable ~= false
-    local textOffset = hasIcon and (iconSize + (isMobile and 8 or 10)) or 0
-
-    local textContainer = self:createElement("Frame", {
-        Name = "TextContainer",
-        Position = UDim2.new(0, textOffset, 0, 0),
-        Size = UDim2.new(1, -textOffset, 1, 0),
-        BackgroundTransparency = 1
-    }, content)
-
-    self:createElement("UIListLayout", {
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, isMobile and 1 or 2),
-        VerticalAlignment = Enum.VerticalAlignment.Center
-    }, textContainer)
-
-    local titleSize = isMobile and 12 or (options.TitleSize or 13)
-    local title = self:createElement("TextLabel", {
-        Name = "Title",
-        LayoutOrder = 1,
-        Size = UDim2.new(1, showClose and -(isMobile and 22 or 26) or 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 1,
-        Text = options.Title or "Notification",
-        Font = Enum.Font.GothamBold,
-        TextSize = titleSize,
-        TextColor3 = options.TitleColor or Color3.fromRGB(255, 255, 255),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextWrapped = true,
-        RichText = true,
-        LineHeight = 1.1
-    }, textContainer)
-
-    if options.Description then
-        local descSize = isMobile and 11 or (options.DescriptionSize or 12)
-        self:createElement("TextLabel", {
-            Name = "Description",
-            LayoutOrder = 2,
-            Size = UDim2.new(1, showClose and -(isMobile and 22 or 26) or 0, 0, 0),
-            AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundTransparency = 1,
-            Text = options.Description,
-            Font = Enum.Font.Gotham,
-            TextSize = descSize,
-            TextColor3 = options.DescriptionColor or Color3.fromRGB(185, 185, 190),
-            TextTransparency = 0.2,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextWrapped = true,
-            RichText = true,
-            LineHeight = 1.2
-        }, textContainer)
-    end
-
-    if showClose then
-        local closeSize = isMobile and 16 or 18
-        local closeButton = self:createElement("TextButton", {
-            Name = "CloseButton",
-            Position = UDim2.new(1, 0, 0, 0),
-            AnchorPoint = Vector2.new(1, 0),
-            Size = UDim2.new(0, closeSize, 0, closeSize),
-            BackgroundTransparency = 1,
-            Text = "×",
-            Font = Enum.Font.GothamBold,
-            TextSize = isMobile and 18 or 20,
-            TextColor3 = Color3.fromRGB(140, 140, 145),
-            AutoButtonColor = false
-        }, content)
-
-        local isHovering = false
-        closeButton.MouseEnter:Connect(function()
-            isHovering = true
-            local TweenService = self:getService("TweenService")
-            TweenService:Create(closeButton, TweenInfo.new(0.15), {
-                TextColor3 = Color3.fromRGB(255, 85, 85),
-                Rotation = 90
-            }):Play()
-        end)
-
-        closeButton.MouseLeave:Connect(function()
-            isHovering = false
-            local TweenService = self:getService("TweenService")
-            TweenService:Create(closeButton, TweenInfo.new(0.15), {
-                TextColor3 = Color3.fromRGB(140, 140, 145),
-                Rotation = 0
-            }):Play()
-        end)
-
-        closeButton.MouseButton1Click:Connect(function()
-            if not isHovering then
+        SetOptions = function(self, NewOptions)
+            if not EH:ValidateType(NewOptions, "table", "NewOptions", "Dropdown:SetOptions") then
                 return
             end
-            self:dismissNotification(notification)
-        end)
-    end
-
-    if options.Callback then
-        local clickArea = self:createElement("TextButton", {
-            Name = "ClickArea",
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            Text = "",
-            ZIndex = 1
-        }, notification)
-
-        clickArea.MouseButton1Click:Connect(function()
-            options.Callback(notification)
-        end)
-
-        clickArea.MouseEnter:Connect(function()
-            local TweenService = self:getService("TweenService")
-            TweenService:Create(notification, TweenInfo.new(0.15), {
-                BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-            }):Play()
-        end)
-
-        clickArea.MouseLeave:Connect(function()
-            local TweenService = self:getService("TweenService")
-            TweenService:Create(notification, TweenInfo.new(0.15), {
-                BackgroundColor3 = Color3.fromRGB(28, 28, 32)
-            }):Play()
-        end)
-    end
-
-    task.defer(function()
-        task.wait()
-
-        local contentSize
-        if options.Height then
-            contentSize = options.Height
-        else
-            local textHeight = 0
-            for _, child in ipairs(textContainer:GetChildren()) do
-                if child:IsA("TextLabel") then
-                    textHeight = textHeight + child.AbsoluteSize.Y
+            for _, Child in ipairs(ScrollList:GetChildren()) do
+                if Child:IsA("Frame") then
+                    Child:Destroy()
                 end
             end
-
-            local layoutPadding = textContainer:FindFirstChildOfClass("UIListLayout")
-            if layoutPadding and #textContainer:GetChildren() > 1 then
-                textHeight = textHeight + (layoutPadding.Padding.Offset * (#textContainer:GetChildren() - 1))
+            Options = NewOptions
+            NormalizedOptions, OptionDataMap = SimpleUI.DropdownManager:NormalizeOptions(Options)
+            for Index, OptionText in ipairs(NormalizedOptions) do
+                CreateOption(OptionText, Index)
             end
-
-            local minHeight = hasIcon and (iconSize + (basePadding * 2)) or (isMobile and 38 or 42)
-            contentSize = math.max(textHeight + (basePadding * 2), minHeight)
-        end
-
-        notification.Size = UDim2.new(1, 0, 0, contentSize)
-        notification.Position = UDim2.new(0, isMobile and 15 or 20, 0, 0)
-        notification.BackgroundTransparency = 1
-        shadow.ImageTransparency = 1
-
-        if content then
-            for _, child in ipairs(content:GetDescendants()) do
-                if child:IsA("TextLabel") or child:IsA("TextButton") then
-                    child.TextTransparency = 1
-                elseif child:IsA("ImageLabel") and child.Name ~= "Shadow" then
-                    child.ImageTransparency = 1
-                elseif child:IsA("Frame") and child.Name ~= "TextContainer" and child.Name ~= "Content" then
-                    child.BackgroundTransparency = 1
+            if IsMultiSelect then
+                local ValidSelected = {}
+                for Value, Enabled in pairs(SelectedValues) do
+                    if OptionDataMap[Value] then
+                        ValidSelected[Value] = Enabled
+                    end
+                end
+                SelectedValues = ValidSelected
+            else
+                if not OptionDataMap[SelectedValues] and NormalizedOptions[1] then
+                    SelectedValues = nil
                 end
             end
-        end
-
-        local TweenService = self:getService("TweenService")
-        local slideInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-        local enterTweens = {}
-
-        table.insert(enterTweens, TweenService:Create(notification, slideInfo, {
-            Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 0
-        }))
-
-        table.insert(enterTweens, TweenService:Create(shadow, slideInfo, {
-            ImageTransparency = 0.75
-        }))
-
-        if content then
-            for _, child in ipairs(content:GetDescendants()) do
-                if child:IsA("TextLabel") or child:IsA("TextButton") then
-                    table.insert(enterTweens, TweenService:Create(child, slideInfo, {
-                        TextTransparency = 0
-                    }))
-                elseif child:IsA("ImageLabel") and child.Name ~= "Shadow" then
-                    table.insert(enterTweens, TweenService:Create(child, slideInfo, {
-                        ImageTransparency = 0
-                    }))
-                elseif child:IsA("Frame") and child.Name == "AccentBar" then
-                    table.insert(enterTweens, TweenService:Create(child, slideInfo, {
-                        BackgroundTransparency = 0
-                    }))
+            UpdateDisplay()
+        end,
+        SetDescription = function(self, NewDescription)
+            local HadDescription = Description ~= nil and Description.Visible
+            local HasNewDescription = NewDescription and NewDescription ~= ""
+            if Description and NewDescription then
+                Description.Text = NewDescription
+                Description.Visible = true
+            elseif Description and not NewDescription then
+                Description.Visible = false
+            elseif not Description and NewDescription then
+                Description = SimpleUI.ComponentBuilder:CreateDescription(Zones.TextZone, NewDescription, Theme, 2)
+                if Window then
+                    SimpleUI.ThemeManager:RegisterElement(Window, Description, {
+                        TextColor3 = "TextSecondary",
+                        Font = "FontSecondary"
+                    })
                 end
             end
-        end
-
-        for _, tween in ipairs(enterTweens) do
-            tween:Play()
-        end
-
-        if options.Progress ~= false then
-            local progressBar = self:createElement("Frame", {
-                Name = "ProgressBar",
-                Position = UDim2.new(0, 0, 1, -2),
-                Size = UDim2.new(1, 0, 0, 2),
-                BackgroundColor3 = accentColor,
-                BorderSizePixel = 0,
-                ZIndex = 10
-            }, notification)
-
-            TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-                Size = UDim2.new(0, 0, 0, 2)
-            }):Play()
-        end
-
-        if options.AutoDismiss ~= false then
-            task.wait(duration)
-            self:dismissNotification(notification)
-        end
-    end)
-
-    return notification
-end
-
-function SimpleUI:dismissNotification(notification)
-    if not notification or not notification.Parent then
-        return
-    end
-    local TweenService = self:getService("TweenService")
-    local fadeInfo = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-    local shadow = notification:FindFirstChild("Shadow")
-    local tweens = {}
-    table.insert(tweens, TweenService:Create(notification, fadeInfo, {
-        BackgroundTransparency = 1
-    }))
-    if shadow then
-        table.insert(tweens, TweenService:Create(shadow, fadeInfo, {
-            ImageTransparency = 1
-        }))
-    end
-    for _, obj in ipairs(notification:GetDescendants()) do
-        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-            table.insert(tweens, TweenService:Create(obj, fadeInfo, {
-                TextTransparency = 1
-            }))
-        elseif obj:IsA("ImageLabel") and obj ~= shadow then
-            table.insert(tweens, TweenService:Create(obj, fadeInfo, {
-                ImageTransparency = 1
-            }))
-        elseif obj:IsA("Frame") and obj ~= notification then
-            table.insert(tweens, TweenService:Create(obj, fadeInfo, {
-                BackgroundTransparency = 1
-            }))
-        end
-    end
-    for _, tween in ipairs(tweens) do
-        tween:Play()
-    end
-    task.delay(0.35, function()
-        TweenService:Create(notification, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-            Size = UDim2.new(1, 0, 0, 0)
-        }):Play()
-        task.wait(0.15)
-        notification:Destroy()
-    end)
-end
-
-function SimpleUI:createPopup(overlayName, options)
-    local function convertMarkdownToRichText(markdown)
-        local text = markdown
-        text = text:gsub("### (.-)\n", '<font size="18"><b>%1</b></font>\n')
-        text = text:gsub("## (.-)\n", '<font size="20"><b>%1</b></font>\n')
-        text = text:gsub("# (.-)\n", '<font size="22"><b>%1</b></font>\n')
-        text = text:gsub("%*%*%*(.-)%*%*%*", "<b><i>%1</i></b>")
-        text = text:gsub("%*%*(.-)%*%*", "<b>%1</b>")
-        text = text:gsub("%*(.-)%*", "<i>%1</i>")
-        text = text:gsub("__(.-)__", "<b>%1</b>")
-        text = text:gsub("_(.-)_", "<i>%1</i>")
-        text = text:gsub("~~(.-)~~", "<s>%1</s>")
-        text = text:gsub("`([^`]+)`",
-            '<font face="RobotoMono"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">%1</stroke></font>')
-        text = text:gsub("```(.-)```", function(code)
-            return
-                '<font face="RobotoMono" size="13"><stroke color="rgb(50,50,60)" joins="miter" thickness="3" transparency="0">' ..
-                    code .. '</stroke></font>'
-        end)
-        text = text:gsub("%[(.-)%]%((.-)%)", '<font color="rgb(100,150,255)"><u>%1</u></font>')
-        text = text:gsub("^%- (.-)\n", "• %1\n")
-        text = text:gsub("\n%- (.-)\n", "\n• %1\n")
-        text = text:gsub("\n%- (.-)", "\n• %1")
-        text = text:gsub("^%* (.-)\n", "• %1\n")
-        text = text:gsub("\n%* (.-)\n", "\n• %1\n")
-        text = text:gsub("\n%* (.-)", "\n• %1")
-        text = text:gsub("^%d+%. (.-)\n", "%1\n")
-        text = text:gsub("\n%d+%. (.-)\n", "\n%1\n")
-        text = text:gsub("%-%-%-+", "────────────────────────")
-        text = text:gsub("%*%*%*+", "────────────────────────")
-        return text
-    end
-    local title = options.title or "Popup"
-    local text = options.text or ""
-    local width = options.width or UDim2.new(0.55, 0, 0.8, 0)
-    local onClose = options.onClose or function()
-    end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = overlayName or "PopupOverlay"
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.IgnoreGuiInset = true
-    self:ParentUI(screenGui)
-    local blurFrame = Instance.new("TextButton")
-    blurFrame.Name = "BlurBackground"
-    blurFrame.Size = UDim2.new(1, 0, 1, 0)
-    blurFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    blurFrame.BackgroundTransparency = 0.4
-    blurFrame.BorderSizePixel = 0
-    blurFrame.Text = ""
-    blurFrame.AutoButtonColor = false
-    blurFrame.Modal = true
-    blurFrame.Parent = screenGui
-    local blurEffect = Instance.new("BlurEffect")
-    blurEffect.Size = 20
-    blurEffect.Parent = self:getService("Lighting")
-    local popup = Instance.new("Frame")
-    popup.Name = "Popup"
-    popup.Size = width
-    popup.Position = UDim2.new(0.5, 0, 0.5, 0)
-    popup.AnchorPoint = Vector2.new(0.5, 0.5)
-    popup.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    popup.BorderSizePixel = 0
-    popup.Parent = screenGui
-    local popupCorner = Instance.new("UICorner")
-    popupCorner.CornerRadius = UDim.new(0.02, 0)
-    popupCorner.Parent = popup
-    local topBar = Instance.new("Frame")
-    topBar.Name = "TopBar"
-    topBar.Size = UDim2.new(1, 0, 0.08, 0)
-    topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    topBar.BorderSizePixel = 0
-    topBar.Parent = popup
-    local topBarCorner = Instance.new("UICorner")
-    topBarCorner.CornerRadius = UDim.new(0.02, 0)
-    topBarCorner.Parent = topBar
-    local topBarBottom = Instance.new("Frame")
-    topBarBottom.Size = UDim2.new(1, 0, 0.2, 0)
-    topBarBottom.Position = UDim2.new(0, 0, 1, 0)
-    topBarBottom.AnchorPoint = Vector2.new(0, 1)
-    topBarBottom.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    topBarBottom.BorderSizePixel = 0
-    topBarBottom.Parent = topBar
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(0.85, 0, 1, 0)
-    titleLabel.Position = UDim2.new(0.03, 0, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = 15
-    titleLabel.Font = Enum.Font.GothamMedium
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.TextScaled = true
-    titleLabel.Parent = topBar
-    local titleConstraint = Instance.new("UITextSizeConstraint")
-    titleConstraint.MaxTextSize = 15
-    titleConstraint.MinTextSize = 10
-    titleConstraint.Parent = titleLabel
-    local closeButton = Instance.new("TextButton")
-    closeButton.Name = "CloseButton"
-    closeButton.Size = UDim2.new(0.08, 0, 0.65, 0)
-    closeButton.Position = UDim2.new(0.95, 0, 0.5, 0)
-    closeButton.AnchorPoint = Vector2.new(0.5, 0.5)
-    closeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    closeButton.Text = "x"
-    closeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-    closeButton.TextSize = 14
-    closeButton.Font = Enum.Font.Arcade
-    closeButton.TextScaled = true
-    closeButton.Parent = topBar
-    local closeButtonConstraint = Instance.new("UITextSizeConstraint")
-    closeButtonConstraint.MaxTextSize = 14
-    closeButtonConstraint.MinTextSize = 10
-    closeButtonConstraint.Parent = closeButton
-    local closeButtonCorner = Instance.new("UICorner")
-    closeButtonCorner.CornerRadius = UDim.new(0.15, 0)
-    closeButtonCorner.Parent = closeButton
-    local container = Instance.new("ScrollingFrame")
-    container.Name = "Container"
-    container.Size = UDim2.new(0.93, 0, 0.85, 0)
-    container.Position = UDim2.new(0.035, 0, 0.12, 0)
-    container.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    container.BorderSizePixel = 0
-    container.ScrollBarThickness = 4
-    container.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 90)
-    container.CanvasSize = UDim2.new(0, 0, 0, 0)
-    container.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    container.Parent = popup
-    local containerCorner = Instance.new("UICorner")
-    containerCorner.CornerRadius = UDim.new(0.03, 0)
-    containerCorner.Parent = container
-    local contentPadding = Instance.new("UIPadding")
-    contentPadding.PaddingTop = UDim.new(0.02, 0)
-    contentPadding.PaddingBottom = UDim.new(0.02, 0)
-    contentPadding.PaddingLeft = UDim.new(0.03, 0)
-    contentPadding.PaddingRight = UDim.new(0.03, 0)
-    contentPadding.Parent = container
-    local contentLabel = Instance.new("TextLabel")
-    contentLabel.Name = "Content"
-    contentLabel.Size = UDim2.new(1, 0, 0, 0)
-    contentLabel.BackgroundTransparency = 1
-    contentLabel.Text = convertMarkdownToRichText(text)
-    contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    contentLabel.TextSize = 14
-    contentLabel.Font = Enum.Font.Gotham
-    contentLabel.TextXAlignment = Enum.TextXAlignment.Left
-    contentLabel.TextYAlignment = Enum.TextYAlignment.Top
-    contentLabel.TextWrapped = true
-    contentLabel.RichText = true
-    contentLabel.AutomaticSize = Enum.AutomaticSize.Y
-    contentLabel.Parent = container
-    local function closePopup()
-        if blurEffect then
-            blurEffect:Destroy()
-        end
-        screenGui:Destroy()
-        onClose()
-    end
-    closeButton.MouseButton1Click:Connect(closePopup)
-    return {
-        gui = screenGui,
-        popup = popup,
-        container = container,
-        contentLabel = contentLabel,
-        close = closePopup
+            if HadDescription ~= HasNewDescription then
+                SimpleUI.ComponentBuilder:UpdateDescriptionPadding(Zones, HasNewDescription)
+            end
+        end,
+        Close = function(self)
+            CloseDropdown()
+        end,
+        GetElements = function(self)
+            return {
+                Container = Zones.Container,
+                Label = Label,
+                Description = Description,
+                Display = Display,
+                DisplayLabel = DisplayLabel,
+                Arrow = Arrow,
+                ListContainer = ListContainer,
+                SearchBox = SearchBox,
+                ScrollList = ScrollList
+            }
+        end,
+        Changed = ChangedEvent.Event
     }
 end
 
+function SimpleUI:CreateNotification(Options)
+    local EH = self.ErrorHandler
+    Options = Options or {}
+    if not EH:ValidateType(Options, "table", "Options", "CreateNotification") then
+        Options = {}
+    end
 
--- ========================= VALIDATION =========================
+    local Title = Options.Title
+    if not EH:ValidateType(Title, "string", "Title", "CreateNotification") then
+        Title = "Notification"
+    end
+
+    local Description = Options.Description
+    if Description and not EH:ValidateType(Description, "string", "Description", "CreateNotification") then
+        Description = nil
+    end
+
+    local Duration = Options.Duration or 5
+    if not EH:ValidateType(Duration, "number", "Duration", "CreateNotification") then
+        Duration = 5
+    else
+        Duration = math.clamp(Duration, 0, 300)
+    end
+
+    local Tag = Options.Tag
+    if Tag and not EH:ValidateType(Tag, "string", "Tag", "CreateNotification") then
+        Tag = nil
+    end
+
+    local Type = Options.Type
+    if Type and not EH:ValidateType(Type, "string", "Type", "CreateNotification") then
+        Type = nil
+    end
+
+    local Theme = type(Options.Theme) == "string" and (self.Themes[Options.Theme] or self.Themes.Obsidian) or
+                      type(Options.Theme) == "table" and Options.Theme or self.Themes.Obsidian
+
+    local Color = Options.Color
+    if Color and typeof(Color) ~= "Color3" then
+        Color = Theme.Accent
+    else
+        Color = Color or Theme.Accent
+    end
+
+    local Callback = Options.Callback
+    if Callback and not EH:ValidateType(Callback, "function", "Callback", "CreateNotification") then
+        Callback = nil
+    end
+
+    local Closable = Options.Closable ~= false
+
+    self.NotificationManager:Initialize()
+
+    local NotificationUI = self.NotificationManager:CreateNotificationUI({
+        Title = Title,
+        Description = Description,
+        Theme = Theme,
+        Color = Color,
+        Type = Type,
+        Tag = Tag,
+        Callback = Callback,
+        Closable = Closable,
+        Duration = Duration
+    })
+
+    return {
+        Dismiss = function(self)
+            SimpleUI.NotificationManager:Dismiss(NotificationUI.Container)
+        end,
+        SetTitle = function(self, NewTitle)
+            if EH:ValidateType(NewTitle, "string", "NewTitle", "Notification:SetTitle") then
+                NotificationUI.Title.Text = NewTitle
+            end
+        end,
+        SetDescription = function(self, NewDescription)
+            if NotificationUI.Description then
+                if NewDescription and
+                    EH:ValidateType(NewDescription, "string", "NewDescription", "Notification:SetDescription") then
+                    NotificationUI.Description.Text = NewDescription
+                    NotificationUI.Description.Visible = true
+                else
+                    NotificationUI.Description.Visible = false
+                end
+            end
+        end,
+        SetTag = function(self, NewTag)
+            if EH:ValidateType(NewTag, "string", "NewTag", "Notification:SetTag") and NotificationUI.Tag then
+                NotificationUI.Tag.Text = NewTag
+            end
+        end,
+        GetElements = function(self)
+            return {
+                Container = NotificationUI.Container,
+                Card = NotificationUI.Card,
+                Title = NotificationUI.Title,
+                Description = NotificationUI.Description,
+                Tag = NotificationUI.Tag,
+                Content = NotificationUI.Content,
+                ProgressFill = NotificationUI.ProgressFill
+            }
+        end
+    }
+end
+
+-- ================= VALIDATION =================
 
 local function getStorage()
     local registry = getgenv().__PrereqStorageRegistry
@@ -4852,31 +7238,26 @@ local function getStorage()
     end
 
     for k, v in pairs(getgenv()) do
-        if type(k) == "userdata" and v == true then
-            if registry[k] then
-                return k
-            end
+        if type(k) == "userdata" and v == true and registry[k] then
+            return k
         end
     end
     return nil
 end
 
 local proxy = getStorage()
-
 if not proxy then
     error("Loader required")
 end
 
 local storageRegistry = getgenv().__PrereqStorageRegistry
 local moduleRegistry = getgenv().__PrereqModuleRegistry
-
 if not storageRegistry or not moduleRegistry then
     error("Loader required")
 end
 
 local data = storageRegistry[proxy]
 local prereqs = data.Prereqs
-
 if not prereqs or not next(prereqs) then
     error("Loader required")
 end
@@ -4893,1868 +7274,1852 @@ end
 
 local TaskManager = getPrerequisite("TaskManager")
 local ShoppingMart = getPrerequisite("ShoppingMart")
-local amazong = ShoppingMart.new(SimpleUI:isMobile() and 0.5 or 0.90)
 
-SimpleUI:createNotification({
+-- ================= MAIN CODE =================
+
+SimpleUI:CreateNotification({
     Title = "Validated!",
     Type = "Success",
     Description = "Pre-requisites validated, script will start soon! Powered by SimpleUI",
     Duration = 3
 })
 
-SimpleUI:createNotification({
+SimpleUI:CreateNotification({
     Title = "UI keybind",
     Type = "Info",
     Description = "Default UI visibility toggle is the Q button on PC",
     Duration = 10
 })
 
-local window = SimpleUI:createWindow({
-    TitleLabel = {
-        Properties = {
-            Text = "Prospecting!"
-        }
-    },
-    Subtitle = "by SimpleScripts",
-    defaultScale = SimpleUI:isMobile() and 0.750 or 1
-})
--- ========================= STATES / VARS =========================
+local Services = {
+    Players = SimpleUI.Utility:GetService("Players"),
+    ReplicatedStorage = SimpleUI.Utility:GetService("ReplicatedStorage"),
+    PathfindingService = SimpleUI.Utility:GetService("PathfindingService"),
+    TeleportService = SimpleUI.Utility:GetService("TeleportService"),
+    Workspace = SimpleUI.Utility:GetService("Workspace"),
+    RunService = SimpleUI.Utility:GetService("RunService"),
+    HttpService = SimpleUI.Utility:GetService("HttpService"),
+    Lighting = SimpleUI.Utility:GetService("Lighting")
+}
 
-local Players = SimpleUI:getService("Players")
-local ReplicatedStorage = SimpleUI:getService("ReplicatedStorage")
-local PathfindingService = SimpleUI:getService("PathfindingService")
-local TeleportService = SimpleUI:getService("TeleportService")
-local Workspace = SimpleUI:getService("Workspace")
-local RunService = SimpleUI:getService("RunService")
-local HttpService = SimpleUI:getService("HttpService")
-local Lighting = SimpleUI:getService("Lighting")
-
-local Player = Players.LocalPlayer
-local LocalPlayer = Player
-local Camera = Workspace.CurrentCamera
-local Characters = Workspace:WaitForChild("Characters")
-
-local Character
-local LocalCharacter
-local HumanoidRootPart
-local Humanoid
-local Animator
-local WashAnimation
-local equipmentNames = {}
-local fireflyAmount = 1
-local priceLabel = nil
-local equipment
-local GEODE_AUTO_LOOP_DELAY = 0.01
-local currentGeodeIndex = 1
-local geodeAutoLoopEnabled = false
-local lastGeodeTeleportTime = 0
-local geodeTeleportConnection
-local currentRuneIndex = 0
-local runeAutoLoopEnabled = false
-local runeTeleportConnection = nil
-local lastRuneTeleportTime = 0
-local RUNE_AUTO_LOOP_DELAY = 1
-
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Player = Services.Players.LocalPlayer
+local Camera = Services.Workspace.CurrentCamera
+local Characters = Services.Workspace:WaitForChild("Characters")
+local PlayerGui = Player:WaitForChild("PlayerGui")
 local BackpackTwo = Player:WaitForChild("BackpackTwo")
-local Map = Workspace:WaitForChild("Map")
-local waypointFolder = Map:FindFirstChild("Waypoints")
+local Map = Services.Workspace:WaitForChild("Map")
 
+local ReplicatedStorage = Services.ReplicatedStorage
 local PanningAnimations = ReplicatedStorage.Assets.Animations.Panning
 local Excavations = require(ReplicatedStorage.GameInfo.Excavations)
 local CraftingRemotes = ReplicatedStorage.Remotes.Crafting
-local StartRemote = ReplicatedStorage.Remotes.Excavation.StartExcavation
-local ClaimRemote = ReplicatedStorage.Remotes.Excavation.ClaimExcavation
-local UpdateRemote = ReplicatedStorage.Remotes.Excavation.UpdateExcavationData
 
-local function BindCharacter(char)
+local Character, LocalCharacter, HumanoidRootPart, Humanoid, Animator, WashAnimation
+
+local function bindCharacter(char)
     Character = char
-    LocalCharacter = Characters:WaitForChild(LocalPlayer.Name)
+    LocalCharacter = Characters:WaitForChild(Player.Name)
     Humanoid = char:WaitForChild("Humanoid")
     HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
     Animator = Humanoid:WaitForChild("Animator")
     WashAnimation = Animator:LoadAnimation(PanningAnimations.Wash)
 end
 
-BindCharacter(LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait())
-LocalPlayer.CharacterAdded:Connect(BindCharacter)
+bindCharacter(Player.Character or Player.CharacterAdded:Wait())
+Player.CharacterAdded:Connect(bindCharacter)
 
--- Others
-local NPCs = Workspace:WaitForChild("NPCs")
-local PlaceId = game.PlaceId
-local JobId = game.JobId
+local State = {
+    AutoFarm = {
+        active = false,
+        actionMode = "Instant",
+        travelMode = "Teleport",
+        sandCFrame = nil,
+        waterCFrame = nil,
+        locked = false,
+        interrupted = false,
+        running = false
+    },
 
--- UI
-local ToolUI = PlayerGui:WaitForChild("ToolUI")
-local FillingPan = ToolUI:WaitForChild("FillingPan")
-local FillText = FillingPan:WaitForChild("FillText")
+    Sell = {
+        mode = "Teleport",
+        type = "Threshold",
+        threshold = 300,
+        delay = 60,
+        autoSell = false,
+        _lastSell = nil,
+        _scheduledSell = nil
+    },
 
-local PanStatus = {
-    current = 0,
-    max = 100,
-    isFull = false
+    Excavation = {
+        selected = nil,
+        data = nil,
+        autoClaim = false,
+        waiting = false
+    },
+
+    Crafting = {
+        selectedEquipment = nil,
+        selectedMaterials = {},
+        discoveredRecipes = {},
+        autocraft = false,
+        autocraftRunning = false,
+        selectBestOres = false
+    },
+
+    ESP = {
+        Players = {},
+        Totems = {},
+        Connections = {}
+    },
+
+    Pan = {
+        current = 0,
+        max = 100,
+        isFull = false
+    },
+
+    Geode = {
+        currentIndex = 1,
+        autoLoopEnabled = false,
+        lastTeleportTime = 0,
+        teleportConnection = nil
+    },
+
+    Rune = {
+        currentIndex = 0,
+        autoLoopEnabled = false,
+        lastTeleportTime = 0,
+        teleportConnection = nil
+    }
 }
 
-local AutoFarmState = {
-    active = false,
-    actionMode = "Instant",
-    travelMode = "Teleport",
-    sandCFrame = nil,
-    waterCFrame = nil,
-    locked = false
+local Config = {
+    GEODE_AUTO_LOOP_DELAY = 0.01,
+    RUNE_AUTO_LOOP_DELAY = 1
 }
 
-local ESP = {
-    Players = {},
-    Totems = {},
-    Connections = {}
-}
+local Utility = {}
+do
+    function Utility.createNotification(content, duration)
+        SimpleUI:CreateNotification({
+            Type = "Default",
+            Title = "Notification",
+            Description = content or "[DEBUG] TEST",
+            Duration = duration or 5
+        })
+    end
 
-local CraftingState = {
-    selectedEquipment = nil,
-    selectedMaterials = {},
-    discoveredRecipes = {},
-    autocraft = false,
-    autocraftRunning = false,
-    selectBestOres = false
-}
+    function Utility.formatPrice(price, isShardPrice)
+        local symbol = isShardPrice and "ƒ" or "$"
+        local suffixes = {{1e21, "Sx"}, {1e18, "Q"}, {1e15, "qd"}, {1e12, "T"}, {1e9, "B"}, {1e6, "M"}, {1e3, "K"}}
 
-local AutoFarmState = {
-    active = false,
-    actionMode = "Instant",
-    travelMode = "Teleport",
-    interrupted = false,
-    running = false,
-    sandCFrame = nil,
-    waterCFrame = nil,
-    locked = false
-}
-
-local SellSettings = {
-    mode = "Teleport",
-    type = "Threshold",
-    threshold = 300,
-    delay = 60,
-    autoSell = false,
-    _lastSell = nil,
-    _scheduledSell = nil
-}
-
-local ExcavationState = {
-    selected = nil,
-    data = nil,
-    autoClaim = false,
-    waiting = false
-}
-
--- ==================== HELPERS ====================
-
-local function createNotification(content, duration)
-    SimpleUI:createNotification({
-        Type = "Default",
-        Title = "Notification",
-        Description = content or "[DEBUG] TEST",
-        Duration = duration or 5
-    })
-end
-
-local function equipPan()
-    local Players = SimpleUI:getService("Players")
-    local ReplicatedStorage = SimpleUI:getService("ReplicatedStorage")
-    local LocalPlayer = Players.LocalPlayer
-    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-
-    local function findPan(container)
-        for _, v in ipairs(container:GetChildren()) do
-            if v:GetAttribute("ItemType") == "Pan" then
-                return v
+        for _, data in ipairs(suffixes) do
+            if price >= data[1] then
+                return string.format("%s%.1f%s", symbol, price / data[1], data[2])
             end
         end
+
+        return symbol .. tostring(price)
     end
-    local pan = findPan(Character) or findPan(LocalPlayer.Backpack) or findPan(LocalPlayer:WaitForChild("BackpackTwo"))
-    if pan then
-        ReplicatedStorage.Remotes.CustomBackpack.EquipRemote:FireServer(pan)
-        return pan
-    end
-    return nil
-end
 
-local function validateSellValue(str)
-    if not str or str == "" then
-        return nil, nil
-    end
-    local n, u = str:lower():match("^(%d+)%s*(%a*)$")
-    n = tonumber(n)
-    if not n then
-        return nil, nil
-    end
-    u = (u or ""):gsub("s+$", "")
-
-    -- omg multi-lang support
-    local multipliers = {
-        -- Seconds
-        [""] = 1, -- Empty/default (seconds)
-        s = 1,
-        sec = 1,
-        secs = 1,
-        second = 1,
-        seconds = 1,
-        ["s."] = 1,
-        ["sec."] = 1,
-        S = 1,
-
-        -- Minutes
-        m = 60,
-        min = 60,
-        mins = 60,
-        minute = 60,
-        minutes = 60,
-        ["m."] = 60,
-        ["min."] = 60,
-        M = 60,
-
-        -- Hours
-        h = 3600,
-        hr = 3600,
-        hrs = 3600,
-        hour = 3600,
-        hours = 3600,
-        ["h."] = 3600,
-        ["hr."] = 3600,
-        H = 3600,
-
-        -- Days
-        d = 86400,
-        day = 86400,
-        days = 86400,
-        ["d."] = 86400,
-        D = 86400,
-
-        -- International variations
-        segundo = 1,
-        minuto = 60,
-        hora = 3600,
-        dia = 86400,
-        seconde = 1,
-        minute_fr = 60,
-        heure = 3600,
-        jour = 86400,
-        sekunde = 1,
-        minute_de = 60,
-        stunde = 3600,
-        tag = 86400,
-        secon = 1,
-        minut = 60,
-        hou = 3600,
-        da = 86400,
-        sec_short = 1,
-        min_short = 60,
-        hr_short = 3600
-    }
-    if u ~= "" then
-        local seconds = n * (multipliers[u] or 0)
-        if seconds >= 30 and seconds <= 86400 then
-            return seconds, "time"
-        else
+    function Utility.validateSellValue(str)
+        if not str or str == "" then
             return nil, nil
         end
-    else
-        -- Treat as sell value
+
+        local n, u = str:lower():match("^(%d+)%s*(%a*)$")
+        n = tonumber(n)
+        if not n then
+            return nil, nil
+        end
+        u = (u or ""):gsub("s+$", "")
+
+        local multipliers = {
+            [""] = 1,
+            s = 1,
+            sec = 1,
+            secs = 1,
+            second = 1,
+            seconds = 1,
+            m = 60,
+            min = 60,
+            mins = 60,
+            minute = 60,
+            minutes = 60,
+            h = 3600,
+            hr = 3600,
+            hrs = 3600,
+            hour = 3600,
+            hours = 3600,
+            d = 86400,
+            day = 86400,
+            days = 86400
+        }
+
+        if u ~= "" then
+            local seconds = n * (multipliers[u] or 0)
+            if seconds >= 30 and seconds <= 86400 then
+                return seconds, "time"
+            end
+            return nil, nil
+        end
+
         if n >= 10 and n <= 2000 then
             return n, "value"
+        end
+
+        return nil, nil
+    end
+
+    function Utility.encodeJSON(value, indentLevel)
+        indentLevel = indentLevel or 0
+        local indent = string.rep("    ", indentLevel)
+        local nextIndent = string.rep("    ", indentLevel + 1)
+
+        if typeof(value) == "table" then
+            local isArray = (#value > 0)
+            local buffer = {}
+
+            if isArray then
+                table.insert(buffer, "[")
+                for i, v in ipairs(value) do
+                    table.insert(buffer,
+                        nextIndent .. Utility.encodeJSON(v, indentLevel + 1) .. (i < #value and "," or ""))
+                end
+                table.insert(buffer, indent .. "]")
+            else
+                table.insert(buffer, "{")
+                local keys = {}
+                for k in pairs(value) do
+                    table.insert(keys, k)
+                end
+                table.sort(keys, function(a, b)
+                    return tostring(a) < tostring(b)
+                end)
+
+                for i, k in ipairs(keys) do
+                    local v = value[k]
+                    local keyStr = ("%q"):format(tostring(k))
+                    local entry = nextIndent .. keyStr .. ": " .. Utility.encodeJSON(v, indentLevel + 1)
+                    if i < #keys then
+                        entry = entry .. ","
+                    end
+                    table.insert(buffer, entry)
+                end
+                table.insert(buffer, indent .. "}")
+            end
+
+            return table.concat(buffer, "\n")
+        elseif typeof(value) == "string" then
+            return ("%q"):format(value)
+        elseif typeof(value) == "boolean" or typeof(value) == "number" then
+            return tostring(value)
+        elseif value == nil then
+            return "null"
         else
-            return nil, nil
+            return ("%q"):format("<unsupported>")
         end
     end
 end
 
-local function getPanStatus()
-    local function getDefaultStatus()
+local PanModule = {}
+do
+    function PanModule.equipPan()
+        local function findPan(container)
+            for _, v in ipairs(container:GetChildren()) do
+                if v:GetAttribute("ItemType") == "Pan" then
+                    return v
+                end
+            end
+        end
+
+        local pan = findPan(Character) or findPan(Player.Backpack) or findPan(BackpackTwo)
+        if pan then
+            ReplicatedStorage.Remotes.CustomBackpack.EquipRemote:FireServer(pan)
+            return pan
+        end
+        return nil
+    end
+
+    function PanModule.getStatus()
+        local ToolUI = PlayerGui:WaitForChild("ToolUI")
+        local FillingPan = ToolUI:WaitForChild("FillingPan")
+        local FillText = FillingPan:WaitForChild("FillText")
+
+        local function getDefaultStatus()
+            return {
+                current = 0,
+                max = 100,
+                isFull = false,
+                isEmpty = true
+            }
+        end
+
+        local function cleanAndParseNumber(raw, fallback)
+            if not raw then
+                return fallback
+            end
+            local cleaned = string.gsub(string.gsub(string.gsub(tostring(raw), ",", ""), " ", ""), "%s+", "")
+            if cleaned == "" then
+                return fallback
+            end
+            local parsed = tonumber(cleaned)
+            return parsed and math.max(0, math.floor(parsed)) or fallback
+        end
+
+        if not FillText or not FillText.ContentText then
+            return getDefaultStatus()
+        end
+
+        local contentText = tostring(FillText.ContentText)
+        if contentText == "" then
+            return getDefaultStatus()
+        end
+
+        local fillNumbers = string.split(contentText, "/")
+        if not fillNumbers or #fillNumbers < 2 then
+            return getDefaultStatus()
+        end
+
+        local current = cleanAndParseNumber(fillNumbers[1], 0)
+        local max = math.max(1, cleanAndParseNumber(fillNumbers[2], 100))
+
         return {
-            current = 0,
-            max = 100,
-            isFull = false,
-            isEmpty = true
+            current = current,
+            max = max,
+            isFull = current >= max,
+            isEmpty = current <= 0
         }
     end
-    local function cleanAndParseNumber(raw, fallback)
-        if not raw then
-            return fallback
-        end
-        local cleaned = string.gsub(string.gsub(string.gsub(tostring(raw), ",", ""), " ", ""), "%s+", "")
-        if cleaned == "" then
-            return fallback
-        end
-        local parsed = tonumber(cleaned)
-        return parsed and math.max(0, math.floor(parsed)) or fallback
-    end
-    if not FillText or not FillText.ContentText then
-        return getDefaultStatus()
-    end
-    local contentText = tostring(FillText.ContentText)
-    if contentText == "" then
-        return getDefaultStatus()
-    end
-    local fillNumbers = string.split(contentText, "/")
-    if not fillNumbers or #fillNumbers < 2 then
-        return getDefaultStatus()
-    end
-    local current = cleanAndParseNumber(fillNumbers[1], 0)
-    local max = math.max(1, cleanAndParseNumber(fillNumbers[2], 100))
-    return {
-        current = current,
-        max = max,
-        isFull = current >= max,
-        isEmpty = current <= 0
-    }
-end
 
-local function CollectInvokeServer(collect)
-    collect:InvokeServer(1, true)
-end
-
-local function getRegion(HumanoidRootPart)
-    local PointToRegion = require(ReplicatedStorage.Modules.Location.PointToRegion)
-    local region, _ = PointToRegion.GetPanningRegion(HumanoidRootPart.Position)
-    return region
-end
-
-local function isMerchant(npc)
-    local imgPass = false
-    local icon = npc:FindFirstChild("IconUI")
-    local img = icon and icon:FindFirstChild("ImageLabel")
-    if img and img.Image == "rbxassetid://2246496691" then
-        imgPass = true
-    end
-    local objPass = false
-    local dialog = npc:FindFirstChild("Dialog")
-    if dialog and dialog.ClassName == "ObjectValue" and dialog.Value and dialog.Value.Name == "Seller" then
-        objPass = true
-    end
-    return imgPass and objPass
-end
-
-local function getClosestMerchant()
-    local char = Players.LocalPlayer.Character
-    local playerHrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not playerHrp then
-        return nil, math.huge
+    function PanModule.getRegion(rootPart)
+        local PointToRegion = require(ReplicatedStorage.Modules.Location.PointToRegion)
+        local region, _ = PointToRegion.GetPanningRegion(rootPart.Position)
+        return region
     end
 
-    local closest, closestDist = nil, math.huge
+    function PanModule.handleAction(mode, actionType, executeToCompletion, killSwitch)
+        executeToCompletion = executeToCompletion or false
 
-    for _, folder in ipairs(NPCs:GetChildren()) do
-        for _, npc in ipairs(folder:GetChildren()) do
-            if isMerchant(npc) and npc:FindFirstChild("HumanoidRootPart") then
-                local hrp = npc.HumanoidRootPart
-                local dist = (playerHrp.Position - hrp.Position).Magnitude
-                if dist < closestDist then
-                    closestDist = dist
-                    closest = hrp
+        local function validatePan()
+            local pan = PanModule.equipPan()
+            local folder = pan and pan:FindFirstChild("Scripts")
+            if not folder then
+                Utility.createNotification("No Pan found.")
+                return nil
+            end
+
+            local scripts = {}
+            for _, child in ipairs(folder:GetChildren()) do
+                if child:IsA("RemoteFunction") or child:IsA("RemoteEvent") then
+                    scripts[child.Name] = child
                 end
             end
-        end
-    end
 
-    return closest, closestDist
-end
-
-local function encodeJSON(value, indentLevel)
-    indentLevel = indentLevel or 0
-    local indent = string.rep("    ", indentLevel)
-    local nextIndent = string.rep("    ", indentLevel + 1)
-    if typeof(value) == "table" then
-        local isArray = (#value > 0)
-        local buffer = {}
-        if isArray then
-            table.insert(buffer, "[")
-            for i, v in ipairs(value) do
-                table.insert(buffer, nextIndent .. encodeJSON(v, indentLevel + 1) .. (i < #value and "," or ""))
-            end
-            table.insert(buffer, indent .. "]")
-        else
-            table.insert(buffer, "{")
-            local keys = {}
-            for k in pairs(value) do
-                table.insert(keys, k)
-            end
-            table.sort(keys, function(a, b)
-                return tostring(a) < tostring(b)
-            end)
-            for i, k in ipairs(keys) do
-                local v = value[k]
-                local keyStr = ("%q"):format(tostring(k))
-                local entry = nextIndent .. keyStr .. ": " .. encodeJSON(v, indentLevel + 1)
-                if i < #keys then
-                    entry = entry .. ","
-                end
-                table.insert(buffer, entry)
-            end
-            table.insert(buffer, indent .. "}")
-        end
-        return table.concat(buffer, "\n")
-    elseif typeof(value) == "string" then
-        return ("%q"):format(value)
-    elseif typeof(value) == "boolean" or typeof(value) == "number" then
-        return tostring(value)
-    elseif value == nil then
-        return "null"
-    else
-        return ("%q"):format("<unsupported>")
-    end
-end
-
-local function tweenToTarget(target, config)
-    local player = Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local hrp = character:WaitForChild("HumanoidRootPart")
-    local humanoid = character:WaitForChild("Humanoid")
-    config = config or {}
-    local offset = config.Offset or Vector3.new(0, 0, 0)
-    local stopDist = config.StopDistance or 20
-    local speed = config.Speed or 24
-    local cruiseHeight = config.CruiseHeight or 25
-    local minHeight = config.MinHeight or 15
-    local maxHeight = config.MaxHeight or 100
-    local agentRadius = config.AgentRadius or 3
-    local longDistanceThreshold = config.LongDistanceThreshold or 150
-    local directFlightThreshold = config.DirectFlightThreshold or 50
-    local waypointDistance = config.WaypointDistance or 12
-    local smoothness = config.Smoothness or 0.5
-    local landingDuration = config.LandingDuration or 1.2
-    local hoverDuration = config.HoverDuration or 0.3
-    local pathTimeout = config.PathTimeout or 8
-    local maxTimeout = config.MaxTimeout or 45
-    local adaptiveHeight = config.AdaptiveHeight ~= false
-    local useDirectFlight = config.UseDirectFlight ~= false
-    local debug = config.Debug or false
-    local isActive = true
-    local currentPath = nil
-    local waypoints = {}
-    local currentWaypointIndex = 1
-    local lastWaypointTime = tick()
-    local startTime = tick()
-    local isLanding = false
-    local currentHeight = cruiseHeight
-    local bg, bv, bp
-    local debugParts = {}
-    local originalPlatformStand
-    local TweenService = SimpleUI:getService("TweenService")
-    local function setNoclip(state)
-        for _, v in pairs(character:GetDescendants()) do
-            if v:IsA("BasePart") then
-                v.CanCollide = not state
-            end
-        end
-        if humanoid then
-            if state then
-                originalPlatformStand = humanoid.PlatformStand
-                humanoid.PlatformStand = true
+            if next(scripts) then
+                return scripts
             else
-                if originalPlatformStand ~= nil then
-                    humanoid.PlatformStand = originalPlatformStand
+                Utility.createNotification("Pan has no scripts.")
+                return nil
+            end
+        end
+
+        local function isInValidRegion(forWhat)
+            return Character and Character:FindFirstChild("HumanoidRootPart") and
+                       PanModule.getRegion(Character.HumanoidRootPart) == forWhat
+        end
+
+        local function shakeUntilNotPanning(shakeScript, killSwitch)
+            while LocalCharacter:GetAttribute("Panning") do
+                if killSwitch and not killSwitch() then
+                    return false
                 end
+                pcall(function()
+                    shakeScript:FireServer()
+                end)
+                task.wait()
             end
-        end
-    end
-    local function cleanup()
-        isActive = false
-        if bg then
-            bg:Destroy()
-        end
-        if bv then
-            bv:Destroy()
-        end
-        if bp then
-            bp:Destroy()
-        end
-        setNoclip(false)
-        if humanoid and originalPlatformStand ~= nil then
-            humanoid.PlatformStand = originalPlatformStand
-        end
-        for _, part in pairs(debugParts) do
-            if part.Parent then
-                part:Destroy()
-            end
-        end
-        debugParts = {}
-    end
-    local function toVector3(t)
-        if typeof(t) == "Vector3" then
-            return t
-        elseif typeof(t) == "Instance" and t:IsA("BasePart") then
-            return t.Position
-        elseif typeof(t) == "CFrame" then
-            return t.Position
-        elseif typeof(t) == "table" then
-            if t.Position then
-                return t.Position
-            elseif t.X and t.Y and t.Z then
-                return Vector3.new(t.X, t.Y, t.Z)
-            end
-        end
-        error("Invalid target type")
-    end
-    local function createDebugWaypoint(position, color, size)
-        if not debug then
-            return
-        end
-        local part = Instance.new("Part")
-        part.Size = Vector3.new(size or 2, size or 2, size or 2)
-        part.Position = position
-        part.Color = color or Color3.new(1, 0, 0)
-        part.Material = Enum.Material.ForceField
-        part.Transparency = 0.3
-        part.Anchored = true
-        part.CanCollide = false
-        part.Shape = Enum.PartType.Ball
-        part.Parent = Workspace
-        local light = Instance.new("PointLight")
-        light.Color = part.Color
-        light.Brightness = 2
-        light.Range = 10
-        light.Parent = part
-        table.insert(debugParts, part)
-        return part
-    end
-    local function getOptimalHeight(position, targetPos)
-        if not adaptiveHeight then
-            return currentHeight
-        end
-        local distance = (targetPos - position).Magnitude
-        local terrainHeight = 0
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {character}
-        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-        local result = Workspace:Raycast(position, Vector3.new(0, -200, 0), rayParams)
-        if result then
-            terrainHeight = result.Position.Y
-        end
-        local baseHeight = math.max(minHeight, terrainHeight + 10)
-        if distance > longDistanceThreshold then
-            return math.min(maxHeight, baseHeight + 30)
-        elseif distance > 75 then
-            return math.min(cruiseHeight + 15, baseHeight + 20)
-        else
-            return math.min(cruiseHeight, baseHeight + 15)
-        end
-    end
-    local function hasObstaclesBetween(start, destination, checkHeight)
-        local direction = (destination - start)
-        local distance = direction.Magnitude
-        local unit = direction.Unit
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {character}
-        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-        local checkPoints = math.max(3, math.floor(distance / 10))
-        for i = 1, checkPoints do
-            local checkPos = start + unit * (distance * i / checkPoints)
-            checkPos = Vector3.new(checkPos.X, checkPos.Y + checkHeight, checkPos.Z)
-            local directions = {Vector3.new(0, 0, 0), Vector3.new(agentRadius, 0, 0), Vector3.new(-agentRadius, 0, 0),
-                                Vector3.new(0, 0, agentRadius), Vector3.new(0, 0, -agentRadius),
-                                Vector3.new(0, agentRadius, 0), Vector3.new(0, -agentRadius, 0)}
-            for _, dir in pairs(directions) do
-                local testPos = checkPos + dir
-                local result = Workspace:Raycast(testPos, Vector3.new(0, -checkHeight - 10, 0), rayParams)
-                if result and result.Position.Y > testPos.Y - 5 then
-                    return true
-                end
-                local ceilingResult = Workspace:Raycast(testPos, Vector3.new(0, 10, 0), rayParams)
-                if ceilingResult and ceilingResult.Position.Y < testPos.Y + 6 then
-                    return true
-                end
-                local forwardRay = Workspace:Raycast(testPos, unit * 10, rayParams)
-                if forwardRay then
-                    return true
-                end
-            end
-        end
-        return false
-    end
-    local function canDirectFly(start, destination)
-        if not useDirectFlight then
-            return false
-        end
-        local distance = (destination - start).Magnitude
-        if distance > directFlightThreshold then
-            return false
-        end
-        return not hasObstaclesBetween(start, destination, currentHeight)
-    end
-    local function createPath(destination)
-        local startPos = hrp.Position
-        local targetPos = destination
-        currentHeight = getOptimalHeight(startPos, targetPos)
-        if canDirectFly(startPos, targetPos) then
-            local directWaypoint = {
-                Position = Vector3.new(targetPos.X, targetPos.Y + currentHeight, targetPos.Z),
-                Action = Enum.PathWaypointAction.Walk
-            }
-            return {{
-                Position = startPos
-            }, directWaypoint}
-        end
-        local groundStart = Vector3.new(startPos.X, startPos.Y, startPos.Z)
-        local groundTarget = Vector3.new(targetPos.X, targetPos.Y, targetPos.Z)
-        local path = PathfindingService:CreatePath({
-            AgentRadius = agentRadius,
-            AgentHeight = 6,
-            AgentCanJump = false,
-            AgentCanClimb = false,
-            WaypointSpacing = math.max(8, waypointDistance),
-            Costs = {
-                Danger = math.huge
-            }
-        })
-        local success, err = pcall(function()
-            path:ComputeAsync(groundStart, groundTarget)
-        end)
-        if success and path.Status == Enum.PathStatus.Success then
-            local pathWaypoints = path:GetWaypoints()
-            local modifiedWaypoints = {}
-            for i, waypoint in ipairs(pathWaypoints) do
-                local elevatedPos = Vector3.new(waypoint.Position.X, waypoint.Position.Y + currentHeight,
-                    waypoint.Position.Z)
-                table.insert(modifiedWaypoints, {
-                    Position = elevatedPos,
-                    Action = waypoint.Action
-                })
-            end
-            return modifiedWaypoints
-        else
-            local direction = (targetPos - startPos)
-            local distance = direction.Magnitude
-            local unit = direction.Unit
-            local fallbackWaypoints = {}
-            table.insert(fallbackWaypoints, {
-                Position = startPos,
-                Action = Enum.PathWaypointAction.Walk
-            })
-            local midPoint = startPos + unit * (distance * 0.5)
-            local highMidPoint = Vector3.new(midPoint.X, midPoint.Y + currentHeight + 20, midPoint.Z)
-            table.insert(fallbackWaypoints, {
-                Position = highMidPoint,
-                Action = Enum.PathWaypointAction.Walk
-            })
-            table.insert(fallbackWaypoints, {
-                Position = Vector3.new(targetPos.X, targetPos.Y + currentHeight, targetPos.Z),
-                Action = Enum.PathWaypointAction.Walk
-            })
-            return fallbackWaypoints
-        end
-    end
-    local function initializePhysics()
-        bg = Instance.new("BodyGyro")
-        bg.MaxTorque = Vector3.new(4000, 4000, 4000)
-        bg.P = 3000
-        bg.D = 500
-        bg.CFrame = hrp.CFrame
-        bg.Parent = hrp
-        bv = Instance.new("BodyVelocity")
-        bv.MaxForce = Vector3.new(4000, 4000, 4000)
-        bv.Velocity = Vector3.new(0, 0, 0)
-        bv.Parent = hrp
-        bp = Instance.new("BodyPosition")
-        bp.MaxForce = Vector3.new(4000, 4000, 4000)
-        bp.P = 3000
-        bp.D = 500
-        bp.Position = hrp.Position + Vector3.new(0, currentHeight, 0)
-        bp.Parent = hrp
-    end
-    local function performLanding(targetPos)
-        if isLanding then
-            return
-        end
-        isLanding = true
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {character}
-        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-        local groundResult = Workspace:Raycast(targetPos, Vector3.new(0, -200, 0), rayParams)
-        local landingY = groundResult and groundResult.Position.Y + 3 or targetPos.Y
-        local hoverPos = Vector3.new(targetPos.X, targetPos.Y + 8, targetPos.Z)
-        bp.Position = hoverPos
-        task.wait(hoverDuration)
-        local finalPos = Vector3.new(targetPos.X, landingY, targetPos.Z)
-        local landingTween = TweenService:Create(bp, TweenInfo.new(landingDuration, Enum.EasingStyle.Quart,
-            Enum.EasingDirection.Out), {
-            Position = finalPos
-        })
-        local velocityTween = TweenService:Create(bv, TweenInfo.new(landingDuration * 0.8, Enum.EasingStyle.Quart,
-            Enum.EasingDirection.Out), {
-            Velocity = Vector3.new(0, 0, 0)
-        })
-        landingTween:Play()
-        velocityTween:Play()
-        landingTween.Completed:Connect(function()
-            task.wait(0.3)
-            setNoclip(false)
-            hrp.Velocity = Vector3.new(0, 0, 0)
-        end)
-    end
-    local function updatePath(destination)
-        waypoints = createPath(destination)
-        currentWaypointIndex = 1
-        lastWaypointTime = tick()
-        if debug then
-            for i, waypoint in pairs(waypoints) do
-                local color = i == 1 and Color3.new(0, 1, 0) or i == #waypoints and Color3.new(0, 0, 1) or
-                                  Color3.new(1, 0.5, 0)
-                createDebugWaypoint(waypoint.Position, color, 1.5)
-            end
-        end
-        return waypoints ~= nil
-    end
-    local function detectObstacles(position, direction, distance)
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {character}
-        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-        local obstacles = {}
-        local checkDistance = math.min(distance, 10)
-        local rayDirections = {direction, direction:Cross(Vector3.new(0, 1, 0)).Unit * 0.3 + direction * 0.954,
-                               direction:Cross(Vector3.new(0, -1, 0)).Unit * 0.3 + direction * 0.954}
-        for i, rayDir in pairs(rayDirections) do
-            local result = Workspace:Raycast(position, rayDir * checkDistance, rayParams)
-            if result and result.Distance > 2 then
-                table.insert(obstacles, {
-                    position = result.Position,
-                    normal = result.Normal,
-                    distance = result.Distance,
-                    direction = i
-                })
-            end
-        end
-        local upwardRay = Workspace:Raycast(position, Vector3.new(0, 10, 0), rayParams)
-        if upwardRay and upwardRay.Distance < 8 then
-            table.insert(obstacles, {
-                position = upwardRay.Position,
-                normal = upwardRay.Normal,
-                distance = upwardRay.Distance,
-                direction = "ceiling"
-            })
-        end
-        return obstacles
-    end
-    local function calculateAvoidanceVector(obstacles, currentDirection)
-        if #obstacles == 0 then
-            return Vector3.new(0, 0, 0)
-        end
-        local avoidanceVector = Vector3.new(0, 0, 0)
-        local totalWeight = 0
-        for _, obstacle in pairs(obstacles) do
-            if obstacle.distance < 2 then
-                local weight = (2 - obstacle.distance) / 6
-                weight = weight * 0.3
-                local pushDirection = obstacle.normal
-                if obstacle.direction == "ceiling" then
-                    pushDirection = Vector3.new(0, -1, 0)
-                elseif pushDirection.Y < 0.2 then
-                    pushDirection = pushDirection + Vector3.new(0, 0.4, 0)
-                    pushDirection = pushDirection.Unit
-                end
-                avoidanceVector = avoidanceVector + (pushDirection * weight)
-                totalWeight = totalWeight + weight
-            end
-        end
-        if totalWeight > 0 then
-            avoidanceVector = avoidanceVector / totalWeight
-            avoidanceVector = avoidanceVector * math.min(0.4, totalWeight)
-        end
-        return avoidanceVector
-    end
-    local function moveToWaypoint(waypoint)
-        local currentPos = hrp.Position
-        local targetPos = waypoint.Position
-        local direction = (targetPos - currentPos)
-        local distance = direction.Magnitude
-        if distance <= waypointDistance then
-            currentWaypointIndex = currentWaypointIndex + 1
-            lastWaypointTime = tick()
             return true
         end
-        local baseDirection = direction.Unit
-        local obstacles = detectObstacles(currentPos, baseDirection, distance)
-        local avoidanceVector = calculateAvoidanceVector(obstacles, baseDirection)
-        local finalDirection = baseDirection + avoidanceVector
-        finalDirection = finalDirection.Unit
-        local velocity = finalDirection * speed
-        local currentVel = bv.Velocity
-        local smoothedVel = currentVel:lerp(velocity, smoothness)
-        bv.Velocity = smoothedVel
-        bp.Position = Vector3.new(targetPos.X, targetPos.Y, targetPos.Z)
-        local lookDirection = Vector3.new(smoothedVel.X, 0, smoothedVel.Z)
-        if lookDirection.Magnitude > 0.1 then
-            local targetCFrame = CFrame.lookAt(currentPos, currentPos + lookDirection)
-            bg.CFrame = bg.CFrame:lerp(targetCFrame, smoothness)
+
+        local function fillToCompletion(collectScript)
+            local scripts = validatePan()
+            local shakeScript = scripts and scripts.Shake
+
+            while task.wait() do
+                if killSwitch and not killSwitch() then
+                    return "KILLED"
+                end
+
+                if LocalCharacter:GetAttribute("Panning") then
+                    if shakeScript and not shakeUntilNotPanning(shakeScript, killSwitch) then
+                        return "KILLED"
+                    end
+                end
+
+                local status = PanModule.getStatus()
+                if status and status.isFull then
+                    break
+                end
+
+                if not isInValidRegion("Deposit") then
+                    break
+                end
+
+                pcall(function()
+                    collectScript:InvokeServer(1, true)
+                end)
+            end
+
+            return (not killSwitch or killSwitch()) and "SUCCESS" or "KILLED"
         end
-        return false
+
+        local function executeSingle(collectScript)
+            if killSwitch and not killSwitch() then
+                return "KILLED"
+            end
+            pcall(function()
+                collectScript:InvokeServer(1, true)
+            end)
+            return "SUCCESS"
+        end
+
+        local function emptyToCompletion(shakeScript)
+            while task.wait() do
+                if killSwitch and not killSwitch() then
+                    WashAnimation:Stop()
+                    return "KILLED"
+                end
+
+                if not shakeUntilNotPanning(shakeScript, killSwitch) then
+                    WashAnimation:Stop()
+                    return "KILLED"
+                end
+
+                local status = PanModule.getStatus()
+                if not status or status.isEmpty then
+                    break
+                end
+
+                pcall(function()
+                    shakeScript:FireServer()
+                end)
+            end
+
+            WashAnimation:Stop()
+            return (not killSwitch or killSwitch()) and "SUCCESS" or "KILLED"
+        end
+
+        local handlers = {
+            Dig = function()
+                if killSwitch and not killSwitch() then
+                    return "KILLED"
+                end
+
+                local scripts = validatePan()
+                if not scripts then
+                    return "FAIL"
+                end
+
+                local collectScript = scripts.Collect
+                if not collectScript then
+                    return "FAIL"
+                end
+
+                local status = PanModule.getStatus()
+                if status and status.isFull then
+                    return "SUCCESS"
+                end
+
+                if mode == "Legit" then
+                    Utility.createNotification("Legit mode is Work In Progress!")
+                    return "FAIL"
+                elseif mode == "Instant" then
+                    if executeToCompletion then
+                        return fillToCompletion(collectScript)
+                    else
+                        return executeSingle(collectScript)
+                    end
+                end
+
+                return "FAIL"
+            end,
+
+            Wash = function()
+                if killSwitch and not killSwitch() then
+                    return "KILLED"
+                end
+
+                local scripts = validatePan()
+                if not scripts then
+                    return "FAIL"
+                end
+
+                local shakeScript = scripts.Shake
+                local panScript = scripts.Pan
+
+                if not shakeScript or not panScript then
+                    return "FAIL"
+                end
+
+                local status = PanModule.getStatus()
+                if status and status.isEmpty then
+                    return "SUCCESS"
+                end
+
+                pcall(function()
+                    panScript:InvokeServer()
+                end)
+
+                return emptyToCompletion(shakeScript)
+            end
+        }
+
+        local handler = handlers[actionType]
+        if not handler then
+            Utility.createNotification("Invalid action type! Use 'Dig' or 'Wash'.")
+            return "FAIL"
+        end
+
+        local ok, result = pcall(handler)
+        if not ok then
+            warn("PanAction failed: " .. tostring(result))
+            return "FAIL"
+        end
+
+        return result or "SUCCESS"
     end
-    local finalTarget = toVector3(target) + offset
-    initializePhysics()
-    setNoclip(true)
-    if not updatePath(finalTarget) then
-        cleanup()
-        if config.OnComplete then
-            config.OnComplete(false, "Initial pathfinding failed")
-        end
-        return
-    end
-    local conn = RunService.Heartbeat:Connect(function()
-        if not isActive then
-            return
-        end
-        if typeof(target) == "Instance" and target:IsA("BasePart") then
-            local newTarget = target.Position + offset
-            if (newTarget - finalTarget).Magnitude > 10 then
-                finalTarget = newTarget
-                updatePath(finalTarget)
+end
+
+local Movement = {}
+do
+    function Movement.tweenToTarget(target, config)
+        local player = Services.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local hrp = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:WaitForChild("Humanoid")
+
+        config = config or {}
+        local offset = config.Offset or Vector3.new(0, 0, 0)
+        local stopDist = config.StopDistance or 20
+        local speed = config.Speed or 24
+        local cruiseHeight = config.CruiseHeight or 25
+        local minHeight = config.MinHeight or 15
+        local maxHeight = config.MaxHeight or 100
+        local agentRadius = config.AgentRadius or 3
+        local longDistanceThreshold = config.LongDistanceThreshold or 150
+        local directFlightThreshold = config.DirectFlightThreshold or 50
+        local waypointDistance = config.WaypointDistance or 12
+        local smoothness = config.Smoothness or 0.5
+        local landingDuration = config.LandingDuration or 1.2
+        local hoverDuration = config.HoverDuration or 0.3
+        local pathTimeout = config.PathTimeout or 8
+        local maxTimeout = config.MaxTimeout or 45
+        local adaptiveHeight = config.AdaptiveHeight ~= false
+        local useDirectFlight = config.UseDirectFlight ~= false
+
+        local isActive = true
+        local waypoints = {}
+        local currentWaypointIndex = 1
+        local lastWaypointTime = tick()
+        local startTime = tick()
+        local isLanding = false
+        local currentHeight = cruiseHeight
+        local bg, bv, bp
+        local originalPlatformStand
+
+        local TweenService = SimpleUI.Utility:GetService("TweenService")
+
+        local function setNoclip(state)
+            for _, v in pairs(character:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CanCollide = not state
+                end
+            end
+
+            if humanoid then
+                if state then
+                    originalPlatformStand = humanoid.PlatformStand
+                    humanoid.PlatformStand = true
+                else
+                    if originalPlatformStand ~= nil then
+                        humanoid.PlatformStand = originalPlatformStand
+                    end
+                end
             end
         end
-        local currentPos = hrp.Position
-        local distToTarget = (finalTarget - currentPos).Magnitude
-        if distToTarget <= stopDist then
-            performLanding(finalTarget)
-            task.wait(landingDuration + hoverDuration)
+
+        local function cleanup()
+            isActive = false
+            if bg then
+                bg:Destroy()
+            end
+            if bv then
+                bv:Destroy()
+            end
+            if bp then
+                bp:Destroy()
+            end
+            setNoclip(false)
+            if humanoid and originalPlatformStand ~= nil then
+                humanoid.PlatformStand = originalPlatformStand
+            end
+        end
+
+        local function toVector3(t)
+            if typeof(t) == "Vector3" then
+                return t
+            elseif typeof(t) == "Instance" and t:IsA("BasePart") then
+                return t.Position
+            elseif typeof(t) == "CFrame" then
+                return t.Position
+            elseif typeof(t) == "table" then
+                if t.Position then
+                    return t.Position
+                elseif t.X and t.Y and t.Z then
+                    return Vector3.new(t.X, t.Y, t.Z)
+                end
+            end
+            error("Invalid target type")
+        end
+
+        local function getOptimalHeight(position, targetPos)
+            if not adaptiveHeight then
+                return currentHeight
+            end
+
+            local distance = (targetPos - position).Magnitude
+            local terrainHeight = 0
+
+            local rayParams = RaycastParams.new()
+            rayParams.FilterDescendantsInstances = {character}
+            rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+            local result = Services.Workspace:Raycast(position, Vector3.new(0, -200, 0), rayParams)
+            if result then
+                terrainHeight = result.Position.Y
+            end
+
+            local baseHeight = math.max(minHeight, terrainHeight + 10)
+
+            if distance > longDistanceThreshold then
+                return math.min(maxHeight, baseHeight + 30)
+            elseif distance > 75 then
+                return math.min(cruiseHeight + 15, baseHeight + 20)
+            else
+                return math.min(cruiseHeight, baseHeight + 15)
+            end
+        end
+
+        local function hasObstaclesBetween(start, destination, checkHeight)
+            local direction = (destination - start)
+            local distance = direction.Magnitude
+            local unit = direction.Unit
+
+            local rayParams = RaycastParams.new()
+            rayParams.FilterDescendantsInstances = {character}
+            rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+            local checkPoints = math.max(3, math.floor(distance / 10))
+
+            for i = 1, checkPoints do
+                local checkPos = start + unit * (distance * i / checkPoints)
+                checkPos = Vector3.new(checkPos.X, checkPos.Y + checkHeight, checkPos.Z)
+
+                local directions = {Vector3.new(0, 0, 0), Vector3.new(agentRadius, 0, 0),
+                                    Vector3.new(-agentRadius, 0, 0), Vector3.new(0, 0, agentRadius),
+                                    Vector3.new(0, 0, -agentRadius), Vector3.new(0, agentRadius, 0),
+                                    Vector3.new(0, -agentRadius, 0)}
+
+                for _, dir in pairs(directions) do
+                    local testPos = checkPos + dir
+                    local result = Services.Workspace:Raycast(testPos, Vector3.new(0, -checkHeight - 10, 0), rayParams)
+                    if result and result.Position.Y > testPos.Y - 5 then
+                        return true
+                    end
+
+                    local ceilingResult = Services.Workspace:Raycast(testPos, Vector3.new(0, 10, 0), rayParams)
+                    if ceilingResult and ceilingResult.Position.Y < testPos.Y + 6 then
+                        return true
+                    end
+
+                    local forwardRay = Services.Workspace:Raycast(testPos, unit * 10, rayParams)
+                    if forwardRay then
+                        return true
+                    end
+                end
+            end
+
+            return false
+        end
+
+        local function canDirectFly(start, destination)
+            if not useDirectFlight then
+                return false
+            end
+
+            local distance = (destination - start).Magnitude
+            if distance > directFlightThreshold then
+                return false
+            end
+
+            return not hasObstaclesBetween(start, destination, currentHeight)
+        end
+
+        local function createPath(destination)
+            local startPos = hrp.Position
+            local targetPos = destination
+
+            currentHeight = getOptimalHeight(startPos, targetPos)
+
+            if canDirectFly(startPos, targetPos) then
+                return {{
+                    Position = startPos
+                }, {
+                    Position = Vector3.new(targetPos.X, targetPos.Y + currentHeight, targetPos.Z),
+                    Action = Enum.PathWaypointAction.Walk
+                }}
+            end
+
+            local groundStart = Vector3.new(startPos.X, startPos.Y, startPos.Z)
+            local groundTarget = Vector3.new(targetPos.X, targetPos.Y, targetPos.Z)
+
+            local path = Services.PathfindingService:CreatePath({
+                AgentRadius = agentRadius,
+                AgentHeight = 6,
+                AgentCanJump = false,
+                AgentCanClimb = false,
+                WaypointSpacing = math.max(8, waypointDistance),
+                Costs = {
+                    Danger = math.huge
+                }
+            })
+
+            local success, err = pcall(function()
+                path:ComputeAsync(groundStart, groundTarget)
+            end)
+
+            if success and path.Status == Enum.PathStatus.Success then
+                local pathWaypoints = path:GetWaypoints()
+                local modifiedWaypoints = {}
+
+                for i, waypoint in ipairs(pathWaypoints) do
+                    local elevatedPos = Vector3.new(waypoint.Position.X, waypoint.Position.Y + currentHeight,
+                        waypoint.Position.Z)
+                    table.insert(modifiedWaypoints, {
+                        Position = elevatedPos,
+                        Action = waypoint.Action
+                    })
+                end
+
+                return modifiedWaypoints
+            else
+                local direction = (targetPos - startPos)
+                local distance = direction.Magnitude
+                local unit = direction.Unit
+
+                local fallbackWaypoints = {}
+                table.insert(fallbackWaypoints, {
+                    Position = startPos,
+                    Action = Enum.PathWaypointAction.Walk
+                })
+
+                local midPoint = startPos + unit * (distance * 0.5)
+                local highMidPoint = Vector3.new(midPoint.X, midPoint.Y + currentHeight + 20, midPoint.Z)
+                table.insert(fallbackWaypoints, {
+                    Position = highMidPoint,
+                    Action = Enum.PathWaypointAction.Walk
+                })
+
+                table.insert(fallbackWaypoints, {
+                    Position = Vector3.new(targetPos.X, targetPos.Y + currentHeight, targetPos.Z),
+                    Action = Enum.PathWaypointAction.Walk
+                })
+
+                return fallbackWaypoints
+            end
+        end
+
+        local function initializePhysics()
+            bg = Instance.new("BodyGyro")
+            bg.MaxTorque = Vector3.new(4000, 4000, 4000)
+            bg.P = 3000
+            bg.D = 500
+            bg.CFrame = hrp.CFrame
+            bg.Parent = hrp
+
+            bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(4000, 4000, 4000)
+            bv.Velocity = Vector3.new(0, 0, 0)
+            bv.Parent = hrp
+
+            bp = Instance.new("BodyPosition")
+            bp.MaxForce = Vector3.new(4000, 4000, 4000)
+            bp.P = 3000
+            bp.D = 500
+            bp.Position = hrp.Position + Vector3.new(0, currentHeight, 0)
+            bp.Parent = hrp
+        end
+
+        local function performLanding(targetPos)
+            if isLanding then
+                return
+            end
+            isLanding = true
+
+            local rayParams = RaycastParams.new()
+            rayParams.FilterDescendantsInstances = {character}
+            rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+            local groundResult = Services.Workspace:Raycast(targetPos, Vector3.new(0, -200, 0), rayParams)
+            local landingY = groundResult and groundResult.Position.Y + 3 or targetPos.Y
+
+            local hoverPos = Vector3.new(targetPos.X, targetPos.Y + 8, targetPos.Z)
+            bp.Position = hoverPos
+            task.wait(hoverDuration)
+
+            local finalPos = Vector3.new(targetPos.X, landingY, targetPos.Z)
+
+            local landingTween = TweenService:Create(bp, TweenInfo.new(landingDuration, Enum.EasingStyle.Quart,
+                Enum.EasingDirection.Out), {
+                Position = finalPos
+            })
+
+            local velocityTween = TweenService:Create(bv, TweenInfo.new(landingDuration * 0.8, Enum.EasingStyle.Quart,
+                Enum.EasingDirection.Out), {
+                Velocity = Vector3.new(0, 0, 0)
+            })
+
+            landingTween:Play()
+            velocityTween:Play()
+
+            landingTween.Completed:Connect(function()
+                task.wait(0.3)
+                setNoclip(false)
+                hrp.Velocity = Vector3.new(0, 0, 0)
+            end)
+        end
+
+        local function updatePath(destination)
+            waypoints = createPath(destination)
+            currentWaypointIndex = 1
+            lastWaypointTime = tick()
+            return waypoints ~= nil
+        end
+
+        local function detectObstacles(position, direction, distance)
+            local rayParams = RaycastParams.new()
+            rayParams.FilterDescendantsInstances = {character}
+            rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+            local obstacles = {}
+            local checkDistance = math.min(distance, 10)
+
+            local rayDirections = {direction, direction:Cross(Vector3.new(0, 1, 0)).Unit * 0.3 + direction * 0.954,
+                                   direction:Cross(Vector3.new(0, -1, 0)).Unit * 0.3 + direction * 0.954}
+
+            for i, rayDir in pairs(rayDirections) do
+                local result = Services.Workspace:Raycast(position, rayDir * checkDistance, rayParams)
+                if result and result.Distance > 2 then
+                    table.insert(obstacles, {
+                        position = result.Position,
+                        normal = result.Normal,
+                        distance = result.Distance,
+                        direction = i
+                    })
+                end
+            end
+
+            local upwardRay = Services.Workspace:Raycast(position, Vector3.new(0, 10, 0), rayParams)
+            if upwardRay and upwardRay.Distance < 8 then
+                table.insert(obstacles, {
+                    position = upwardRay.Position,
+                    normal = upwardRay.Normal,
+                    distance = upwardRay.Distance,
+                    direction = "ceiling"
+                })
+            end
+
+            return obstacles
+        end
+
+        local function calculateAvoidanceVector(obstacles, currentDirection)
+            if #obstacles == 0 then
+                return Vector3.new(0, 0, 0)
+            end
+
+            local avoidanceVector = Vector3.new(0, 0, 0)
+            local totalWeight = 0
+
+            for _, obstacle in pairs(obstacles) do
+                if obstacle.distance < 2 then
+                    local weight = (2 - obstacle.distance) / 6
+                    weight = weight * 0.3
+
+                    local pushDirection = obstacle.normal
+                    if obstacle.direction == "ceiling" then
+                        pushDirection = Vector3.new(0, -1, 0)
+                    elseif pushDirection.Y < 0.2 then
+                        pushDirection = pushDirection + Vector3.new(0, 0.4, 0)
+                        pushDirection = pushDirection.Unit
+                    end
+
+                    avoidanceVector = avoidanceVector + (pushDirection * weight)
+                    totalWeight = totalWeight + weight
+                end
+            end
+
+            if totalWeight > 0 then
+                avoidanceVector = avoidanceVector / totalWeight
+                avoidanceVector = avoidanceVector * math.min(0.4, totalWeight)
+            end
+
+            return avoidanceVector
+        end
+
+        local function moveToWaypoint(waypoint)
+            local currentPos = hrp.Position
+            local targetPos = waypoint.Position
+            local direction = (targetPos - currentPos)
+            local distance = direction.Magnitude
+
+            if distance <= waypointDistance then
+                currentWaypointIndex = currentWaypointIndex + 1
+                lastWaypointTime = tick()
+                return true
+            end
+
+            local baseDirection = direction.Unit
+            local obstacles = detectObstacles(currentPos, baseDirection, distance)
+            local avoidanceVector = calculateAvoidanceVector(obstacles, baseDirection)
+
+            local finalDirection = baseDirection + avoidanceVector
+            finalDirection = finalDirection.Unit
+
+            local velocity = finalDirection * speed
+            local currentVel = bv.Velocity
+            local smoothedVel = currentVel:lerp(velocity, smoothness)
+
+            bv.Velocity = smoothedVel
+            bp.Position = Vector3.new(targetPos.X, targetPos.Y, targetPos.Z)
+
+            local lookDirection = Vector3.new(smoothedVel.X, 0, smoothedVel.Z)
+            if lookDirection.Magnitude > 0.1 then
+                local targetCFrame = CFrame.lookAt(currentPos, currentPos + lookDirection)
+                bg.CFrame = bg.CFrame:lerp(targetCFrame, smoothness)
+            end
+
+            return false
+        end
+
+        local finalTarget = toVector3(target) + offset
+
+        initializePhysics()
+        setNoclip(true)
+
+        if not updatePath(finalTarget) then
             cleanup()
             if config.OnComplete then
-                config.OnComplete(true, "Target reached successfully")
+                config.OnComplete(false, "Initial pathfinding failed")
             end
             return
         end
-        if tick() - startTime > maxTimeout then
-            cleanup()
-            if config.OnComplete then
-                config.OnComplete(false, "Maximum timeout exceeded")
+
+        local conn = Services.RunService.Heartbeat:Connect(function()
+            if not isActive then
+                return
             end
-            return
-        end
-        if tick() - lastWaypointTime > pathTimeout then
-            if not updatePath(finalTarget) then
+
+            if typeof(target) == "Instance" and target:IsA("BasePart") then
+                local newTarget = target.Position + offset
+                if (newTarget - finalTarget).Magnitude > 10 then
+                    finalTarget = newTarget
+                    updatePath(finalTarget)
+                end
+            end
+
+            local currentPos = hrp.Position
+            local distToTarget = (finalTarget - currentPos).Magnitude
+
+            if distToTarget <= stopDist then
+                performLanding(finalTarget)
+                task.wait(landingDuration + hoverDuration)
                 cleanup()
                 if config.OnComplete then
-                    config.OnComplete(false, "Path recalculation failed")
+                    config.OnComplete(true, "Target reached successfully")
                 end
                 return
             end
-        end
-        if currentWaypointIndex <= #waypoints then
-            moveToWaypoint(waypoints[currentWaypointIndex])
-        else
-            if distToTarget > stopDist then
-                if not updatePath(finalTarget) then
-                    local direction = (finalTarget - currentPos).Unit
-                    bv.Velocity = bv.Velocity:lerp(direction * speed, smoothness)
-                    bp.Position = finalTarget + Vector3.new(0, currentHeight, 0)
-                end
-            end
-        end
-    end)
-    return {
-        connection = conn,
-        stop = function()
-            cleanup()
-        end,
-        setSpeed = function(newSpeed)
-            speed = math.max(5, math.min(50, newSpeed))
-        end,
-        setTarget = function(newTarget)
-            target = newTarget
-            finalTarget = toVector3(newTarget) + offset
-            updatePath(finalTarget)
-        end,
-        getProgress = function()
-            if #waypoints == 0 then
-                return 0
-            end
-            return math.min(1, currentWaypointIndex / #waypoints)
-        end,
-        getCurrentHeight = function()
-            return currentHeight
-        end,
-        getDistanceRemaining = function()
-            return (finalTarget - hrp.Position).Magnitude
-        end,
-        getETA = function()
-            local distance = (finalTarget - hrp.Position).Magnitude
-            return distance / speed
-        end,
-        isActive = function()
-            return isActive
-        end,
-        pause = function()
-            if bv then
-                bv.Velocity = Vector3.new(0, 0, 0)
-            end
-        end,
-        resume = function()
-        end,
-        result = (hrp.Position - finalTarget).Magnitude <= stopDist
-    }
-end
 
-local function teleportToTarget(target, options)
-    local player = LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local hrp = character:WaitForChild("HumanoidRootPart")
-    local targetPos
-    if typeof(target) == "Vector3" then
-        targetPos = target
-    elseif typeof(target) == "Instance" and target:IsA("BasePart") then
-        targetPos = target.Position
-    else
-        error("Invalid target type")
-    end
-    options = options or {}
-    local mode = options.Mode or "Standard"
-    local fireRemoteFunc = options.FireRemoteFunc
-    local timeout = options.Timeout or 10
-    local tpWaitTime = options.TeleportWaitTime or 0.03
-    local maxFiresPerTeleport = options.MaxFiresPerTeleport or 10
-    local offsetRange = options.OffsetRange or 0.25
-    local exitDelay = options.ExitDelay or 0.2
-    local onComplete = options.OnComplete
-    local rubberBandTolerance = options.RubberBandTolerance or 12
-    local rubberBandWaitTime = options.RubberBandWaitTime or 0.3
-    local success = false
-    local function handleRubberBand(expectedPos)
-        local currentPos = hrp.Position
-        local distance = (currentPos - expectedPos).Magnitude
-        if distance > rubberBandTolerance then
-            if (currentPos - expectedPos).Magnitude > 350 then
-                SimpleUI:createNotification({
-                    Type = "Default",
-                    Title = "Notification",
-                    Description = "Distance is too long, try again while being closer to the target",
-                    Duration = 10
-                })
-                return false
-            end
-            local tweenConfig = {
-                CruiseHeight = 6,
-                MinHeight = 1,
-                MaxHeight = 10,
-                LongDistanceThreshold = 150,
-                DirectFlightThreshold = 50,
-                AdaptiveHeight = true,
-                UseDirectFlight = true,
-                HoverDuration = 0,
-                LandingDuration = 1.2,
-                StopDistance = 10,
-                OnComplete = function(tweenSuccess, message)
-                    if typeof(onComplete) == "function" then
-                        onComplete(tweenSuccess)
-                    end
+            if tick() - startTime > maxTimeout then
+                cleanup()
+                if config.OnComplete then
+                    config.OnComplete(false, "Maximum timeout exceeded")
                 end
-            }
-            tweenToTarget(expectedPos, tweenConfig)
-            return true
-        end
-        return false
-    end
-    if mode == "Standard" then
-        local maxAttempts = 10
-        local tolerance = 10
-        for attempt = 1, maxAttempts do
-            hrp.CFrame = CFrame.new(targetPos)
-            local startTime = tick()
-            local settled = false
-            task.wait(rubberBandWaitTime)
-            if handleRubberBand(targetPos) then
-                return true
+                return
             end
-            while tick() - startTime < 1 do
-                task.wait(0.05)
-                local distance = (hrp.Position - targetPos).Magnitude
-                if distance <= tolerance then
-                    local stableStart = tick()
-                    local stable = true
-                    while tick() - stableStart < 0.2 do
-                        task.wait(0.05)
-                        if (hrp.Position - targetPos).Magnitude > tolerance then
-                            if handleRubberBand(targetPos) then
-                                return true
-                            end
-                            stable = false
-                            break
-                        end
+
+            if tick() - lastWaypointTime > pathTimeout then
+                if not updatePath(finalTarget) then
+                    cleanup()
+                    if config.OnComplete then
+                        config.OnComplete(false, "Path recalculation failed")
                     end
-                    if stable then
-                        settled = true
-                        success = true
-                        break
-                    end
+                    return
                 end
             end
-            if success then
-                break
-            end
-            if attempt < maxAttempts then
-                task.wait(0.2)
-            end
-        end
-        if success then
-            task.wait(rubberBandWaitTime)
-            if handleRubberBand(targetPos) then
-                return true
-            end
-        end
-    elseif mode == "Critical" then
-        if typeof(fireRemoteFunc) ~= "function" then
-            error("Critical mode requires FireRemoteFunc")
-        end
-        local originalPos = hrp.Position
-        local startTime = tick()
-        local remoteRunning = true
-        local remoteThread = task.spawn(function()
-            while task.wait() do
-                local ok, result = pcall(fireRemoteFunc)
-                if ok and typeof(result) == "number" and result > 0 then
-                    success = true
-                    hrp.CFrame = CFrame.new(originalPos)
-                    break
+
+            if currentWaypointIndex <= #waypoints then
+                moveToWaypoint(waypoints[currentWaypointIndex])
+            else
+                if distToTarget > stopDist then
+                    if not updatePath(finalTarget) then
+                        local direction = (finalTarget - currentPos).Unit
+                        bv.Velocity = bv.Velocity:lerp(direction * speed, smoothness)
+                        bp.Position = finalTarget + Vector3.new(0, currentHeight, 0)
+                    end
                 end
             end
         end)
-        while tick() - startTime < timeout and not success do
-            for i = 1, 15 do
+
+        return {
+            connection = conn,
+            stop = function()
+                cleanup()
+            end,
+            setSpeed = function(newSpeed)
+                speed = math.max(5, math.min(50, newSpeed))
+            end,
+            setTarget = function(newTarget)
+                target = newTarget
+                finalTarget = toVector3(newTarget) + offset
+                updatePath(finalTarget)
+            end,
+            getProgress = function()
+                if #waypoints == 0 then
+                    return 0
+                end
+                return math.min(1, currentWaypointIndex / #waypoints)
+            end,
+            getCurrentHeight = function()
+                return currentHeight
+            end,
+            getDistanceRemaining = function()
+                return (finalTarget - hrp.Position).Magnitude
+            end,
+            getETA = function()
+                local distance = (finalTarget - hrp.Position).Magnitude
+                return distance / speed
+            end,
+            isActive = function()
+                return isActive
+            end,
+            pause = function()
+                if bv then
+                    bv.Velocity = Vector3.new(0, 0, 0)
+                end
+            end,
+            resume = function()
+            end,
+            result = (hrp.Position - finalTarget).Magnitude <= stopDist
+        }
+    end
+
+    function Movement.teleportToTarget(target, options)
+        local character = Player.Character or Player.CharacterAdded:Wait()
+        local hrp = character:WaitForChild("HumanoidRootPart")
+
+        local targetPos
+        if typeof(target) == "Vector3" then
+            targetPos = target
+        elseif typeof(target) == "Instance" and target:IsA("BasePart") then
+            targetPos = target.Position
+        else
+            error("Invalid target type")
+        end
+
+        options = options or {}
+        local mode = options.Mode or "Standard"
+        local fireRemoteFunc = options.FireRemoteFunc
+        local timeout = options.Timeout or 10
+        local tpWaitTime = options.TeleportWaitTime or 0.03
+        local maxFiresPerTeleport = options.MaxFiresPerTeleport or 10
+        local offsetRange = options.OffsetRange or 0.25
+        local exitDelay = options.ExitDelay or 0.2
+        local onComplete = options.OnComplete
+        local rubberBandTolerance = options.RubberBandTolerance or 12
+        local rubberBandWaitTime = options.RubberBandWaitTime or 0.3
+
+        local success = false
+
+        local function handleRubberBand(expectedPos)
+            local currentPos = hrp.Position
+            local distance = (currentPos - expectedPos).Magnitude
+
+            if distance > rubberBandTolerance then
+                if (currentPos - expectedPos).Magnitude > 350 then
+                    SimpleUI:CreateNotification({
+                        Type = "Default",
+                        Title = "Notification",
+                        Description = "Distance is too long, try again while being closer to the target",
+                        Duration = 10
+                    })
+                    return false
+                end
+
+                local tweenConfig = {
+                    CruiseHeight = 6,
+                    MinHeight = 1,
+                    MaxHeight = 10,
+                    LongDistanceThreshold = 150,
+                    DirectFlightThreshold = 50,
+                    AdaptiveHeight = true,
+                    UseDirectFlight = true,
+                    HoverDuration = 0,
+                    LandingDuration = 1.2,
+                    StopDistance = 10,
+                    OnComplete = function(tweenSuccess, message)
+                        if typeof(onComplete) == "function" then
+                            onComplete(tweenSuccess)
+                        end
+                    end
+                }
+
+                Movement.tweenToTarget(expectedPos, tweenConfig)
+                return true
+            end
+
+            return false
+        end
+
+        if mode == "Standard" then
+            local maxAttempts = 10
+            local tolerance = 10
+
+            for attempt = 1, maxAttempts do
+                hrp.CFrame = CFrame.new(targetPos)
+                local startTime = tick()
+                local settled = false
+
+                task.wait(rubberBandWaitTime)
+                if handleRubberBand(targetPos) then
+                    return true
+                end
+
+                while tick() - startTime < 1 do
+                    task.wait(0.05)
+                    local distance = (hrp.Position - targetPos).Magnitude
+
+                    if distance <= tolerance then
+                        local stableStart = tick()
+                        local stable = true
+
+                        while tick() - stableStart < 0.2 do
+                            task.wait(0.05)
+                            if (hrp.Position - targetPos).Magnitude > tolerance then
+                                if handleRubberBand(targetPos) then
+                                    return true
+                                end
+                                stable = false
+                                break
+                            end
+                        end
+
+                        if stable then
+                            settled = true
+                            success = true
+                            break
+                        end
+                    end
+                end
+
                 if success then
                     break
                 end
-                local offset = Vector3.new(math.random() * offsetRange - offsetRange / 2, math.random(5, 10),
-                    math.random() * offsetRange - offsetRange / 2)
-                hrp.CFrame = CFrame.new(targetPos + offset)
-                task.wait()
+                if attempt < maxAttempts then
+                    task.wait(0.2)
+                end
             end
+
+            if success then
+                task.wait(rubberBandWaitTime)
+                if handleRubberBand(targetPos) then
+                    return true
+                end
+            end
+
+        elseif mode == "Critical" then
+            if typeof(fireRemoteFunc) ~= "function" then
+                error("Critical mode requires FireRemoteFunc")
+            end
+
+            local originalPos = hrp.Position
+            local startTime = tick()
+            local remoteRunning = true
+
+            local remoteThread = task.spawn(function()
+                while task.wait() do
+                    local ok, result = pcall(fireRemoteFunc)
+                    if ok and typeof(result) == "number" and result > 0 then
+                        success = true
+                        hrp.CFrame = CFrame.new(originalPos)
+                        break
+                    end
+                end
+            end)
+
+            while tick() - startTime < timeout and not success do
+                for i = 1, 15 do
+                    if success then
+                        break
+                    end
+
+                    local offset = Vector3.new(math.random() * offsetRange - offsetRange / 2, math.random(5, 10),
+                        math.random() * offsetRange - offsetRange / 2)
+
+                    hrp.CFrame = CFrame.new(targetPos + offset)
+                    task.wait()
+                end
+
+                hrp.CFrame = CFrame.new(originalPos)
+                task.wait(1)
+            end
+
+            if remoteThread then
+                task.cancel(remoteThread)
+            end
+
             hrp.CFrame = CFrame.new(originalPos)
-            task.wait(1)
         end
-        if remoteThread then
-            task.cancel(remoteThread)
-        end
-        hrp.CFrame = CFrame.new(originalPos)
-    end
-    if typeof(onComplete) == "function" then
-        onComplete(success)
-    end
-    return success
-end
 
-local function handlePanAction(mode, actionType, executeToCompletion, killSwitch)
-    executeToCompletion = executeToCompletion or false
-    local messages = {
-        dig = {
-            start = "Starting dig action...",
-            success = "Pan is now full!",
-            singleSuccess = "Collection completed!",
-            alreadyFull = "Pan is already full!",
-            leftRegion = "Left deposit region! Stopping.",
-            singleAction = "Performing single collection..."
-        },
-        wash = {
-            start = "Starting wash action...",
-            PanEmpty = "Pan is empty, cannot wash!"
-        },
-        general = {
-            noPan = "No Pan found.",
-            noScript = "Pan has no scripts.",
-            invalidAction = "Invalid action type! Use 'Dig' or 'Wash'.",
-            legitWIP = "Legit mode is Work In Progress!"
-        }
-    }
-    local function validatePan()
-        local pan = equipPan()
-        local folder = pan and pan:FindFirstChild("Scripts")
-        if not folder then
-            SimpleUI:createNotification({
-                Type = "Default",
-                Title = "Notification",
-                Description = messages.general.noPan,
-                Duration = 10
-            })
-            return nil
+        if typeof(onComplete) == "function" then
+            onComplete(success)
         end
-        local scripts = {}
-        for _, child in ipairs(folder:GetChildren()) do
-            if child:IsA("RemoteFunction") or child:IsA("RemoteEvent") then
-                scripts[child.Name] = child
-            end
-        end
-        if next(scripts) then
-            return scripts
-        else
-            SimpleUI:createNotification({
-                Type = "Default",
-                Title = "Notification",
-                Description = messages.general.noScript,
-                Duration = 10
-            })
-            return nil
-        end
-    end
-    local function isInValidRegion(forWhat)
-        local char = Player.Character
-        return char and char:FindFirstChild("HumanoidRootPart") and getRegion(char.HumanoidRootPart) == forWhat
-    end
-    local function shakeUntilNotPanning(shakeScript, killSwitch)
-        while LocalCharacter:GetAttribute("Panning") do
-            if killSwitch and not killSwitch() then
-                return false
-            end
-            pcall(function()
-                shakeScript:FireServer()
-            end)
-            task.wait()
-        end
-        return true
-    end
-    local function fillToCompletion(collectScript, msgs)
-        local scripts = validatePan()
-        local shakeScript = scripts and scripts.Shake
-        while task.wait() do
-            if killSwitch and not killSwitch() then
-                return "KILLED"
-            end
-            if LocalCharacter:GetAttribute("Panning") then
-                if shakeScript and not shakeUntilNotPanning(shakeScript, killSwitch) then
-                    return "KILLED"
-                end
-            end
-            local status = getPanStatus()
-            if status and status.isFull then
-                break
-            end
-            if not isInValidRegion("Deposit") then
-                break
-            end
-            pcall(CollectInvokeServer, collectScript)
-        end
-        return (not killSwitch or killSwitch()) and "SUCCESS" or "KILLED"
-    end
-    local function executeSingle(collectScript, msgs)
-        if killSwitch and not killSwitch() then
-            return "KILLED"
-        end
-        pcall(CollectInvokeServer, collectScript)
-        return "SUCCESS"
-    end
-    local function emptyToCompletion(shakeScript, msgs)
-        while task.wait() do
-            if killSwitch and not killSwitch() then
-                WashAnimation:Stop()
-                return "KILLED"
-            end
-            if not shakeUntilNotPanning(shakeScript, killSwitch) then
-                WashAnimation:Stop()
-                return "KILLED"
-            end
-            local status = getPanStatus()
-            if not status or status.isEmpty then
-                break
-            end
-            pcall(function()
-                shakeScript:FireServer()
-            end)
-        end
-        WashAnimation:Stop()
-        return (not killSwitch or killSwitch()) and "SUCCESS" or "KILLED"
-    end
-    local handlers = {
-        Dig = function()
-            if killSwitch and not killSwitch() then
-                return "KILLED"
-            end
-            local msgs = messages.dig
-            local scripts = validatePan()
-            if not scripts then
-                return "FAIL"
-            end
-            local collectScript = scripts.Collect
-            if not collectScript then
-                return "FAIL"
-            end
-            local status = getPanStatus()
-            if status and status.isFull then
-                return "SUCCESS"
-            end
-            if mode == "Legit" then
-                SimpleUI:createNotification({
-                    Type = "Default",
-                    Title = "Notification",
-                    Description = messages.general.legitWIP,
-                    Duration = 5
-                })
-                return "FAIL"
-            elseif mode == "Instant" then
-                if executeToCompletion then
-                    return fillToCompletion(collectScript, msgs)
-                else
-                    return executeSingle(collectScript, msgs)
-                end
-            end
-            return "FAIL"
-        end,
-        Wash = function()
-            if killSwitch and not killSwitch() then
-                return "KILLED"
-            end
-            local scripts = validatePan()
-            if not scripts then
-                return "FAIL"
-            end
-            local shakeScript = scripts.Shake
-            local panScript = scripts.Pan
-            if not shakeScript or not panScript then
-                return "FAIL"
-            end
-            local status = getPanStatus()
-            if status and status.isEmpty then
-                return "SUCCESS"
-            end
-            pcall(function()
-                panScript:InvokeServer()
-            end)
-            return emptyToCompletion(shakeScript, messages.wash)
-        end
-    }
-    local handler = handlers[actionType]
-    if not handler then
-        SimpleUI:createNotification({
-            Type = "Default",
-            Title = "Notification",
-            Description = messages.general.invalidAction,
-            Duration = 10
-        })
-        return "FAIL"
-    end
-    local ok, result = pcall(handler)
-    if not ok then
-        warn("PanAction failed: " .. tostring(result))
-        return "FAIL"
-    end
-    return result or "SUCCESS"
-end
 
-local function applyDefaults(config, mode)
-    local defaults = {}
-    if mode == "Tween" then
-        defaults = {
-            StopDistance = 20,
-            CruiseHeight = 6,
-            MaxHeight = 10,
-            MinHeight = 1,
-            LongDistanceThreshold = 150,
-            DirectFlightThreshold = 50,
-            AdaptiveHeight = true,
-            UseDirectFlight = true,
-            HoverDuration = 0.3,
-            LandingDuration = 1.2
-        }
-    else
-        defaults = {
-            Mode = "Critical",
-            Timeout = 90
-        }
-    end
-    for k, v in pairs(defaults) do
-        if config[k] == nil then
-            config[k] = v
-        end
-    end
-end
-
-local function handleVoidSellRequest()
-    local LocalPlayer = LocalPlayer
-    local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
-    createNotification("Exiting The Void to find merchant...", 5)
-    SimpleUI:createNotification({
-        Type = "Default",
-        Title = "Notification",
-        Description = "Exiting The Void to find merchant...",
-        Duration = 5
-    })
-    HumanoidRootPart.CFrame = CFrame.new(Map.EventStuff["The Void"].Model.ExitPortal.CFrame.Position +
-                                             Vector3.new(0, 3, 0))
-    local maxWait = tick() + 7
-    repeat
-        task.wait(0.1)
-    until (LocalPlayer:GetAttribute("CurrentArea") == "Fortune River" and LocalPlayer:GetAttribute("GameplayPaused") ==
-        false) or tick() > maxWait
-    if LocalPlayer:GetAttribute("CurrentArea") ~= "Fortune River" then
-        SimpleUI:createNotification({
-            Type = "Default",
-            Title = "Notification",
-            Description = "Failed to exit The Void properly.",
-            Duration = 5
-        })
-        return false
-    end
-    task.wait(2)
-    local closestHrp
-    for i = 1, 4 do
-        closestHrp = getClosestMerchant()
-        if closestHrp then
-            break
-        end
-        if i < 4 then
-            task.wait(1)
-        end
-    end
-    if not closestHrp then
-        SimpleUI:createNotification({
-            Type = "Default",
-            Title = "Notification",
-            Description = "No merchant found after exiting void.",
-            Duration = 5
-        })
-        HumanoidRootPart.CFrame = CFrame.new(Map.EventStuff.VoidPortal.Part.CFrame.Position + Vector3.new(0, 3, 0))
-        return false
-    end
-    SimpleUI:createNotification({
-        Type = "Default",
-        Title = "Notification",
-        Description = "Found merchant, teleporting and selling..",
-        Duration = 5
-    })
-    local sellSuccess = teleportToTarget(closestHrp.Position, {
-        Mode = "Critical",
-        FireRemoteFunc = function()
-            SimpleUI:createNotification({
-                Type = "Default",
-                Title = "Notification",
-                Description = "Selling all valuables...",
-                Duration = 3
-            })
-            return SimpleUI:getService("ReplicatedStorage").Remotes.Shop.SellAll:InvokeServer()
-        end,
-        Timeout = 90
-    })
-    if sellSuccess then
-        local success
-        task.wait(3)
-        SimpleUI:createNotification({
-            Type = "Default",
-            Title = "Notification",
-            Description = "Returning to The Void...",
-            Duration = 5
-        })
-        local voidportal = Map.EventStuff.VoidPortal
-        teleportToTarget(voidportal.WorldPivot.Position, {
-            Mode = "Standard",
-            OnComplete = function(moveSuccess)
-                success = moveSuccess or false
-            end
-        })
-        task.wait()
         return success
     end
-    return sellSuccess
 end
 
-local function executeSell()
-    return SimpleUI:getService("ReplicatedStorage").Remotes.Shop.SellAll:InvokeServer()
-end
+local CharacterLock = {}
+do
+    local storedValues = {}
 
-local function sellInventory(config, mode)
-    local closestHrp, dist = getClosestMerchant()
+    function CharacterLock.lock(targetCFrame)
+        local char = Player.Character
+        if not char then
+            return
+        end
 
-    local ServerTime = Workspace:GetServerTimeNow()
-    local trialTime = LocalPlayer:GetAttribute("SellAnywhereTrialTime")
-    local requiredDistance = config.RequiredDistance or 45
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            return
+        end
 
-    if LocalPlayer:GetAttribute("SellAnywhere") == true or (trialTime and trialTime + 600 > ServerTime) then
-        local itemsSold, _ = executeSell()
-        if itemsSold and itemsSold > 0 then
-            return true
+        hrp.CFrame = targetCFrame
+        hrp.Velocity = Vector3.new(0, 0, 0)
+        hrp.RotVelocity = Vector3.new(0, 0, 0)
+
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            storedValues[Player.UserId] = {
+                WalkSpeed = hum.WalkSpeed,
+                JumpPower = hum.JumpPower
+            }
+
+            hum.WalkSpeed = 0
+            hum.JumpPower = 0
+            hum:ChangeState(Enum.HumanoidStateType.Seated)
         end
     end
 
-    if not closestHrp and LocalPlayer:GetAttribute("CurrentArea") == "The Void" then
-        return handleVoidSellRequest(config, mode)
-    end
-
-    if closestHrp and dist <= requiredDistance then
-        executeSell()
-        return true
-    end
-
-    if not closestHrp then
-        SimpleUI:createNotification({
-            Type = "Error",
-            Title = "Notification",
-            Description = "No merchant found nearby.",
-            Duration = 5
-        })
-        return false
-    end
-
-    applyDefaults(config, mode)
-
-    if mode == "Tween" then
-        local completed = false
-        local successSell = false
-        config.OnStart = function()
-            SimpleUI:createNotification({
-                Type = "Default",
-                Title = "Notification",
-                Description = "Tweening to merchant...",
-                Duration = 5
-            })
+    function CharacterLock.unlock()
+        local char = Player.Character
+        if not char then
+            return
         end
-        config.OnComplete = function()
-            task.wait(1)
-            local _, finalDistance = getClosestMerchant()
-            if finalDistance and finalDistance <= requiredDistance then
-                executeSell()
-                successSell = true
-            else
-                SimpleUI:createNotification({
-                    Type = "Error",
-                    Title = "Notification",
-                    Description = "Could not reach merchant via tween",
-                    Duration = 5
-                })
+
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            local values = storedValues[Player.UserId] or {
+                WalkSpeed = 16,
+                JumpPower = 50
+            }
+
+            hum.WalkSpeed = values.WalkSpeed
+            hum.JumpPower = values.JumpPower
+            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            storedValues[Player.UserId] = nil
+        end
+    end
+end
+
+local MerchantModule = {}
+do
+    function MerchantModule.isMerchant(npc)
+        local imgPass = false
+        local icon = npc:FindFirstChild("IconUI")
+        local img = icon and icon:FindFirstChild("ImageLabel")
+        if img and img.Image == "rbxassetid://2246496691" then
+            imgPass = true
+        end
+
+        local objPass = false
+        local dialog = npc:FindFirstChild("Dialog")
+        if dialog and dialog.ClassName == "ObjectValue" and dialog.Value and dialog.Value.Name == "Seller" then
+            objPass = true
+        end
+
+        return imgPass and objPass
+    end
+
+    function MerchantModule.getClosest()
+        local NPCs = Services.Workspace:WaitForChild("NPCs")
+        local char = Player.Character
+        local playerHrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not playerHrp then
+            return nil, math.huge
+        end
+
+        local closest, closestDist = nil, math.huge
+
+        for _, folder in ipairs(NPCs:GetChildren()) do
+            for _, npc in ipairs(folder:GetChildren()) do
+                if MerchantModule.isMerchant(npc) and npc:FindFirstChild("HumanoidRootPart") then
+                    local hrp = npc.HumanoidRootPart
+                    local dist = (playerHrp.Position - hrp.Position).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closest = hrp
+                    end
+                end
             end
-            completed = true
         end
-        tweenToTarget(closestHrp, config)
-        repeat
-            task.wait()
-        until completed
-        return successSell
-    else
-        config.FireRemoteFunc = function()
-            return executeSell()
-        end
-        return teleportToTarget(closestHrp, config)
+
+        return closest, closestDist
     end
 end
 
-local function getInventoryCount()
-    local player = SimpleUI:getService("Players").LocalPlayer
-    local count = 0
+local SellModule = {}
+do
+    function SellModule.getInventoryCount()
+        local count = 0
 
-    for _, item in ipairs(player.BackpackTwo:GetChildren()) do
-        local t = item:GetAttribute("ItemType")
-        if t == "Valuable" or t == "Equipment" then
-            count = count + 1
-        end
-    end
-
-    local character = player.Character
-    if character then
-        local equipped = character:FindFirstChildOfClass("Tool")
-        if equipped then
-            local t = equipped:GetAttribute("ItemType")
+        for _, item in ipairs(BackpackTwo:GetChildren()) do
+            local t = item:GetAttribute("ItemType")
             if t == "Valuable" or t == "Equipment" then
                 count = count + 1
             end
         end
-    end
 
-    return count
-end
-
-local function formatPrice(price, isShardPrice)
-    local symbol = isShardPrice and "ƒ" or "$"
-    if price >= 1e21 then
-        return string.format("%s%.1fSx", symbol, price / 1e21)
-    elseif price >= 1e18 then
-        return string.format("%s%.1fQ", symbol, price / 1e18)
-    elseif price >= 1e15 then
-        return string.format("%s%.1fqd", symbol, price / 1e15)
-    elseif price >= 1e12 then
-        return string.format("%s%.1fT", symbol, price / 1e12)
-    elseif price >= 1e9 then
-        return string.format("%s%.1fB", symbol, price / 1e9)
-    elseif price >= 1e6 then
-        return string.format("%s%.1fM", symbol, price / 1e6)
-    elseif price >= 1e3 then
-        return string.format("%s%.1fK", symbol, price / 1e3)
-    else
-        return symbol .. tostring(price)
-    end
-end
-
-local storedValues = {}
-
-local function lockCharacterAt(targetCFrame)
-    local player = Players.LocalPlayer
-    local char = player.Character
-    if not char then
-        return
-    end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then
-        return
-    end
-    hrp.CFrame = targetCFrame
-    hrp.Velocity = Vector3.new(0, 0, 0)
-    hrp.RotVelocity = Vector3.new(0, 0, 0)
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        storedValues[player.UserId] = {
-            WalkSpeed = hum.WalkSpeed,
-            JumpPower = hum.JumpPower
-        }
-        hum.WalkSpeed = 0
-        hum.JumpPower = 0
-        hum:ChangeState(Enum.HumanoidStateType.Seated)
-    end
-end
-
-local function unlockCharacter()
-    local player = Players.LocalPlayer
-    local char = player.Character
-    if not char then
-        return
-    end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        local values = storedValues[player.UserId] or {
-            WalkSpeed = 16,
-            JumpPower = 50
-        }
-        hum.WalkSpeed = values.WalkSpeed
-        hum.JumpPower = values.JumpPower
-        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-        storedValues[player.UserId] = nil
-    end
-end
-
-local function refreshData()
-    if ExcavationState.waiting then
-        return
-    end
-    ExcavationState.waiting = true
-    local con
-    con = UpdateRemote.OnClientEvent:Connect(function(d)
-        ExcavationState.data = d
-        ExcavationState.waiting = false
-        con:Disconnect()
-    end)
-    UpdateRemote:FireServer()
-end
-
-local function getCurrentExcavationStatus()
-    if not ExcavationState.data then
-        refreshData()
-    end
-    repeat
-        task.wait()
-    until ExcavationState.data
-    local d = ExcavationState.data
-    local ce = d.CurrentExcavation
-    local marker = Workspace:FindFirstChild("Marker")
-    if marker then
-        local ui = marker:FindFirstChild("UI")
-        if ui then
-            local n = ui:FindFirstChild("ExcavationName")
-            if n and typeof(n.Text) == "string" and n.Text ~= "" then
-                return "Finished", n.Text
+        local character = Player.Character
+        if character then
+            local equipped = character:FindFirstChildOfClass("Tool")
+            if equipped then
+                local t = equipped:GetAttribute("ItemType")
+                if t == "Valuable" or t == "Equipment" then
+                    count = count + 1
+                end
             end
         end
-    end
-    if ce and ce ~= "" then
-        return "Active", ce
-    end
-    return "None", nil
-end
 
-local function canStartExcavation()
-    local status = getCurrentExcavationStatus()
-    return status == "None"
-end
+        return count
+    end
 
-local function claimExcavation()
-    local status, name = getCurrentExcavationStatus()
-    if status ~= "Finished" or not name then
-        return false
+    function SellModule.execute()
+        return ReplicatedStorage.Remotes.Shop.SellAll:InvokeServer()
     end
-    local ok = ClaimRemote:InvokeServer(name)
-    if ok then
-        task.wait(2)
-        refreshData()
-        return true
-    end
-    return false
-end
 
-local function startExcavation()
-    if not ExcavationState.selected then
-        return false, "No excavation selected."
-    end
-    local d = ExcavationState.data
-    if not d then
-        refreshData()
+    function SellModule.handleVoidRequest()
+        Utility.createNotification("Exiting The Void to find merchant...", 5)
+
+        HumanoidRootPart.CFrame = CFrame.new(Map.EventStuff["The Void"].Model.ExitPortal.CFrame.Position +
+                                                 Vector3.new(0, 3, 0))
+
+        local maxWait = tick() + 7
         repeat
+            task.wait(0.1)
+        until (Player:GetAttribute("CurrentArea") == "Fortune River" and Player:GetAttribute("GameplayPaused") == false) or
+            tick() > maxWait
+
+        if Player:GetAttribute("CurrentArea") ~= "Fortune River" then
+            Utility.createNotification("Failed to exit The Void properly.", 5)
+            return false
+        end
+
+        task.wait(2)
+
+        local closestHrp
+        for i = 1, 4 do
+            closestHrp = MerchantModule.getClosest()
+            if closestHrp then
+                break
+            end
+            if i < 4 then
+                task.wait(1)
+            end
+        end
+
+        if not closestHrp then
+            Utility.createNotification("No merchant found after exiting void.", 5)
+            HumanoidRootPart.CFrame = CFrame.new(Map.EventStuff.VoidPortal.Part.CFrame.Position + Vector3.new(0, 3, 0))
+            return false
+        end
+
+        Utility.createNotification("Found merchant, teleporting and selling..", 5)
+
+        local sellSuccess = Movement.teleportToTarget(closestHrp.Position, {
+            Mode = "Critical",
+            FireRemoteFunc = function()
+                Utility.createNotification("Selling all valuables...", 3)
+                return SellModule.execute()
+            end,
+            Timeout = 90
+        })
+
+        if sellSuccess then
+            local success
+            task.wait(3)
+            Utility.createNotification("Returning to The Void...", 5)
+
+            local voidportal = Map.EventStuff.VoidPortal
+            Movement.teleportToTarget(voidportal.WorldPivot.Position, {
+                Mode = "Standard",
+                OnComplete = function(moveSuccess)
+                    success = moveSuccess or false
+                end
+            })
+
             task.wait()
-        until ExcavationState.data
-        d = ExcavationState.data
+            return success
+        end
+
+        return sellSuccess
     end
-    local unlocked = d.UnlockedExcavationSites
-    if not table.find(unlocked, ExcavationState.selected) then
-        return false, "You haven't unlocked this excavation."
-    end
-    if not canStartExcavation() then
-        if d.CurrentExcavation and d.CurrentExcavation ~= "" then
-            return false, "Cannot start — active excavation: " .. d.CurrentExcavation
+
+    function SellModule.sell(config, mode)
+        local closestHrp, dist = MerchantModule.getClosest()
+
+        local ServerTime = Services.Workspace:GetServerTimeNow()
+        local trialTime = Player:GetAttribute("SellAnywhereTrialTime")
+        local requiredDistance = config.RequiredDistance or 45
+
+        if Player:GetAttribute("SellAnywhere") == true or (trialTime and trialTime + 600 > ServerTime) then
+            local itemsSold, _ = SellModule.execute()
+            if itemsSold and itemsSold > 0 then
+                return true
+            end
+        end
+
+        if not closestHrp and Player:GetAttribute("CurrentArea") == "The Void" then
+            return SellModule.handleVoidRequest(config, mode)
+        end
+
+        if closestHrp and dist <= requiredDistance then
+            SellModule.execute()
+            return true
+        end
+
+        if not closestHrp then
+            SimpleUI:CreateNotification({
+                Type = "Error",
+                Title = "Notification",
+                Description = "No merchant found nearby.",
+                Duration = 5
+            })
+            return false
+        end
+
+        local function applyDefaults(cfg, m)
+            local defaults = {}
+            if m == "Tween" then
+                defaults = {
+                    StopDistance = 20,
+                    CruiseHeight = 6,
+                    MaxHeight = 10,
+                    MinHeight = 1,
+                    LongDistanceThreshold = 150,
+                    DirectFlightThreshold = 50,
+                    AdaptiveHeight = true,
+                    UseDirectFlight = true,
+                    HoverDuration = 0.3,
+                    LandingDuration = 1.2
+                }
+            else
+                defaults = {
+                    Mode = "Critical",
+                    Timeout = 90
+                }
+            end
+
+            for k, v in pairs(defaults) do
+                if cfg[k] == nil then
+                    cfg[k] = v
+                end
+            end
+        end
+
+        applyDefaults(config, mode)
+
+        if mode == "Tween" then
+            local completed = false
+            local successSell = false
+
+            config.OnStart = function()
+                SimpleUI:CreateNotification({
+                    Type = "Default",
+                    Title = "Notification",
+                    Description = "Tweening to merchant...",
+                    Duration = 5
+                })
+            end
+
+            config.OnComplete = function()
+                task.wait(1)
+                local _, finalDistance = MerchantModule.getClosest()
+                if finalDistance and finalDistance <= requiredDistance then
+                    SellModule.execute()
+                    successSell = true
+                else
+                    SimpleUI:CreateNotification({
+                        Type = "Error",
+                        Title = "Notification",
+                        Description = "Could not reach merchant via tween",
+                        Duration = 5
+                    })
+                end
+                completed = true
+            end
+
+            Movement.tweenToTarget(closestHrp, config)
+
+            repeat
+                task.wait()
+            until completed
+
+            return successSell
         else
-            return false, "Cannot start — check for unclaimed excavation."
+            config.FireRemoteFunc = function()
+                return SellModule.execute()
+            end
+            return Movement.teleportToTarget(closestHrp, config)
         end
     end
-    local ok = StartRemote:InvokeServer(ExcavationState.selected)
-    if ok then
-        refreshData()
-        return true
-    end
-    return false, "Server rejected the request."
 end
 
-local function getExcavationNames()
-    local t = {}
-    for name in pairs(Excavations.Sites) do
-        table.insert(t, name)
-    end
-    return t
-end
-
-local function isGeodeCollected(geode)
-    return not geode or not geode.Parent
-end
-
-local function getGeodeModels()
-    local geodeFolder = Workspace:FindFirstChild("Geode")
-    if not geodeFolder then
-        return {}
-    end
-    local geodeModels = {}
-    for _, child in pairs(geodeFolder:GetChildren()) do
-        if child:IsA("Model") then
-            table.insert(geodeModels, child)
-        end
-    end
-    return geodeModels
-end
-
-local function getGeodeTeleportPosition(geodeModel)
-    local cf, size = geodeModel:GetBoundingBox()
-    return cf.Position
-end
-
-local function teleportToGeodePosition(position)
-    local character = Player.Character
-    if not character then
-        return false
-    end
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then
-        return false
-    end
-    humanoidRootPart.CFrame = CFrame.new(position)
-    return true
-end
-
-local function teleportToNextGeode(geodeStatus)
-    local geodeModels = getGeodeModels()
-
-    if #geodeModels == 0 then
-        if geodeStatus then
-            geodeStatus.setFields({"No geodes found"})
-        end
-        return false
-    end
-
-    if currentGeodeIndex > #geodeModels then
-        currentGeodeIndex = 1
-    end
-
-    local targetGeode = geodeModels[currentGeodeIndex]
-
-    if isGeodeCollected(targetGeode) then
-        currentGeodeIndex = currentGeodeIndex + 1
-        return false
-    end
-
-    local geodePosition = getGeodeTeleportPosition(targetGeode)
-
-    if teleportToGeodePosition(geodePosition) then
-        if geodeStatus then
-            geodeStatus.setFields({string.format("Teleported to: %s (%d/%d)", targetGeode.Name, currentGeodeIndex,
-                #geodeModels)})
-        end
-        return true
-    else
-        if geodeStatus then
-            geodeStatus.setFields({"Failed to teleport – Character not found"})
-        end
-        return false
-    end
-end
-
-local function getRunes()
-    local folder = Map:FindFirstChild("FindableRunes")
-    return folder and folder:GetChildren() or {}
-end
-
-local function teleportToNextRune(runeStatus)
-    local list = getRunes()
-
-    if #list == 0 then
-        if runeStatus then
-            runeStatus.setFields({"No runes found in workspace"})
-        end
-        return
-    end
-
-    currentRuneIndex = currentRuneIndex + 1
-    if currentRuneIndex > #list then
-        currentRuneIndex = 1
-    end
-
-    local rune = list[currentRuneIndex]
-    if not rune or not rune:IsA("Model") then
-        if runeStatus then
-            runeStatus.setFields({"Invalid rune"})
-        end
-        return
-    end
-
-    local target = rune:FindFirstChild("MainPart")
-    if not target or not target:IsA("BasePart") then
-        if runeStatus then
-            runeStatus.setFields({"Rune has no MainPart"})
-        end
-        return
-    end
-
-    local char = Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then
-        if runeStatus then
-            runeStatus.setFields({"No HumanoidRootPart"})
-        end
-        return
-    end
-
-    root.CFrame = target.CFrame + Vector3.new(0, 3, 0)
-
-    if runeStatus then
-        runeStatus.setFields({string.format("Teleported to rune %d/%d", currentRuneIndex, #list)})
-    end
-end
-
-local function getModifierNames()
-    local t = {}
-    for k in pairs(require(ReplicatedStorage.GameInfo.Modifiers)) do
-        t[#t + 1] = k
-    end
-    return t
-end
-
-local function getOreNames()
-    local t = {}
-    for _, obj in ipairs(ReplicatedStorage.Items.Valuables:GetChildren()) do
-        t[#t + 1] = obj.Name
-    end
-    return t
-end
-
-local function createBillboard(target, name, color, player)
-    local bb = Instance.new("BillboardGui")
-    bb.Name = "ESPBillboard"
-    bb.Adornee = target
-    bb.AlwaysOnTop = true
-    bb.StudsOffset = Vector3.new(0, 2.6, 0)
-    bb.Size = UDim2.fromOffset(200, 24)
-    bb.Parent = target
-
-    local frame = Instance.new("Frame")
-    frame.BackgroundTransparency = 1
-    frame.Size = UDim2.fromScale(1, 1)
-    frame.Parent = bb
-
-    local padding = Instance.new("UIPadding")
-    padding.PaddingLeft = UDim.new(0, 4)
-    padding.PaddingRight = UDim.new(0, 4)
-    padding.Parent = frame
-
-    local layout = Instance.new("UIListLayout")
-    layout.FillDirection = Enum.FillDirection.Horizontal
-    layout.VerticalAlignment = Enum.VerticalAlignment.Center
-    layout.Padding = UDim.new(0, 5)
-    layout.Parent = frame
-
-    if player then
-        local avatar = Instance.new("ImageLabel")
-        avatar.BackgroundTransparency = 1
-        avatar.Size = UDim2.fromOffset(16, 16)
-        avatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot,
-            Enum.ThumbnailSize.Size48x48)
-        avatar.Parent = frame
-
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = avatar
-    end
-
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Font = Enum.Font.GothamSemibold
-    nameLabel.TextSize = 13
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    nameLabel.TextColor3 = color or Color3.new(1, 1, 1)
-    nameLabel.Text = name
-    nameLabel.AutomaticSize = Enum.AutomaticSize.X
-    nameLabel.Parent = frame
-
-    local distLabel = Instance.new("TextLabel")
-    distLabel.BackgroundTransparency = 1
-    distLabel.Font = Enum.Font.Gotham
-    distLabel.TextSize = 11
-    distLabel.TextXAlignment = Enum.TextXAlignment.Left
-    distLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
-    distLabel.AutomaticSize = Enum.AutomaticSize.X
-    distLabel.Parent = frame
-
-    local conn
-    conn = RunService.RenderStepped:Connect(function()
-        if not bb.Parent or not target.Parent then
-            conn:Disconnect()
+local ExcavationModule = {}
+do
+    function ExcavationModule.refreshData()
+        if State.Excavation.waiting then
             return
         end
-        local d = (Camera.CFrame.Position - target.Position).Magnitude
-        distLabel.Text = string.format("%dm", d + 0.5)
-    end)
+        State.Excavation.waiting = true
 
-    return bb
-end
+        local UpdateRemote = ReplicatedStorage.Remotes.Excavation.UpdateExcavationData
+        local con
 
-local function getDiscoveredRecipes()
-    local discovered = {}
-    local discoveredIDs = {}
+        con = UpdateRemote.OnClientEvent:Connect(function(d)
+            State.Excavation.data = d
+            State.Excavation.waiting = false
+            con:Disconnect()
+        end)
 
-    local UpdateRemote = ReplicatedStorage.Remotes.Crafting.UpdateDiscoveredEquipment
-
-    local waiting = true
-    local conn
-    conn = UpdateRemote.OnClientEvent:Connect(function(ids)
-        discoveredIDs = ids
-        waiting = false
-        conn:Disconnect()
-    end)
-
-    UpdateRemote:FireServer()
-
-    local timeout = 5
-    local elapsed = 0
-    while waiting and elapsed < timeout do
-        task.wait(0.1)
-        elapsed = elapsed + 0.1
+        UpdateRemote:FireServer()
     end
 
-    for _, item in ipairs(ReplicatedStorage.Items.Equipment:GetChildren()) do
-        if item:GetAttribute("Hidden") then
-            local itemID = item:GetAttribute("ItemID")
-            if itemID and table.find(discoveredIDs, itemID) then
+    function ExcavationModule.getCurrentStatus()
+        if not State.Excavation.data then
+            ExcavationModule.refreshData()
+        end
+
+        repeat
+            task.wait()
+        until State.Excavation.data
+
+        local d = State.Excavation.data
+        local ce = d.CurrentExcavation
+        local marker = Services.Workspace:FindFirstChild("Marker")
+
+        if marker then
+            local ui = marker:FindFirstChild("UI")
+            if ui then
+                local n = ui:FindFirstChild("ExcavationName")
+                if n and typeof(n.Text) == "string" and n.Text ~= "" then
+                    return "Finished", n.Text
+                end
+            end
+        end
+
+        if ce and ce ~= "" then
+            return "Active", ce
+        end
+
+        return "None", nil
+    end
+
+    function ExcavationModule.canStart()
+        local status = ExcavationModule.getCurrentStatus()
+        return status == "None"
+    end
+
+    function ExcavationModule.claim()
+        local status, name = ExcavationModule.getCurrentStatus()
+        if status ~= "Finished" or not name then
+            return false
+        end
+
+        local ClaimRemote = ReplicatedStorage.Remotes.Excavation.ClaimExcavation
+        local ok = ClaimRemote:InvokeServer(name)
+
+        if ok then
+            task.wait(2)
+            ExcavationModule.refreshData()
+            return true
+        end
+
+        return false
+    end
+
+    function ExcavationModule.start()
+        if not State.Excavation.selected then
+            return false, "No excavation selected."
+        end
+
+        local d = State.Excavation.data
+        if not d then
+            ExcavationModule.refreshData()
+            repeat
+                task.wait()
+            until State.Excavation.data
+            d = State.Excavation.data
+        end
+
+        local unlocked = d.UnlockedExcavationSites
+        if not table.find(unlocked, State.Excavation.selected) then
+            return false, "You haven't unlocked this excavation."
+        end
+
+        if not ExcavationModule.canStart() then
+            if d.CurrentExcavation and d.CurrentExcavation ~= "" then
+                return false, "Cannot start — active excavation: " .. d.CurrentExcavation
+            else
+                return false, "Cannot start — check for unclaimed excavation."
+            end
+        end
+
+        local StartRemote = ReplicatedStorage.Remotes.Excavation.StartExcavation
+        local ok = StartRemote:InvokeServer(State.Excavation.selected)
+
+        if ok then
+            ExcavationModule.refreshData()
+            return true
+        end
+
+        return false, "Server rejected the request."
+    end
+
+    function ExcavationModule.getNames()
+        local t = {}
+        for name in pairs(Excavations.Sites) do
+            table.insert(t, name)
+        end
+        return t
+    end
+end
+
+local GeodeModule = {}
+do
+    function GeodeModule.isCollected(geode)
+        return not geode or not geode.Parent
+    end
+
+    function GeodeModule.getModels()
+        local geodeFolder = Services.Workspace:FindFirstChild("Geode")
+        if not geodeFolder then
+            return {}
+        end
+
+        local geodeModels = {}
+        for _, child in pairs(geodeFolder:GetChildren()) do
+            if child:IsA("Model") then
+                table.insert(geodeModels, child)
+            end
+        end
+
+        return geodeModels
+    end
+
+    function GeodeModule.getTeleportPosition(geodeModel)
+        local cf, size = geodeModel:GetBoundingBox()
+        return cf.Position
+    end
+
+    function GeodeModule.teleportToPosition(position)
+        local character = Player.Character
+        if not character then
+            return false
+        end
+
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then
+            return false
+        end
+
+        humanoidRootPart.CFrame = CFrame.new(position)
+        return true
+    end
+
+    function GeodeModule.teleportToNext(geodeStatus)
+        local geodeModels = GeodeModule.getModels()
+
+        if #geodeModels == 0 then
+            if geodeStatus then
+                geodeStatus:SetFields({"No geodes found"})
+            end
+            return false
+        end
+
+        if State.Geode.currentIndex > #geodeModels then
+            State.Geode.currentIndex = 1
+        end
+
+        local targetGeode = geodeModels[State.Geode.currentIndex]
+
+        if GeodeModule.isCollected(targetGeode) then
+            State.Geode.currentIndex = State.Geode.currentIndex + 1
+            return false
+        end
+
+        local geodePosition = GeodeModule.getTeleportPosition(targetGeode)
+
+        if GeodeModule.teleportToPosition(geodePosition) then
+            if geodeStatus then
+                geodeStatus:SetFields({string.format("Teleported to: %s (%d/%d)", targetGeode.Name,
+                    State.Geode.currentIndex, #geodeModels)})
+            end
+            return true
+        else
+            if geodeStatus then
+                geodeStatus:SetFields({"Failed to teleport – Character not found"})
+            end
+            return false
+        end
+    end
+end
+
+local RuneModule = {}
+do
+    function RuneModule.getList()
+        local folder = Map:FindFirstChild("FindableRunes")
+        return folder and folder:GetChildren() or {}
+    end
+
+    function RuneModule.teleportToNext(runeStatus)
+        local list = RuneModule.getList()
+
+        if #list == 0 then
+            if runeStatus then
+                runeStatus:SetFields({"No runes found in workspace"})
+            end
+            return
+        end
+
+        State.Rune.currentIndex = State.Rune.currentIndex + 1
+        if State.Rune.currentIndex > #list then
+            State.Rune.currentIndex = 1
+        end
+
+        local rune = list[State.Rune.currentIndex]
+        if not rune or not rune:IsA("Model") then
+            if runeStatus then
+                runeStatus:SetFields({"Invalid rune"})
+            end
+            return
+        end
+
+        local target = rune:FindFirstChild("MainPart")
+        if not target or not target:IsA("BasePart") then
+            if runeStatus then
+                runeStatus:SetFields({"Rune has no MainPart"})
+            end
+            return
+        end
+
+        local char = Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if not root then
+            if runeStatus then
+                runeStatus:SetFields({"No HumanoidRootPart"})
+            end
+            return
+        end
+
+        root.CFrame = target.CFrame + Vector3.new(0, 3, 0)
+
+        if runeStatus then
+            runeStatus:SetFields({string.format("Teleported to rune %d/%d", State.Rune.currentIndex, #list)})
+        end
+    end
+end
+
+local CraftingModule = {}
+do
+    function CraftingModule.getModifierNames()
+        local t = {}
+        for k in pairs(require(ReplicatedStorage.GameInfo.Modifiers)) do
+            t[#t + 1] = k
+        end
+        return t
+    end
+
+    function CraftingModule.getOreNames()
+        local t = {}
+        for _, obj in ipairs(ReplicatedStorage.Items.Valuables:GetChildren()) do
+            t[#t + 1] = obj.Name
+        end
+        return t
+    end
+
+    function CraftingModule.getDiscoveredRecipes()
+        local discovered = {}
+        local discoveredIDs = {}
+
+        local UpdateRemote = ReplicatedStorage.Remotes.Crafting.UpdateDiscoveredEquipment
+
+        local waiting = true
+        local conn
+
+        conn = UpdateRemote.OnClientEvent:Connect(function(ids)
+            discoveredIDs = ids
+            waiting = false
+            conn:Disconnect()
+        end)
+
+        UpdateRemote:FireServer()
+
+        local timeout = 5
+        local elapsed = 0
+        while waiting and elapsed < timeout do
+            task.wait(0.1)
+            elapsed = elapsed + 0.1
+        end
+
+        for _, item in ipairs(ReplicatedStorage.Items.Equipment:GetChildren()) do
+            if item:GetAttribute("Hidden") then
+                local itemID = item:GetAttribute("ItemID")
+                if itemID and table.find(discoveredIDs, itemID) then
+                    local equipData = item:FindFirstChild("EquipmentData")
+                    if equipData and equipData:IsA("ModuleScript") then
+                        local success, data = pcall(require, equipData)
+                        if success and data.Materials then
+                            table.insert(discovered, {
+                                Name = item.Name,
+                                Item = item,
+                                Data = data
+                            })
+                        end
+                    end
+                end
+            elseif not item:GetAttribute("AdminLimited") and not item:GetAttribute("ChristmasLimited") then
                 local equipData = item:FindFirstChild("EquipmentData")
                 if equipData and equipData:IsA("ModuleScript") then
                     local success, data = pcall(require, equipData)
@@ -6767,1545 +9132,500 @@ local function getDiscoveredRecipes()
                     end
                 end
             end
-        elseif not item:GetAttribute("AdminLimited") and not item:GetAttribute("ChristmasLimited") then
-            local equipData = item:FindFirstChild("EquipmentData")
-            if equipData and equipData:IsA("ModuleScript") then
-                local success, data = pcall(require, equipData)
-                if success and data.Materials then
-                    table.insert(discovered, {
-                        Name = item.Name,
-                        Item = item,
-                        Data = data
-                    })
+        end
+
+        table.sort(discovered, function(a, b)
+            return a.Name < b.Name
+        end)
+
+        return discovered
+    end
+
+    function CraftingModule.getAvailableMaterials(materialName, minWeight)
+        local available = {}
+        local backpackItems = BackpackTwo:GetChildren()
+        local charTool = Character and Character:FindFirstChildOfClass("Tool")
+
+        if charTool then
+            table.insert(backpackItems, charTool)
+        end
+
+        for _, tool in ipairs(backpackItems) do
+            if tool.Name == materialName then
+                local itemData = tool:FindFirstChild("ItemData")
+                if itemData then
+                    local weight = itemData:GetAttribute("Weight") or 0
+                    if weight >= (minWeight or 0) then
+                        table.insert(available, tool)
+                    end
                 end
             end
         end
+
+        return available
     end
 
-    table.sort(discovered, function(a, b)
-        return a.Name < b.Name
-    end)
+    function CraftingModule.compareMaterialQuality(a, b)
+        local ModifiersModule = require(ReplicatedStorage.GameInfo.Modifiers)
 
-    return discovered
-end
+        local weightA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Weight") or 0
+        local weightB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Weight") or 0
 
-local function getAvailableMaterials(materialName, minWeight)
-    local available = {}
-    local backpackItems = BackpackTwo:GetChildren()
-    local charTool = Character and Character:FindFirstChildOfClass("Tool")
+        local modifierA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Modifier")
+        local modifierB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Modifier")
 
-    if charTool then
-        table.insert(backpackItems, charTool)
+        if modifierA and ModifiersModule[modifierA] then
+            weightA = weightA * ModifiersModule[modifierA].Multiplier
+        end
+
+        if modifierB and ModifiersModule[modifierB] then
+            weightB = weightB * ModifiersModule[modifierB].Multiplier
+        end
+
+        return weightB < weightA
     end
 
-    for _, tool in ipairs(backpackItems) do
-        if tool.Name == materialName then
-            local itemData = tool:FindFirstChild("ItemData")
-            if itemData then
-                local weight = itemData:GetAttribute("Weight") or 0
-                if weight >= (minWeight or 0) then
-                    table.insert(available, tool)
-                end
+    function CraftingModule.calculateQuality(materials, recipe)
+        local QualityModule = require(ReplicatedStorage.Modules.Inventory.CraftingQuality)
+        return QualityModule.DetermineQuality(materials, recipe)
+    end
+
+    function CraftingModule.updateStatus(craftingStatus)
+        if not State.Crafting.selectedEquipment then
+            craftingStatus:SetFields({"No equipment selected", "Select an equipment to begin"})
+            return
+        end
+
+        local recipe = State.Crafting.selectedEquipment.Data
+        local fields = {"Equipment: " .. State.Crafting.selectedEquipment.Name,
+                        "Price: " .. Utility.formatPrice(recipe.Price or 0)}
+
+        local allMaterialsAvailable = true
+
+        for materialName, requirements in pairs(recipe.Materials) do
+            local selectedCount = State.Crafting.selectedMaterials[materialName] and
+                                      #State.Crafting.selectedMaterials[materialName] or 0
+            local required = requirements.Amount
+            local available = #CraftingModule.getAvailableMaterials(materialName, requirements.MinWeight)
+
+            local status = string.format("%s: %d/%d selected (%d available)", materialName, selectedCount, required,
+                available)
+
+            if selectedCount < required then
+                allMaterialsAvailable = false
             end
-        end
-    end
 
-    return available
-end
-
-local function compareMaterialQuality(a, b)
-    local ModifiersModule = require(ReplicatedStorage.GameInfo.Modifiers)
-
-    local weightA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Weight") or 0
-    local weightB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Weight") or 0
-
-    local modifierA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Modifier")
-    local modifierB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Modifier")
-
-    if modifierA and ModifiersModule[modifierA] then
-        weightA = weightA * ModifiersModule[modifierA].Multiplier
-    end
-
-    if modifierB and ModifiersModule[modifierB] then
-        weightB = weightB * ModifiersModule[modifierB].Multiplier
-    end
-
-    return weightB < weightA
-end
-
-local function calculateQuality(materials, recipe)
-    local QualityModule = require(ReplicatedStorage.Modules.Inventory.CraftingQuality)
-    return QualityModule.DetermineQuality(materials, recipe)
-end
-
-local function updateCraftingStatus(craftingStatus)
-    if not CraftingState.selectedEquipment then
-        craftingStatus.setFields({"No equipment selected", "Select an equipment to begin"})
-        return
-    end
-
-    local recipe = CraftingState.selectedEquipment.Data
-    local fields = {"Equipment: " .. CraftingState.selectedEquipment.Name, "Price: " .. formatPrice(recipe.Price or 0)}
-
-    local allMaterialsAvailable = true
-
-    for materialName, requirements in pairs(recipe.Materials) do
-        local selectedCount = CraftingState.selectedMaterials[materialName] and
-                                  #CraftingState.selectedMaterials[materialName] or 0
-        local required = requirements.Amount
-        local available = #getAvailableMaterials(materialName, requirements.MinWeight)
-
-        local status = string.format("%s: %d/%d selected (%d available)", materialName, selectedCount, required,
-            available)
-
-        if selectedCount < required then
-            allMaterialsAvailable = false
-        end
-
-        table.insert(fields, {
-            text = status,
-            isSubField = true
-        })
-    end
-
-    local quality = calculateQuality(CraftingState.selectedMaterials, recipe)
-
-    if quality then
-        local starDisplay = string.rep("★", quality)
-        table.insert(fields, "Quality: " .. starDisplay .. " (" .. quality .. "/5)")
-
-        if quality < 5 then
             table.insert(fields, {
-                text = "⚠ Not maximum quality - you can still craft",
+                text = status,
                 isSubField = true
             })
         end
-    else
-        table.insert(fields, "Quality: ??? (insufficient materials)")
-    end
 
-    if allMaterialsAvailable then
-        table.insert(fields, "✅ Ready to craft")
-    else
-        table.insert(fields, "❌ Missing materials")
-    end
+        local quality = CraftingModule.calculateQuality(State.Crafting.selectedMaterials, recipe)
 
-    craftingStatus.setFields(fields)
-end
+        if quality then
+            local starDisplay = string.rep("★", quality)
+            table.insert(fields, "Quality: " .. starDisplay .. " (" .. quality .. "/5)")
 
-local function selectBestMaterials(craftingStatus)
-    if not CraftingState.selectedEquipment then
-        return
-    end
-
-    CraftingState.selectedMaterials = {}
-
-    local recipe = CraftingState.selectedEquipment.Data
-
-    for materialName, requirements in pairs(recipe.Materials) do
-        local available = getAvailableMaterials(materialName, requirements.MinWeight)
-        table.sort(available, compareMaterialQuality)
-
-        CraftingState.selectedMaterials[materialName] = {}
-
-        for i = 1, math.min(requirements.Amount, #available) do
-            table.insert(CraftingState.selectedMaterials[materialName], available[i])
+            if quality < 5 then
+                table.insert(fields, {
+                    text = "⚠ Not maximum quality - you can still craft",
+                    isSubField = true
+                })
+            end
+        else
+            table.insert(fields, "Quality: ??? (insufficient materials)")
         end
+
+        if allMaterialsAvailable then
+            table.insert(fields, "✅ Ready to craft")
+        else
+            table.insert(fields, "❌ Missing materials")
+        end
+
+        craftingStatus:SetFields(fields)
     end
 
-    updateCraftingStatus(craftingStatus)
-end
+    function CraftingModule.selectBestMaterials(craftingStatus)
+        if not State.Crafting.selectedEquipment then
+            return
+        end
 
-local function canCraft()
-    if not CraftingState.selectedEquipment then
-        return false
+        State.Crafting.selectedMaterials = {}
+
+        local recipe = State.Crafting.selectedEquipment.Data
+
+        for materialName, requirements in pairs(recipe.Materials) do
+            local available = CraftingModule.getAvailableMaterials(materialName, requirements.MinWeight)
+            table.sort(available, CraftingModule.compareMaterialQuality)
+
+            State.Crafting.selectedMaterials[materialName] = {}
+
+            for i = 1, math.min(requirements.Amount, #available) do
+                table.insert(State.Crafting.selectedMaterials[materialName], available[i])
+            end
+        end
+
+        CraftingModule.updateStatus(craftingStatus)
     end
 
-    local recipe = CraftingState.selectedEquipment.Data
-
-    for materialName, requirements in pairs(recipe.Materials) do
-        local selectedCount = CraftingState.selectedMaterials[materialName] and
-                                  #CraftingState.selectedMaterials[materialName] or 0
-        if selectedCount < requirements.Amount then
+    function CraftingModule.canCraft()
+        if not State.Crafting.selectedEquipment then
             return false
         end
-    end
 
-    return true
-end
+        local recipe = State.Crafting.selectedEquipment.Data
 
-local function performCraft(equipmentItem, recipe, materials)
-    local CraftRemote = ReplicatedStorage.Remotes.Crafting.CraftEquipment
-
-    local success, result, model, craftedItem, auxData = pcall(function()
-        return CraftRemote:InvokeServer(equipmentItem, materials)
-    end)
-
-    if not success then
-        return false, "Remote call failed"
-    end
-
-    if not result then
-        return false, "Server rejected craft"
-    end
-
-    return true, craftedItem
-end
-
--- ========================= TABS =========================
-
-local MainTab = SimpleUI:createTab(window, "Main", {
-    Icon = {
-        Image = "rbxassetid://16898613509",
-        Size = UDim2.new(0, 16, 0, 16),
-        ImageRectSize = Vector2.new(48, 48),
-        ImageRectOffset = Vector2.new(771, 759),
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-});
-local MainPage = MainTab.page
-
-local TeleportTab = SimpleUI:createTab(window, "Teleport", {
-    Icon = {
-        Image = "rbxassetid://16898613777",
-        Size = UDim2.new(0, 16, 0, 16),
-        ImageRectSize = Vector2.new(48, 48),
-        ImageRectOffset = Vector2.new(771, 98),
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-
-local TeleportPage = TeleportTab.page
-
-local ToolsTab = SimpleUI:createTab(window, "Tools", {
-    Icon = {
-        Image = "rbxassetid://16898613044",
-        Size = UDim2.new(0, 16, 0, 16),
-        ImageRectSize = Vector2.new(48, 48),
-        ImageRectOffset = Vector2.new(771, 955),
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local ToolsPage = ToolsTab.page
-
-local CraftingTab = SimpleUI:createTab(window, "Crafting", {
-    Icon = {
-        Image = "rbxassetid://10723396542",
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local CraftingPage = CraftingTab.page
-
-local FavouriteTab = SimpleUI:createTab(window, "Favourite", {
-    Icon = {
-        Image = "rbxassetid://10734966248",
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local FavouritePage = FavouriteTab.page
-
-local ShopTab = SimpleUI:createTab(window, "Shop", {
-    Icon = {
-        Image = "rbxassetid://10734952479",
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local ShopPage = ShopTab.page
-
-local PlayerTab = SimpleUI:createTab(window, "Player", {
-    Icon = {
-        Image = "rbxassetid://10747373176",
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local PlayerPage = PlayerTab.page
-
-local MiscellaneousTab = SimpleUI:createTab(window, "Miscellaneous", {
-    Icon = {
-        Image = "rbxassetid://10734963191",
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local MiscellaneousPage = MiscellaneousTab.page
-
-local OthersTab = SimpleUI:createTab(window, "Others", {
-    Icon = {
-        Image = "rbxassetid://10723404337",
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local OthersPage = OthersTab.page
-
-local SettingsTab = SimpleUI:createTab(window, "SettingsTab", {
-    Icon = {
-        Image = "rbxassetid://16898613777",
-        Size = UDim2.new(0, 16, 0, 16),
-        ImageRectSize = Vector2.new(48, 48),
-        ImageRectOffset = Vector2.new(771, 257),
-        ImageColor3 = Color3.fromRGB(255, 255, 255)
-    }
-})
-local SettingsPage = SettingsTab.page
-
--- ========================= MAIN =========================
-
-SimpleUI:createSection(MainTab.page, "Auto Farming")
-
-SimpleUI:createDropdown(MainPage, "Travel Mode", {"Tween", "Teleport"}, "Teleport", function(selection)
-    AutoFarmState.travelMode = selection
-end, {
-    Description = "Teleport is highly recommended here"
-})
-
-SimpleUI:createButton(MainPage, "Set Digging location", function()
-    if getRegion(HumanoidRootPart) == "Deposit" then
-        AutoFarmState.sandCFrame = HumanoidRootPart.CFrame
-        SimpleUI:createNotification({
-            Type = "Success",
-            Title = "Notification",
-            Description = "✅ Sand location set",
-            Duration = 5
-        })
-    else
-        SimpleUI:createNotification({
-            Type = "Error",
-            Title = "Notification",
-            Description = "❌ Must be at dig location",
-            Duration = 5
-        })
-    end
-end, {
-    Description = "Stand where you want to dig and then press this button to save the location."
-})
-
-SimpleUI:createButton(MainPage, "Set Wash location", function()
-    if getRegion(HumanoidRootPart) == "Water" then
-        AutoFarmState.waterCFrame = HumanoidRootPart.CFrame
-        SimpleUI:createNotification({
-            Type = "Success",
-            Title = "Notification",
-            Description = "✅ Wash location set",
-            Duration = 5
-        })
-    else
-        SimpleUI:createNotification({
-            Type = "Error",
-            Title = "Notification",
-            Description = "❌ Must be at wash location",
-            Duration = 5
-        })
-    end
-end, {
-    Description = "Stand where you want to wash and then press this button to save the location."
-})
-
-SimpleUI:createToggle(MainPage, "Auto Farm", false, function(state)
-    if state then
-        if AutoFarmState.running then
-            return
+        for materialName, requirements in pairs(recipe.Materials) do
+            local selectedCount = State.Crafting.selectedMaterials[materialName] and
+                                      #State.Crafting.selectedMaterials[materialName] or 0
+            if selectedCount < requirements.Amount then
+                return false
+            end
         end
 
-        AutoFarmState.active = true
-        AutoFarmState.running = true
-        AutoFarmState.interrupted = false
+        return true
+    end
 
-        if not AutoFarmState.travelMode or AutoFarmState.travelMode == "" then
-            createNotification("❌ Select travel mode!")
-            AutoFarmState.active = false
-            AutoFarmState.running = false
-            return
-        end
+    function CraftingModule.perform(equipmentItem, recipe, materials)
+        local CraftRemote = ReplicatedStorage.Remotes.Crafting.CraftEquipment
 
-        if not AutoFarmState.actionMode or AutoFarmState.actionMode == "" then
-            createNotification("❌ Select farming mode!")
-            AutoFarmState.active = false
-            AutoFarmState.running = false
-            return
-        end
-
-        if not (AutoFarmState.sandCFrame and AutoFarmState.waterCFrame) then
-            createNotification("❌ Set locations!")
-            AutoFarmState.active = false
-            AutoFarmState.running = false
-            return
-        end
-
-        createNotification("🚀 Starting!")
-
-        task.spawn(function()
-            local function teardown()
-                if AutoFarmState.locked then
-                    unlockCharacter()
-                    AutoFarmState.locked = false
-                end
-
-                if TaskManager:getMainTask() == "AutoFarm" then
-                    TaskManager:finishTask("AutoFarm")
-                end
-
-                TaskManager:clearSubTasks()
-                AutoFarmState.running = false
-            end
-
-            local function moveToLocation(targetCFrame)
-                local completed = false
-                local success = false
-
-                local targetObj = {
-                    Position = targetCFrame.Position,
-                    CFrame = targetCFrame
-                }
-
-                if AutoFarmState.travelMode == "Tween" then
-                    tweenToTarget(targetObj, {
-                        CruiseHeight = 4,
-                        MinHeight = 1,
-                        MaxHeight = 6,
-                        LongDistanceThreshold = 100,
-                        DirectFlightThreshold = 30,
-                        AdaptiveHeight = false,
-                        UseDirectFlight = true,
-                        HoverDuration = 0,
-                        LandingDuration = 0.3,
-                        StopDistance = 5,
-                        OnComplete = function(ok)
-                            success = ok or false
-                            completed = true
-                        end
-                    })
-                else
-                    teleportToTarget(targetObj.Position, {
-                        Mode = "Standard",
-                        OnComplete = function(ok)
-                            success = ok or false
-                            completed = true
-                        end
-                    })
-                end
-
-                local elapsed = 0
-                while not completed and elapsed < 45 and AutoFarmState.active do
-                    task.wait(0.05)
-                    elapsed = elapsed + 0.05
-                end
-
-                if success then
-                    lockCharacterAt(targetCFrame)
-                    AutoFarmState.locked = true
-                end
-
-                return success
-            end
-
-            local function doAction(actionType, expectedRegion)
-                local ok, result = pcall(function()
-                    local pan = equipPan()
-                    if not pan then
-                        return false
-                    end
-
-                    if getRegion(HumanoidRootPart) ~= expectedRegion then
-                        return false
-                    end
-
-                    local killSwitch = function()
-                        return AutoFarmState.active
-                    end
-
-                    local r = handlePanAction(AutoFarmState.actionMode, actionType, true, killSwitch)
-                    return r ~= "MAX_RETRY_FAIL" and r ~= "KILLED"
-                end)
-
-                return ok and result
-            end
-
-            local function performTask(taskName, nextTask, targetCFrame, actionType, expectedRegion)
-                TaskManager:setCurrentTask(taskName)
-                TaskManager:setNextTask(nextTask)
-
-                if not moveToLocation(targetCFrame) then
-                    return false
-                end
-
-                task.wait(0.1)
-
-                if not doAction(actionType, expectedRegion) then
-                    return false
-                end
-
-                TaskManager:setCurrentTask("AutoFarm")
-                return true
-            end
-
-            local function checkAndDoSell()
-                if not SellSettings.autoSell then
-                    return
-                end
-
-                local shouldSell = false
-                local mode = SellSettings.type or "Threshold"
-
-                if mode == "Threshold" then
-                    shouldSell = getInventoryCount() >= (tonumber(SellThreshold) or 50)
-                elseif mode == "Time" then
-                    shouldSell = SellSettings._scheduledSell or
-                                     (os.clock() - (SellSettings._lastSell or 0) >= (tonumber(SellDelay) or 300))
-                end
-
-                if shouldSell then
-                    if sellInventory({}, SellSettings.mode or "Teleport") then
-                        SellSettings._lastSell = os.clock()
-                        SellSettings._scheduledSell = false
-
-                        if Players.LocalPlayer and Players.LocalPlayer.Character and
-                            Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                            lockCharacterAt(Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                            AutoFarmState.locked = true
-                        end
-                    end
-                end
-            end
-
-            while AutoFarmState.active do
-                local acquired = TaskManager:requestTask("AutoFarm", 1)
-
-                if acquired then
-                    local hasTurn = TaskManager:waitForTurn("AutoFarm", 5)
-
-                    if hasTurn then
-                        local started = TaskManager:startTask("AutoFarm")
-
-                        if started then
-                            while AutoFarmState.active and TaskManager:canRun("AutoFarm") do
-                                if AutoFarmState.interrupted then
-                                    if AutoFarmState.locked then
-                                        unlockCharacter()
-                                        AutoFarmState.locked = false
-                                    end
-
-                                    while AutoFarmState.interrupted and AutoFarmState.active do
-                                        task.wait(0.1)
-                                    end
-                                end
-
-                                local ok = pcall(function()
-                                    local panStatus = getPanStatus()
-                                    if not panStatus then
-                                        task.wait(0.05)
-                                        return
-                                    end
-
-                                    checkAndDoSell()
-
-                                    if panStatus.isFull then
-                                        if not performTask("MovingToWater", "WashPan", AutoFarmState.waterCFrame,
-                                            "Wash", "Water") then
-                                            AutoFarmState.active = false
-                                        end
-                                    else
-                                        if not performTask("MovingToSand", "DigSand", AutoFarmState.sandCFrame, "Dig",
-                                            "Deposit") then
-                                            AutoFarmState.active = false
-                                        end
-                                    end
-                                end)
-
-                                if not ok then
-                                    if AutoFarmState.locked then
-                                        unlockCharacter()
-                                        AutoFarmState.locked = false
-                                    end
-                                    task.wait(0.05)
-                                end
-
-                                task.wait(0.01)
-                            end
-
-                            TaskManager:finishTask("AutoFarm")
-                        else
-                            task.wait(0.1)
-                        end
-                    end
-                else
-                    task.wait(0.1)
-                end
-            end
-
-            teardown()
-            createNotification("🛑 Stopped")
+        local success, result, model, craftedItem, auxData = pcall(function()
+            return CraftRemote:InvokeServer(equipmentItem, materials)
         end)
-    else
-        AutoFarmState.active = false
+
+        if not success then
+            return false, "Remote call failed"
+        end
+
+        if not result then
+            return false, "Server rejected craft"
+        end
+
+        return true, craftedItem
     end
-end)
+end
 
-SimpleUI:createButton(MainPage, "Unstuck Character / Stop tween", function()
-    unlockCharacter()
-end)
-
-SimpleUI:createButton(MainPage, "Remove Crocodiles", function()
-    local crocsFolder = Map and Map:FindFirstChild("Crocodiles")
-    if crocsFolder then
-        crocsFolder:Destroy()
-        createNotification("Crocodiles removed!")
-        return
+local EnchantModule = {}
+do
+    function EnchantModule.getNames(type)
+        if type == "pan" then
+            local enchantsModule = require(ReplicatedStorage.GameInfo.Enchants)
+            local names = {}
+            for name in pairs(enchantsModule) do
+                names[#names + 1] = name
+            end
+            table.sort(names)
+            return names
+        elseif type == "shovel" then
+            local shovelEnchantsModule = require(ReplicatedStorage.GameInfo.ShovelEnchants)
+            local names = {}
+            for name in pairs(shovelEnchantsModule) do
+                names[#names + 1] = name
+            end
+            table.sort(names)
+            return names
+        end
+        return {}
     end
-    createNotification("Crocodiles not found, already removed?")
-end)
 
-SimpleUI:createSection(MainPage, "Selling")
+    function EnchantModule.findPanMaterial(materialName)
+        if not BackpackTwo then
+            return nil
+        end
+        return BackpackTwo:FindFirstChild(materialName)
+    end
 
-SimpleUI:createDropdown(MainPage, "Sell Type", {"Threshold", "Duration"}, "Threshold", function(selection)
-    SellSettings.type = selection
-    createNotification("📌 Sell Type: " .. selection)
-end, {
-    Description = "Threshold means the minimum items before it sells the inventory & duration means how often to sell inventory"
-})
+    function EnchantModule.findShovelMaterial(modifier)
+        if not BackpackTwo then
+            return nil
+        end
 
-SimpleUI:createTextInput(MainPage, "Enter value", nil, function(input)
-    local result, kind = validateSellValue(input)
-    if result then
-        if kind == "time" then
-            SellDelay = result
-            createNotification("✅ Sell delay set! The inventory will now be sold every " .. result .. " seconds!", 10)
+        for _, tool in ipairs(BackpackTwo:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name == "Aetherite" then
+                local itemData = tool:FindFirstChild("ItemData")
+                if itemData and itemData:GetAttribute("Modifier") == modifier then
+                    return tool
+                end
+            end
+        end
+
+        return nil
+    end
+
+    function EnchantModule.enchant(remote, item, itemName)
+        local ok, result = pcall(function()
+            return remote:InvokeServer(item)
+        end)
+
+        if ok then
+            Utility.createNotification("Successfully enchanted with " .. tostring(result) .. " using " .. itemName, 4)
+            return result
         else
-            SellThreshold = result
-            createNotification("✅ Sell value set! The inventory will now be sold every " .. result .. " items", 10)
+            Utility.createNotification("Error enchanting " .. itemName, 3)
+            return nil
         end
-    else
-        createNotification(
-            "❌ Invalid input. Use either Threshold from 10 to 2000 items OR use Time from 30 seconds to 1 day.", 10)
     end
-end, {
-    Description = "Input Threshold number or Duration number in seconds - for example: 1min 30s would be = 90sec"
-})
 
-SimpleUI:createButton(MainPage, "Sell All Inventory", function()
-    if TaskManager:getMainTask() then
-        return createNotification(
-            "Please wait for current task to complete, if something (AutoFarm) is running, turn it off and try this again.",
-            5)
-    end
-    if not TaskManager:requestTask("ManualSell", 3) then
-        return createNotification("Could not start sell task", 5)
-    end
-    task.spawn(function()
-        if TaskManager:waitForTurn("ManualSell", 10) and TaskManager:startTask("ManualSell") then
-            TaskManager:setCurrentTask("Selling")
-            sellInventory({}, SellSettings.mode or "Teleport")
-            TaskManager:finishTask("ManualSell")
-        end
-    end)
-end)
-
-SimpleUI:createToggle(MainPage, "Auto Sell", false, function(state)
-    SellSettings.autoSell = state
-    SellSettings._lastSell = SellSettings._lastSell or 0
-    SellSettings._scheduledSell = false
-    if state then
+    function EnchantModule.performAuto(findFunc, remote, itemName, target, flag)
         task.spawn(function()
-            while SellSettings.autoSell do
-                if SellSettings.type == "Time" then
-                    local delay = tonumber(SellDelay) or 300
-                    if os.clock() - SellSettings._lastSell >= delay then
-                        SellSettings._scheduledSell = true
+            while flag[1] do
+                local item = findFunc()
+                if not item then
+                    flag[1] = false
+                    Utility.createNotification("Item not found: " .. itemName, 3)
+                    break
+                end
+
+                local enchant = EnchantModule.enchant(remote, item, itemName)
+                if enchant then
+                    if enchant == target then
+                        flag[1] = false
+                        Utility.createNotification("Got target enchant: " .. enchant, 5)
+                        break
                     end
                 end
-                task.wait(5)
+
+                task.wait(1.5)
             end
         end)
     end
-    createNotification(state and "✅ Auto Sell Enabled" or "❌ Auto Sell Disabled")
-end)
+end
 
-SimpleUI:createSection(TeleportPage, "Waypoints")
+local FavouriteModule = {}
+do
+    function FavouriteModule.isLocked(item)
+        return item:GetAttribute("Locked") == true
+    end
 
-local waypointsTable = {}
-if waypointFolder then
-    for _, wp in pairs(waypointFolder:GetChildren()) do
-        if wp:IsA("Model") then
-            table.insert(waypointsTable, wp.Name)
+    function FavouriteModule.toggle(item)
+        ReplicatedStorage.Remotes.Inventory.ToggleLock:FireServer(item)
+    end
+
+    function FavouriteModule.favourite(item)
+        if not FavouriteModule.isLocked(item) then
+            FavouriteModule.toggle(item)
         end
+    end
+
+    function FavouriteModule.matchesModifier(item, modifier)
+        return item:FindFirstChild("ItemData"):GetAttribute("Modifier") == modifier
+    end
+
+    function FavouriteModule.matchesOre(item, oreName)
+        return item.Name == oreName
+    end
+
+    function FavouriteModule.isValuable(item)
+        return item:GetAttribute("ItemType") == "Valuable"
     end
 end
-local WaypointsDropdown = SimpleUI:createDropdown(TeleportPage, "Select Waypoint", waypointsTable, nil,
-    function(selection)
-        local attr = LocalPlayer:GetAttribute("CurrentArea")
-        local currentWaypoint = nil
-        for _, w in pairs(waypointFolder:GetChildren()) do
-            if string.find(string.lower(attr), string.lower(w.Name)) then
-                currentWaypoint = w
-                break
-            end
-        end
-        currentWaypoint = currentWaypoint or waypointFolder["Museum"]
-        local targetWaypoint = waypointFolder:FindFirstChild(selection)
-        if currentWaypoint and targetWaypoint then
-            ReplicatedStorage.Remotes.Misc.FastTravel:FireServer(currentWaypoint, targetWaypoint)
-        end
-    end, {
-        Description = "Refresh waypoints to load locations, only unlocked waypoints are available."
-    })
 
-SimpleUI:createButton(TeleportPage, "Refresh waypoints", function()
-    local Table = {}
-    if waypointFolder then
-        for _, wp in pairs(waypointFolder:GetChildren()) do
-            if wp:IsA("Model") then
-                table.insert(Table, wp.Name)
-            end
+local ReforgeModule = {}
+do
+    function ReforgeModule.updateInfo(guid, infoDisplay)
+        local function safeSetFields(fields)
+            pcall(function()
+                infoDisplay:SetFields(fields)
+            end)
         end
-    end
-    WaypointsDropdown.setOptions(Table)
-end)
 
-SimpleUI:createButton(TeleportPage, "Unlock all waypoints", function()
-    if not fireproximityprompt then
-        return SimpleUI:createNotification({
-            Title = "Not supported",
-            Type = "Error",
-            Description = "Your exploit does not support fireproximityprompt",
-            Duration = 4
-        })
-    end
-    local waypoints = waypointFolder:GetChildren()
-    local FastTravelDataRemote = ReplicatedStorage.Remotes.Misc.GetFastTravelData
-    local unlocked = {}
-    FastTravelDataRemote.OnClientEvent:Connect(function(data)
-        unlocked = data
-    end)
-    FastTravelDataRemote:FireServer()
-    local function unlock(model)
-        local prompt = model:FindFirstChild("WaypointPrompt", true)
-        if not prompt then
+        if not guid then
+            safeSetFields({"No equipment selected"})
             return
         end
-        while unlocked[model.Name] ~= true do
-            HumanoidRootPart.CFrame = model:GetPivot() + Vector3.new(0, 5, 0)
-            fireproximityprompt(prompt)
-            RunService.Heartbeat:Wait()
+
+        if not BackpackTwo or not BackpackTwo.GetChildren then
+            safeSetFields({"Backpack unavailable"})
+            return
         end
-    end
-    task.spawn(function()
-        while true do
-            for _, model in ipairs(waypoints) do
-                if not unlocked[model.Name] then
-                    unlock(model)
-                end
-            end
-            task.wait(1)
-            FastTravelDataRemote:FireServer()
-            if next(unlocked) and not table.find(unlocked, false) then
+
+        local equipment
+        for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
+            if child and child.GetAttribute and child:GetAttribute("GUID") == guid then
+                equipment = child
                 break
             end
         end
-    end)
-end)
 
-SimpleUI:createButton(TeleportPage, "EMERGENCY TELEPORT", function()
-    ReplicatedStorage.Remotes.Misc.FastTravel:FireServer(waypointFolder["Museum"], waypointFolder["Rubble Creek"])
-end, {
-    Description = "Teleports to Starter Town in cases of emergency"
-})
-
-SimpleUI:createSection(TeleportPage, "Geodes")
-
-local geodeStatus = SimpleUI:createParagraph(TeleportPage, "Geode Teleporter", {"Scanning..."})
-
-local geodes = getGeodeModels()
-geodeStatus.setFields({#geodes > 0 and ("Found " .. #geodes .. " geodes") or "No geodes found"})
-
-SimpleUI:createButton(TeleportPage, "Teleport to Next Geode", function()
-    teleportToNextGeode(geodeStatus)
-end)
-
-SimpleUI:createToggle(TeleportPage, "Auto Teleport", false, function(state)
-    geodeAutoLoopEnabled = state
-    if geodeTeleportConnection then
-        geodeTeleportConnection:Disconnect()
-        geodeTeleportConnection = nil
-    end
-    if not state then
-        local list = getGeodeModels()
-        geodeStatus.setFields({#list > 0 and ("Found " .. #list .. " geodes") or "No geodes found"})
-        return
-    end
-    geodeStatus.setFields({"Auto Teleport: ON"})
-    lastGeodeTeleportTime = tick()
-    geodeTeleportConnection = RunService.Heartbeat:Connect(function()
-        if tick() - lastGeodeTeleportTime >= GEODE_AUTO_LOOP_DELAY then
-            teleportToNextGeode(geodeStatus)
-            lastGeodeTeleportTime = tick()
+        if not equipment then
+            safeSetFields({"Equipment not found"})
+            return
         end
-    end)
-end)
 
-SimpleUI:createSection(TeleportPage, "Runes")
+        local fields = {}
+        table.insert(fields, "Name: " .. tostring(equipment.Name or "Unknown"))
 
-local runeStatus = SimpleUI:createParagraph(TeleportPage, "Rune Tracker", {"Scanning..."})
+        local reforges = (equipment:FindFirstChild("ItemData") and equipment.ItemData:GetAttribute("Reforges")) or 0
+        table.insert(fields, "Reforges: " .. tostring(reforges))
 
-local runes = getRunes()
-runeStatus.setFields({#runes > 0 and ("Found " .. #runes .. " runes") or "No runes found"})
-
-SimpleUI:createButton(TeleportPage, "Teleport to Next Rune", function()
-    teleportToNextRune(runeStatus)
-end)
-
-SimpleUI:createToggle(TeleportPage, "Auto Teleport", false, function(state)
-    runeAutoLoopEnabled = state
-    if runeTeleportConnection then
-        runeTeleportConnection:Disconnect()
-        runeTeleportConnection = nil
-    end
-    if not state then
-        local list = getRunes()
-        runeStatus.setFields({#list > 0 and ("Found " .. #list .. " runes") or "No runes found"})
-        return
-    end
-    runeStatus.setFields({"Auto Teleport: ON"})
-    lastRuneTeleportTime = tick()
-    runeTeleportConnection = RunService.Heartbeat:Connect(function()
-        if tick() - lastRuneTeleportTime >= RUNE_AUTO_LOOP_DELAY then
-            teleportToNextRune(runeStatus)
-            lastRuneTeleportTime = tick()
-        end
-    end)
-end)
-
-SimpleUI:createSection(ToolsPage, "Reforge")
-
-local selectedGUID = nil
-local equipmentInfo = SimpleUI:createParagraph(ToolsPage, "Equipment Information", {})
-
-local function safeSetFields(fields)
-    pcall(function()
-        equipmentInfo.setFields(fields)
-    end)
-end
-
-local function updateEquipmentInfo(guid)
-    if not guid then
-        safeSetFields({"No equipment selected"})
-        return
-    end
-    if not BackpackTwo or not BackpackTwo.GetChildren then
-        safeSetFields({"Backpack unavailable"})
-        return
-    end
-    local equipment
-    for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
-        if child and child.GetAttribute and child:GetAttribute("GUID") == guid then
-            equipment = child
-            break
-        end
-    end
-    if not equipment then
-        safeSetFields({"Equipment not found"})
-        return
-    end
-    local fields = {}
-    table.insert(fields, "Name: " .. tostring(equipment.Name or "Unknown"))
-    local reforges = (equipment:FindFirstChild("ItemData") and equipment.ItemData:GetAttribute("Reforges")) or 0
-    table.insert(fields, "Reforges: " .. tostring(reforges))
-    local cost
-    pcall(function()
-        cost = game:GetService("ReplicatedStorage").Remotes.Crafting.GetReforgeCost:InvokeServer(equipment)
-    end)
-    table.insert(fields, "Price: " .. formatPrice(cost or 0))
-    local statRolls
-    pcall(function()
-        statRolls = equipment:FindFirstChild("StatRolls")
-    end)
-    if statRolls and statRolls.GetAttributes then
-        table.insert(fields, "Stats:")
-        local attributes = {}
+        local cost
         pcall(function()
-            attributes = statRolls:GetAttributes()
+            cost = ReplicatedStorage.Remotes.Crafting.GetReforgeCost:InvokeServer(equipment)
         end)
-        for attrName, attrValue in pairs(attributes or {}) do
-            table.insert(fields, {
-                text = tostring(attrName) .. ": " .. tostring(attrValue),
-                isSubField = true
-            })
-        end
-    end
-    safeSetFields(fields)
-end
+        table.insert(fields, "Price: " .. Utility.formatPrice(cost or 0))
 
-local equipmentReforgeDropdown = SimpleUI:createDropdown(ToolsPage, "Select Equipment", {}, nil, function(selection)
-    if type(selection) ~= "table" then
-        selectedGUID = nil
-        updateEquipmentInfo(nil)
-        return
-    end
-    selectedGUID = selection.guid
-    updateEquipmentInfo(selectedGUID)
-end)
+        local statRolls
+        pcall(function()
+            statRolls = equipment:FindFirstChild("StatRolls")
+        end)
 
-SimpleUI:createButton(ToolsPage, "Refresh Equipment", function()
-    local equipmentOptions = {}
-    local nameCounts = {}
-    if BackpackTwo and BackpackTwo.GetChildren then
-        for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
-            if child and child.GetAttribute and child:GetAttribute("ItemType") == "Equipment" then
-                local baseName = tostring(child.Name or "Unknown")
-                nameCounts[baseName] = (nameCounts[baseName] or 0) + 1
-                local displayName = baseName
-                if nameCounts[baseName] > 1 then
-                    displayName = baseName .. " #" .. nameCounts[baseName]
-                end
-                table.insert(equipmentOptions, {
-                    text = displayName,
-                    guid = child:GetAttribute("GUID")
+        if statRolls and statRolls.GetAttributes then
+            table.insert(fields, "Stats:")
+            local attributes = {}
+            pcall(function()
+                attributes = statRolls:GetAttributes()
+            end)
+
+            for attrName, attrValue in pairs(attributes or {}) do
+                table.insert(fields, {
+                    text = tostring(attrName) .. ": " .. tostring(attrValue),
+                    isSubField = true
                 })
             end
         end
-    end
-    selectedGUID = nil
-    pcall(function()
-        equipmentReforgeDropdown.setOptions(equipmentOptions)
-    end)
-    updateEquipmentInfo(nil)
-end)
 
-SimpleUI:createButton(ToolsPage, "Reforge Equipment", function()
-    if not selectedGUID then
-        createNotification("Select an Equipment from your Backpack first!")
-        return
-    end
-    if not BackpackTwo or not BackpackTwo.GetChildren then
-        createNotification("Backpack unavailable.")
-        return
-    end
-    local equipment
-    for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
-        if child and child.GetAttribute and child:GetAttribute("GUID") == selectedGUID then
-            equipment = child
-            break
-        end
-    end
-    if not equipment then
-        createNotification("Selected equipment not found.")
-        return
-    end
-    local success, result = pcall(function()
-        return CraftingRemotes.ReforgeEquipment:InvokeServer(equipment)
-    end)
-    if not success then
-        createNotification("Reforge failed: " .. tostring(result))
-        return
-    end
-    createNotification("Reforge successful!")
-    local newEquipment
-    local timeout = 2
-    local startTime = os.clock()
-    while os.clock() - startTime < timeout do
-        for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
-            if child and child.GetAttribute and child:GetAttribute("GUID") == selectedGUID then
-                newEquipment = child
-                break
-            end
-        end
-        if newEquipment then
-            break
-        end
-        task.wait(0.1)
-    end
-    if not newEquipment then
-        createNotification("Reforge succeeded, but updated item not found.")
-        return
-    end
-    pcall(function()
-        CraftingRemotes.GetReforgeCost:InvokeServer(newEquipment)
-    end)
-    updateEquipmentInfo(selectedGUID)
-    pcall(function()
-        equipmentReforgeDropdown.setOptions({})
-    end)
-end)
-
-SimpleUI:createSection(ToolsPage, "Pan Enchants")
-
-local selectedMaterial = "Aurorite"
-local targetPanEnchant = "Prismatic"
-local autoEnchantingPan = {false}
-
-local PanEnchantRemote = ReplicatedStorage.Remotes.Crafting.Enchant
-local enchantsModule = require(ReplicatedStorage.GameInfo.Enchants)
-
-local panEnchantNames = {}
-for name in pairs(enchantsModule) do
-    panEnchantNames[#panEnchantNames + 1] = name
-end
-table.sort(panEnchantNames)
-
-local function findPanMaterial()
-    if not BackpackTwo then
-        return nil
-    end
-    return BackpackTwo:FindFirstChild(selectedMaterial)
-end
-
-local function enchantItem(remote, item, itemName)
-    local ok, result = pcall(function()
-        return remote:InvokeServer(item)
-    end)
-    if ok then
-        createNotification("Successfully enchanted with " .. tostring(result) .. " using " .. itemName, 4)
-        return result
-    else
-        createNotification("Error enchanting " .. itemName, 3)
-        return nil
-    end
-end
-
-local function performAutoEnchant(findFunc, remote, itemName, target, flag)
-    task.spawn(function()
-        while flag[1] do
-            local item = findFunc()
-            if not item then
-                flag[1] = false
-                createNotification("Item not found: " .. itemName, 3)
-                break
-            end
-            local enchant = enchantItem(remote, item, itemName)
-            if enchant then
-                if enchant == target then
-                    flag[1] = false
-                    createNotification("Got target enchant: " .. enchant, 5)
-                    break
-                end
-            end
-            task.wait(1.5)
-        end
-    end)
-end
-
-SimpleUI:createDropdown(ToolsPage, "Select Material", {{
-    text = "Aetherite"
-}, {
-    text = "Aurorite"
-}}, "Aurorite", function(selection)
-    if selection and selection.text then
-        selectedMaterial = selection.text
-    end
-end)
-
-SimpleUI:createDropdown(ToolsPage, "Target Enchant", panEnchantNames, nil, function(selection)
-    targetPanEnchant = selection
-end, {
-    Description = "For obvious reasons you cannot get Book-Only enchants"
-})
-
-SimpleUI:createButton(ToolsPage, "Enchant Pan", function()
-    local match = findPanMaterial()
-    if not match then
-        createNotification("Material not found: " .. selectedMaterial, 3)
-        return
-    end
-    enchantItem(PanEnchantRemote, match, selectedMaterial)
-end)
-
-SimpleUI:createButton(ToolsPage, "Auto Enchant Pan", function()
-    if autoEnchantingPan[1] then
-        autoEnchantingPan[1] = false
-        createNotification("Stopped auto enchanting pan", 2)
-        return
-    end
-    autoEnchantingPan[1] = true
-    createNotification("Auto enchanting pan until " .. targetPanEnchant, 3)
-    performAutoEnchant(findPanMaterial, PanEnchantRemote, selectedMaterial, targetPanEnchant, autoEnchantingPan)
-end)
-
-SimpleUI:createSection(ToolsPage, "Shovel Enchants")
-
-local selectedShovelModifier = "Iridescent"
-local targetShovelEnchant = "WellBalanced"
-local autoEnchantingShovel = {false}
-
-local ShovelEnchantRemote = ReplicatedStorage.Remotes.Crafting.EnchantShovel
-local shovelEnchantsModule = require(ReplicatedStorage.GameInfo.ShovelEnchants)
-
-local shovelEnchantNames = {}
-for name in pairs(shovelEnchantsModule) do
-    shovelEnchantNames[#shovelEnchantNames + 1] = name
-end
-table.sort(shovelEnchantNames)
-
-local function findShovelMaterial()
-    if not BackpackTwo then
-        return nil
-    end
-    for _, tool in ipairs(BackpackTwo:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name == "Aetherite" then
-            local itemData = tool:FindFirstChild("ItemData")
-            if itemData and itemData:GetAttribute("Modifier") == selectedShovelModifier then
-                return tool
-            end
-        end
-    end
-    return nil
-end
-
-SimpleUI:createDropdown(ToolsPage, "Select Modifier", {{
-    text = "Iridescent"
-}, {
-    text = "Voidtorn"
-}, {
-    text = "Electrified"
-}}, nil, function(sel)
-    if sel and sel.text then
-        selectedShovelModifier = sel.text
-    end
-end)
-
-SimpleUI:createDropdown(ToolsPage, "Target Enchant", shovelEnchantNames, nil, function(selection)
-    targetShovelEnchant = selection
-end)
-
-SimpleUI:createButton(ToolsPage, "Enchant Shovel", function()
-    local shovel = findShovelMaterial()
-    if not shovel then
-        createNotification("Shovel material not found", 3)
-        return
-    end
-    enchantItem(ShovelEnchantRemote, shovel, selectedShovelModifier .. " Aetherite")
-end)
-
-SimpleUI:createButton(ToolsPage, "Auto Enchant Shovel", function()
-    if autoEnchantingShovel[1] then
-        autoEnchantingShovel[1] = false
-        createNotification("Stopped auto enchanting shovel", 2)
-        return
-    end
-    autoEnchantingShovel[1] = true
-    createNotification("Auto enchanting shovel until " .. targetShovelEnchant, 3)
-    performAutoEnchant(findShovelMaterial, ShovelEnchantRemote, selectedShovelModifier .. " Aetherite",
-        targetShovelEnchant, autoEnchantingShovel)
-end)
-
-SimpleUI:createButton(ToolsPage, "Stop All Enchanting", function()
-    if autoEnchantingPan then
-        autoEnchantingPan[1] = false
-    end
-    if autoEnchantingShovel then
-        autoEnchantingShovel[1] = false
-    end
-    createNotification("EMERGENCY STOP - All auto enchanting terminated", 3)
-end)
-
-SimpleUI:createSection(FavouritePage, "Favourite")
-
-local selectedModifiers = {}
-local selectedOre = nil
-local autoFavEnabled = false
-
-local function isLocked(item)
-    return item:GetAttribute("Locked") == true
-end
-
-local function toggleFavourite(item)
-    ReplicatedStorage.Remotes.Inventory.ToggleLock:FireServer(item)
-end
-
-local function favouriteItem(item)
-    if not isLocked(item) then
-        toggleFavourite(item)
-    end
-end
-
-local function matchesModifier(item, modifier)
-    return item:FindFirstChild("ItemData"):GetAttribute("Modifier") == modifier
-end
-
-local function matchesOre(item, oreName)
-    return item.Name == oreName
-end
-
-local function isValuable(item)
-    return item:GetAttribute("ItemType") == "Valuable"
-end
-
-SimpleUI:createDropdown(FavouritePage, "Select Modifier(s)", getModifierNames(), nil, function(values)
-    selectedModifiers = {}
-    for _, v in pairs(values or {}) do
-        table.insert(selectedModifiers, v)
-    end
-end, {
-    MultiSelect = true
-})
-
-SimpleUI:createButton(FavouritePage, "Instant Favourite (Modifier)", function()
-    if #selectedModifiers == 0 then
-        SimpleUI:createNotification({
-            Type = "Warning",
-            Title = "No Modifiers Selected",
-            Description = "Select at least one modifier first."
-        })
-        return
+        safeSetFields(fields)
     end
 
-    for _, item in pairs(LocalPlayer.BackpackTwo:GetChildren()) do
-        for _, modifier in ipairs(selectedModifiers) do
-            if isValuable(item) and matchesModifier(item, modifier) then
-                favouriteItem(item)
-                break
-            end
-        end
-    end
-
-    SimpleUI:createNotification({
-        Type = "Success",
-        Title = "Completed",
-        Description = "Items with selected modifiers were favourited."
-    })
-end)
-
-SimpleUI:createDropdown(FavouritePage, "Select Ore", getOreNames(), nil, function(value)
-    selectedOre = value
-end)
-
-SimpleUI:createButton(FavouritePage, "Instant Favourite (Ore)", function()
-    if not selectedOre then
-        SimpleUI:createNotification({
-            Type = "Warning",
-            Title = "No Ore Selected",
-            Description = "Select an ore first."
-        })
-        return
-    end
-
-    for _, item in pairs(LocalPlayer.BackpackTwo:GetChildren()) do
-        if isValuable(item) and matchesOre(item, selectedOre) then
-            favouriteItem(item)
-        end
-    end
-
-    SimpleUI:createNotification({
-        Type = "Success",
-        Title = "Completed",
-        Description = "All matching ores were favourited."
-    })
-end)
-
-SimpleUI:createButton(FavouritePage, "Favourite Selected Ore with Selected Modifiers", function()
-    if not selectedOre or #selectedModifiers == 0 then
-        SimpleUI:createNotification({
-            Type = "Warning",
-            Title = "Selection Incomplete",
-            Description = "Select both an ore and at least one modifier."
-        })
-        return
-    end
-
-    for _, item in pairs(LocalPlayer.BackpackTwo:GetChildren()) do
-        if isValuable(item) and matchesOre(item, selectedOre) then
-            for _, modifier in ipairs(selectedModifiers) do
-                if matchesModifier(item, modifier) then
-                    favouriteItem(item)
-                    break
-                end
-            end
-        end
-    end
-
-    SimpleUI:createNotification({
-        Type = "Success",
-        Title = "Completed",
-        Description = "Matching items were favourited."
-    })
-end)
-
-SimpleUI:createToggle(FavouritePage, "Auto Favourite", false, function(state)
-    autoFavEnabled = state
-end, {
-    Description = "Automatically favourite items as they are obtained."
-})
-
-LocalPlayer.BackpackTwo.ChildAdded:Connect(function(item)
-    if not autoFavEnabled then
-        return
-    end
-    if not isValuable(item) then
-        return
-    end
-
-    if selectedOre and #selectedModifiers > 0 then
-        if matchesOre(item, selectedOre) then
-            for _, modifier in ipairs(selectedModifiers) do
-                if matchesModifier(item, modifier) then
-                    task.wait(0.1)
-                    favouriteItem(item)
-                    break
-                end
-            end
-        end
-    elseif selectedOre then
-        if matchesOre(item, selectedOre) then
-            task.wait(0.1)
-            favouriteItem(item)
-        end
-    elseif #selectedModifiers > 0 then
-        for _, modifier in ipairs(selectedModifiers) do
-            if matchesModifier(item, modifier) then
-                task.wait(0.1)
-                favouriteItem(item)
-                break
-            end
-        end
-    end
-end)
-
-SimpleUI:createParagraph(FavouritePage, "Auto Favourite System",
-    {"Select Modifier: Choose which modifiers are affected.",
-     "Instant Favourite (Modifier): Favourite all items with selected modifiers.", "Select Ore: Choose an ore type.",
-     "Instant Favourite (Ore): Favourite all items of that ore.",
-     "Favourite Selected Ore with Selected Modifiers: Requires both selections.",
-     "Auto Favourite: Automatically favourites newly obtained items based on your selections.", {
-        text = "[BETA] Favorite System, full version will take a little time, sorry :_]",
-        isSubField = true
-    }})
-
-SimpleUI:createSection(CraftingPage, "Equipment Crafting")
-
-local craftingStatus = SimpleUI:createParagraph(CraftingPage, "Crafting Status",
-    {"No equipment selected", "Select an equipment to begin"})
-
-local equipmentDropdown = SimpleUI:createDropdown(CraftingPage, "Select Equipment", {}, nil, function(selection)
-    for _, recipe in ipairs(CraftingState.discoveredRecipes) do
-        if recipe.Name == selection then
-            CraftingState.selectedEquipment = recipe
-            CraftingState.selectedMaterials = {}
-            updateCraftingStatus(craftingStatus)
-
-            if CraftingState.selectBestOres then
-                selectBestMaterials(craftingStatus)
-            end
-
+    function ReforgeModule.perform(guid)
+        if not guid then
+            Utility.createNotification("Select an Equipment from your Backpack first!")
             return
         end
-    end
-end)
 
-SimpleUI:createButton(CraftingPage, "Load Discovered Recipes", function()
-    CraftingState.discoveredRecipes = getDiscoveredRecipes()
-
-    local options = {}
-    for _, recipe in ipairs(CraftingState.discoveredRecipes) do
-        table.insert(options, recipe.Name)
-    end
-
-    equipmentDropdown.setOptions(options)
-
-    createNotification("Loaded " .. #options .. " discovered recipes", 3)
-end)
-
-SimpleUI:createToggle(CraftingPage, "Select Best Ores", false, function(state)
-    CraftingState.selectBestOres = state
-
-    if state and CraftingState.selectedEquipment then
-        selectBestMaterials(craftingStatus)
-    end
-end, {
-    Description = "Automatically select highest quality materials when equipment is chosen"
-})
-
-SimpleUI:createButton(CraftingPage, "Craft Equipment", function()
-    if not canCraft() then
-        createNotification("Cannot craft - missing materials or no equipment selected", 4)
-        return
-    end
-
-    local success, craftedItem = performCraft(CraftingState.selectedEquipment.Item,
-        CraftingState.selectedEquipment.Data, CraftingState.selectedMaterials)
-
-    if success then
-        createNotification("Successfully crafted " .. CraftingState.selectedEquipment.Name, 4)
-        CraftingState.selectedMaterials = {}
-        updateCraftingStatus(craftingStatus)
-
-        if CraftingState.selectBestOres then
-            task.wait(0.5)
-            selectBestMaterials(craftingStatus)
-        end
-    else
-        createNotification("Crafting failed: " .. tostring(craftedItem), 4)
-    end
-end)
-
-SimpleUI:createToggle(CraftingPage, "Auto Craft", false, function(state)
-    CraftingState.autocraft = state
-
-    if not state then
-        return
-    end
-
-    if CraftingState.autocraftRunning then
-        return
-    end
-
-    CraftingState.autocraftRunning = true
-
-    task.spawn(function()
-        while CraftingState.autocraft do
-            if CraftingState.selectedEquipment then
-                if CraftingState.selectBestOres then
-                    selectBestMaterials(craftingStatus)
-                end
-
-                while CraftingState.autocraft and not canCraft() do
-                    if CraftingState.selectBestOres then
-                        selectBestMaterials(craftingStatus)
-                    end
-
-                    updateCraftingStatus(craftingStatus)
-                    task.wait(2)
-                end
-
-                if CraftingState.autocraft then
-                    local success = performCraft(CraftingState.selectedEquipment.Item,
-                        CraftingState.selectedEquipment.Data, CraftingState.selectedMaterials)
-
-                    if success then
-                        CraftingState.selectedMaterials = {}
-                        updateCraftingStatus(craftingStatus)
-                        task.wait(1)
-                    else
-                        task.wait(3)
-                    end
-                end
-            else
-                updateCraftingStatus(craftingStatus)
-                task.wait(1)
-            end
+        if not BackpackTwo or not BackpackTwo.GetChildren then
+            Utility.createNotification("Backpack unavailable.")
+            return
         end
 
-        CraftingState.autocraftRunning = false
-    end)
-
-end, {
-    Description = "Continuously craft selected equipment when materials are available"
-})
-
-SimpleUI:createParagraph(CraftingPage, "About Select Best Ores",
-    {"This toggle acts like a two-step verification so you don't accidentally craft, you have to keep it enabled for craft to work"})
-
-SimpleUI:createSection(CraftingPage, "Firefly Flare")
-
-SimpleUI:createTextInput(CraftingPage, "Craft Amount", 1, function(input)
-    local value = tonumber(input)
-
-    if not value or value ~= math.floor(value) then
-        SimpleUI:createNotification({
-            Type = "Error",
-            Title = "Invalid Amount",
-            Description = "Please enter a natural number."
-        })
-        return
-    end
-
-    if value < 1 or value >= 1000 then
-        SimpleUI:createNotification({
-            Type = "Warning",
-            Title = "Out of Range",
-            Description = "Craft amount must be between 1 and 999."
-        })
-        return
-    end
-
-    fireflyAmount = value
-end, {
-    Description = "The number of Firefly Flares to craft. 1 Firefly Stone = 1 Firefly Flare"
-})
-
-local FireflyCrafting = false
-local FireflyStopRequested = false
-
-local flareTable = Map:WaitForChild("LushCaverns"):WaitForChild("AbyssAssets"):WaitForChild("FlareTable")
-
-local EquipRemote = ReplicatedStorage.Remotes.CustomBackpack.EquipRemote
-
-SimpleUI:createButton(CraftingPage, "Craft Firefly Flare", function()
-    if FireflyCrafting then
-        SimpleUI:createNotification({
-            Type = "Warning",
-            Title = "Already Crafting",
-            Description = "Firefly crafting is already running."
-        })
-        return
-    end
-
-    if type(fireflyAmount) ~= "number" or fireflyAmount < 1 or fireflyAmount >= 1000 then
-        SimpleUI:createNotification({
-            Type = "Error",
-            Title = "Invalid Amount",
-            Description = "Craft amount must be between 1 and 999."
-        })
-        return
-    end
-
-    local stones = {}
-    for _, tool in ipairs(BackpackTwo:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name == "Firefly Stone" then
-            table.insert(stones, tool)
-        end
-    end
-
-    if #stones < fireflyAmount then
-        SimpleUI:createNotification({
-            Type = "Error",
-            Title = "Insufficient Materials",
-            Description = "Not enough Firefly Stones."
-        })
-        return
-    end
-
-    local prompt = flareTable:FindFirstChild("Prompt", true)
-    if not prompt or not fireproximityprompt then
-        SimpleUI:createNotification({
-            Type = "Error",
-            Title = "Executor Unsupported",
-            Description = "fireproximityprompt is unavailable."
-        })
-        return
-    end
-
-    if not HumanoidRootPart then
-        return
-    end
-
-    local distance = (HumanoidRootPart.Position - flareTable:GetPivot().Position).Magnitude
-    if distance > 20 then
-        SimpleUI:createNotification({
-            Type = "Warning",
-            Title = "Too Far Away",
-            Description = "Go to the Firefly crafting table."
-        })
-        return
-    elseif distance > 10 then
-        SimpleUI:createNotification({
-            Type = "Info",
-            Title = "Get Closer",
-            Description = "Move closer to the crafting table."
-        })
-        return
-    end
-
-    prompt.HoldDuration = 0
-    FireflyCrafting = true
-    FireflyStopRequested = false
-
-    SimpleUI:createNotification({
-        Type = "Info",
-        Title = "Crafting Started",
-        Description = "Crafting Firefly Flares..."
-    })
-
-    task.spawn(function()
-        for i = 1, fireflyAmount do
-            if FireflyStopRequested then
+        local equipment
+        for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
+            if child and child.GetAttribute and child:GetAttribute("GUID") == guid then
+                equipment = child
                 break
             end
+        end
+
+        if not equipment then
+            Utility.createNotification("Selected equipment not found.")
+            return
+        end
+
+        local success, result = pcall(function()
+            return CraftingRemotes.ReforgeEquipment:InvokeServer(equipment)
+        end)
+
+        if not success then
+            Utility.createNotification("Reforge failed: " .. tostring(result))
+            return
+        end
+
+        Utility.createNotification("Reforge successful!")
+
+        local newEquipment
+        local timeout = 2
+        local startTime = os.clock()
+
+        while os.clock() - startTime < timeout do
+            for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
+                if child and child.GetAttribute and child:GetAttribute("GUID") == guid then
+                    newEquipment = child
+                    break
+                end
+            end
+            if newEquipment then
+                break
+            end
+            task.wait(0.1)
+        end
+
+        if not newEquipment then
+            Utility.createNotification("Reforge succeeded, but updated item not found.")
+            return
+        end
+
+        pcall(function()
+            CraftingRemotes.GetReforgeCost:InvokeServer(newEquipment)
+        end)
+
+        return guid
+    end
+end
+
+local FireflyModule = {}
+do
+    function FireflyModule.craft(amount)
+        if typeof(amount) ~= "number" or amount < 1 or amount >= 1000 then
+            SimpleUI:CreateNotification({
+                Type = "Error",
+                Title = "Invalid Amount",
+                Description = "Craft amount must be between 1 and 999."
+            })
+            return false
+        end
+
+        local stones = {}
+        for _, tool in ipairs(BackpackTwo:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name == "Firefly Stone" then
+                table.insert(stones, tool)
+            end
+        end
+
+        if #stones < amount then
+            SimpleUI:CreateNotification({
+                Type = "Error",
+                Title = "Insufficient Materials",
+                Description = "Not enough Firefly Stones."
+            })
+            return false
+        end
+
+        local flareTable = Map:WaitForChild("LushCaverns"):WaitForChild("AbyssAssets"):WaitForChild("FlareTable")
+        local prompt = flareTable:FindFirstChild("Prompt", true)
+
+        if not prompt or not fireproximityprompt then
+            SimpleUI:CreateNotification({
+                Type = "Error",
+                Title = "Executor Unsupported",
+                Description = "fireproximityprompt is unavailable."
+            })
+            return false
+        end
+
+        if not HumanoidRootPart then
+            return false
+        end
+
+        local distance = (HumanoidRootPart.Position - flareTable:GetPivot().Position).Magnitude
+
+        if distance > 20 then
+            SimpleUI:CreateNotification({
+                Type = "Warning",
+                Title = "Too Far Away",
+                Description = "Go to the Firefly crafting table."
+            })
+            return false
+        elseif distance > 10 then
+            SimpleUI:CreateNotification({
+                Type = "Info",
+                Title = "Get Closer",
+                Description = "Move closer to the crafting table."
+            })
+            return false
+        end
+
+        prompt.HoldDuration = 0
+
+        SimpleUI:CreateNotification({
+            Type = "Info",
+            Title = "Crafting Started",
+            Description = "Crafting Firefly Flares..."
+        })
+
+        local EquipRemote = ReplicatedStorage.Remotes.CustomBackpack.EquipRemote
+
+        for i = 1, amount do
             if not Character or not HumanoidRootPart then
                 break
             end
@@ -8333,112 +9653,91 @@ SimpleUI:createButton(CraftingPage, "Craft Firefly Flare", function()
             task.wait(0.15)
         end
 
-        FireflyCrafting = false
-        FireflyStopRequested = false
-
-        SimpleUI:createNotification({
+        SimpleUI:CreateNotification({
             Type = "Success",
             Title = "Crafting Complete",
             Description = "Firefly crafting process finished."
         })
-    end)
-end, {
-    Description = "Reminder: 1 Firefly Stone = 1 Firefly Flare"
-})
 
-SimpleUI:createButton(CraftingPage, "Stop Crafting", function()
-    if not FireflyCrafting then
-        SimpleUI:createNotification({
-            Type = "Info",
-            Title = "Idle",
-            Description = "No crafting process is running."
-        })
-        return
+        return true
     end
-
-    FireflyStopRequested = true
-
-    SimpleUI:createNotification({
-        Type = "Warning",
-        Title = "Stopping",
-        Description = "Stopping Firefly crafting..."
-    })
-end)
-
-SimpleUI:createParagraph(CraftingPage, "Information", {"You have to be near the firefly crafting table to convert."})
-
-SimpleUI:createSection(ShopPage, "Buy items LIKE A BOSS")
-
-SimpleUI:createButton(ShopPage, "Open amazong", function()
-    amazong:Toggle()
-end)
-
-SimpleUI:createSection(PlayerPage, "Humanoid")
-
-local jumpPower = Humanoid.JumpPower or 50
-local walkSpeedValue = Humanoid and Humanoid.WalkSpeed or 16
-
-SimpleUI:createSlider(PlayerPage, "Walk Speed", 0, 100, walkSpeedValue, function(val)
-    pcall(function()
-        walkSpeedValue = val
-        if Humanoid then
-            Humanoid.WalkSpeed = val
-        end
-    end)
-end)
-
-if Humanoid then
-    Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-        if Humanoid.WalkSpeed ~= walkSpeedValue then
-            Humanoid.WalkSpeed = walkSpeedValue
-        end
-    end)
 end
 
-SimpleUI:createSlider(PlayerPage, "Jump Power", 1, 100, jumpPower, function(val)
-    pcall(function()
-        jumpPower = val
-        if Humanoid then
-            Humanoid.UseJumpPower = true
-            Humanoid.JumpPower = val
+local ESPModule = {}
+do
+    function ESPModule.createBillboard(target, name, color, player)
+        local bb = Instance.new("BillboardGui")
+        bb.Name = "ESPBillboard"
+        bb.Adornee = target
+        bb.AlwaysOnTop = true
+        bb.StudsOffset = Vector3.new(0, 2.6, 0)
+        bb.Size = UDim2.fromOffset(200, 24)
+        bb.Parent = target
+
+        local frame = Instance.new("Frame")
+        frame.BackgroundTransparency = 1
+        frame.Size = UDim2.fromScale(1, 1)
+        frame.Parent = bb
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingLeft = UDim.new(0, 4)
+        padding.PaddingRight = UDim.new(0, 4)
+        padding.Parent = frame
+
+        local layout = Instance.new("UIListLayout")
+        layout.FillDirection = Enum.FillDirection.Horizontal
+        layout.VerticalAlignment = Enum.VerticalAlignment.Center
+        layout.Padding = UDim.new(0, 5)
+        layout.Parent = frame
+
+        if player then
+            local avatar = Instance.new("ImageLabel")
+            avatar.BackgroundTransparency = 1
+            avatar.Size = UDim2.fromOffset(16, 16)
+            avatar.Image = Services.Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot,
+                Enum.ThumbnailSize.Size48x48)
+            avatar.Parent = frame
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0)
+            corner.Parent = avatar
         end
-    end)
-end)
 
-if Humanoid then
-    Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
-        if Humanoid.JumpPower ~= jumpPower then
-            Humanoid.UseJumpPower = true
-            Humanoid.JumpPower = jumpPower
-        end
-    end)
-end
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Font = Enum.Font.GothamSemibold
+        nameLabel.TextSize = 13
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.TextColor3 = color or Color3.new(1, 1, 1)
+        nameLabel.Text = name
+        nameLabel.AutomaticSize = Enum.AutomaticSize.X
+        nameLabel.Parent = frame
 
-SimpleUI:createSlider(PlayerPage, "Adjust FOV", 30, 120, Camera.FieldOfView, function(value)
-    Camera.FieldOfView = value
-end, {
-    Increment = 1
-})
+        local distLabel = Instance.new("TextLabel")
+        distLabel.BackgroundTransparency = 1
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.TextSize = 11
+        distLabel.TextXAlignment = Enum.TextXAlignment.Left
+        distLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
+        distLabel.AutomaticSize = Enum.AutomaticSize.X
+        distLabel.Parent = frame
 
-local fogDensity = 0.1
-local atmosphere = Lighting:FindFirstChildWhichIsA("Atmosphere") or Instance.new("Atmosphere", Lighting)
-RunService.RenderStepped:Connect(function()
-    if atmosphere then
-        atmosphere.Density = math.clamp(fogDensity, 0, 1)
+        local conn
+        conn = Services.RunService.RenderStepped:Connect(function()
+            if not bb.Parent or not target.Parent then
+                conn:Disconnect()
+                return
+            end
+            local d = (Camera.CFrame.Position - target.Position).Magnitude
+            distLabel.Text = string.format("%dm", d + 0.5)
+        end)
+
+        return bb
     end
-end)
-SimpleUI:createSlider(PlayerPage, "Fog Density", 0.30, 1, 0.40, function(value)
-    fogDensity = value
-end, {
-    Increment = 0.01
-})
 
-SimpleUI:createSection(PlayerPage, "ESP")
-
-SimpleUI:createToggle(PlayerPage, "Players ESP", false, function(enabled)
-    if enabled then
+    function ESPModule.enablePlayers()
         local function attachESP(plr)
-            if plr == LocalPlayer then
+            if plr == Player then
                 return
             end
 
@@ -8452,15 +9751,15 @@ SimpleUI:createToggle(PlayerPage, "Players ESP", false, function(enabled)
                 return
             end
 
-            if ESP.Players[plr] then
-                ESP.Players[plr]:Destroy()
+            if State.ESP.Players[plr] then
+                State.ESP.Players[plr]:Destroy()
             end
 
-            ESP.Players[plr] = createBillboard(head, plr.Name, Color3.fromRGB(255, 255, 255), plr)
+            State.ESP.Players[plr] = ESPModule.createBillboard(head, plr.Name, Color3.fromRGB(255, 255, 255), plr)
         end
 
         local function hookPlayer(plr)
-            if plr == LocalPlayer then
+            if plr == Player then
                 return
             end
 
@@ -8468,61 +9767,61 @@ SimpleUI:createToggle(PlayerPage, "Players ESP", false, function(enabled)
                 attachESP(plr)
             end
 
-            ESP.Connections["Char_" .. plr.UserId] = plr.CharacterAdded:Connect(function()
+            State.ESP.Connections["Char_" .. plr.UserId] = plr.CharacterAdded:Connect(function()
                 attachESP(plr)
             end)
 
             plr.CharacterRemoving:Connect(function()
-                if ESP.Players[plr] then
-                    ESP.Players[plr]:Destroy()
-                    ESP.Players[plr] = nil
+                if State.ESP.Players[plr] then
+                    State.ESP.Players[plr]:Destroy()
+                    State.ESP.Players[plr] = nil
                 end
             end)
         end
 
-        for _, plr in ipairs(Players:GetPlayers()) do
+        for _, plr in ipairs(Services.Players:GetPlayers()) do
             hookPlayer(plr)
         end
 
-        ESP.Connections.PlayerAdded = Players.PlayerAdded:Connect(hookPlayer)
+        State.ESP.Connections.PlayerAdded = Services.Players.PlayerAdded:Connect(hookPlayer)
 
-        ESP.Connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(plr)
-            if ESP.Players[plr] then
-                ESP.Players[plr]:Destroy()
-                ESP.Players[plr] = nil
+        State.ESP.Connections.PlayerRemoving = Services.Players.PlayerRemoving:Connect(function(plr)
+            if State.ESP.Players[plr] then
+                State.ESP.Players[plr]:Destroy()
+                State.ESP.Players[plr] = nil
             end
 
-            local conn = ESP.Connections["Char_" .. plr.UserId]
+            local conn = State.ESP.Connections["Char_" .. plr.UserId]
             if conn then
                 conn:Disconnect()
-                ESP.Connections["Char_" .. plr.UserId] = nil
+                State.ESP.Connections["Char_" .. plr.UserId] = nil
             end
         end)
-    else
-        for _, bb in pairs(ESP.Players) do
+    end
+
+    function ESPModule.disablePlayers()
+        for _, bb in pairs(State.ESP.Players) do
             if bb then
                 bb:Destroy()
             end
         end
 
-        for _, conn in pairs(ESP.Connections) do
+        for _, conn in pairs(State.ESP.Connections) do
             if typeof(conn) == "RBXScriptConnection" then
                 conn:Disconnect()
             end
         end
 
-        ESP.Players = {}
-        ESP.Connections = {}
-    end
-end)
-
-SimpleUI:createToggle(PlayerPage, "Totems ESP", false, function(enabled)
-    local folder = workspace:FindFirstChild("ActiveTotems")
-    if not folder then
-        return
+        State.ESP.Players = {}
+        State.ESP.Connections = {}
     end
 
-    if enabled then
+    function ESPModule.enableTotems()
+        local folder = Services.Workspace:FindFirstChild("ActiveTotems")
+        if not folder then
+            return
+        end
+
         local function addTotem(model)
             if model:IsA("Model") then
                 local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
@@ -8531,8 +9830,8 @@ SimpleUI:createToggle(PlayerPage, "Totems ESP", false, function(enabled)
                     if typeof(color) ~= "Color3" then
                         color = Color3.fromRGB(150, 200, 255)
                     end
-                    local bb = createBillboard(part, model.Name, color)
-                    ESP.Totems[model] = bb
+                    local bb = ESPModule.createBillboard(part, model.Name, color)
+                    State.ESP.Totems[model] = bb
                 end
             end
         end
@@ -8541,616 +9840,2072 @@ SimpleUI:createToggle(PlayerPage, "Totems ESP", false, function(enabled)
             addTotem(m)
         end
 
-        ESP.Connections.TotemAdded = folder.ChildAdded:Connect(addTotem)
-        ESP.Connections.TotemRemoved = folder.ChildRemoved:Connect(function(m)
-            if ESP.Totems[m] then
-                ESP.Totems[m]:Destroy()
-                ESP.Totems[m] = nil
+        State.ESP.Connections.TotemAdded = folder.ChildAdded:Connect(addTotem)
+        State.ESP.Connections.TotemRemoved = folder.ChildRemoved:Connect(function(m)
+            if State.ESP.Totems[m] then
+                State.ESP.Totems[m]:Destroy()
+                State.ESP.Totems[m] = nil
             end
         end)
-    else
-        for _, v in pairs(ESP.Totems) do
+    end
+
+    function ESPModule.disableTotems()
+        for _, v in pairs(State.ESP.Totems) do
             v:Destroy()
         end
-        if ESP.Connections.TotemAdded then
-            ESP.Connections.TotemAdded:Disconnect()
-        end
-        if ESP.Connections.TotemRemoved then
-            ESP.Connections.TotemRemoved:Disconnect()
-        end
-        ESP.Totems = {}
-    end
-end)
 
-SimpleUI:createButton(PlayerPage, "Clear All ESP", function()
-    local function clearFromFolder(folder)
-        if not folder then
-            return
+        if State.ESP.Connections.TotemAdded then
+            State.ESP.Connections.TotemAdded:Disconnect()
         end
-        for _, obj in ipairs(folder:GetDescendants()) do
-            if obj:IsA("BillboardGui") and obj.Name == "ESPBillboard" then
-                obj:Destroy()
+
+        if State.ESP.Connections.TotemRemoved then
+            State.ESP.Connections.TotemRemoved:Disconnect()
+        end
+
+        State.ESP.Totems = {}
+    end
+
+    function ESPModule.clearAll()
+        local function clearFromFolder(folder)
+            if not folder then
+                return
             end
-        end
-    end
-
-    clearFromFolder(workspace:FindFirstChild("ActiveTotems"))
-    clearFromFolder(workspace:FindFirstChild("Characters"))
-
-    for _, bb in pairs(ESP.Players or {}) do
-        if bb and bb.Parent then
-            bb:Destroy()
-        end
-    end
-    ESP.Players = {}
-
-    for _, bb in pairs(ESP.Totems or {}) do
-        if bb and bb.Parent then
-            bb:Destroy()
-        end
-    end
-    ESP.Totems = {}
-
-    for _, conn in pairs(ESP.Connections or {}) do
-        if typeof(conn) == "RBXScriptConnection" then
-            conn:Disconnect()
-        end
-    end
-    ESP.Connections = {}
-
-    if ESP.Toggles then
-        ESP.Toggles.Players = false
-        ESP.Toggles.Totems = false
-    end
-end)
-
-SimpleUI:createSection(MiscellaneousPage, "Excavation")
-
-local excavationStatus = SimpleUI:createParagraph(MiscellaneousPage, "Excavation Status", {"Idle", "No site selected"})
-
-SimpleUI:createDropdown(MiscellaneousPage, "Select Excavation", getExcavationNames(), nil, function(s)
-    ExcavationState.selected = s
-    excavationStatus.setFields({"Status: Ready", "Selected: " .. tostring(s)})
-end)
-
-SimpleUI:createButton(MiscellaneousPage, "Start Excavation", function()
-    if not ExcavationState.selected then
-        excavationStatus.setFields({"Status: Error", "No excavation selected"})
-        return
-    end
-    local ok, msg = startExcavation()
-    if ok then
-        excavationStatus.setFields({"Status: Running", "Site: " .. ExcavationState.selected})
-    else
-        excavationStatus.setFields({"Status: Failed", tostring(msg)})
-    end
-end)
-
-SimpleUI:createToggle(MiscellaneousPage, "Auto Claim", true, function(state)
-    ExcavationState.autoClaim = state
-    excavationStatus.setFields({"Status: " .. (state and "Auto-Claim Enabled" or "Auto-Claim Disabled"),
-                                "Site: " .. tostring(ExcavationState.selected)})
-    if not state then
-        return
-    end
-    task.spawn(function()
-        while ExcavationState.autoClaim do
-            if getCurrentExcavationStatus() == "Finished" then
-                claimExcavation()
-            end
-            task.wait(1)
-        end
-    end)
-end)
-
-SimpleUI:createButton(MiscellaneousPage, "View Item Chances", function()
-    if not ExcavationState.selected then
-        excavationStatus.setFields({"Status: Error", "Select an excavation first"})
-        return
-    end
-    local site = Excavations.Sites[ExcavationState.selected]
-    if not site then
-        excavationStatus.setFields({"Status: Error", "Invalid excavation site"})
-        return
-    end
-    local total = 0
-    for _, w in pairs(site.Weights) do
-        total = total + w
-    end
-    local drops = {}
-    for name, w in pairs(site.Weights) do
-        table.insert(drops, {
-            name = name,
-            chance = (w / total) * 100
-        })
-    end
-    table.sort(drops, function(a, b)
-        return a.chance > b.chance
-    end)
-    local lines = {"Site: " .. site.Name, "Geode: " .. site.GeodeType,
-                   "Items: " .. site.MinItems .. " - " .. site.MaxItems, "Duration: " .. (site.Duration / 3600) .. "h",
-                   "Unlock Cost: " .. site.UnlockCost, "Start Cost: " .. site.StartCost, "", "Drop Rates:"}
-    for _, d in ipairs(drops) do
-        table.insert(lines, string.format("• %s — %.2f%%", d.name, d.chance))
-    end
-    SimpleUI:createPopup("ExcavationPopup", {
-        title = "Excavation Info",
-        text = table.concat(lines, "\n")
-    })
-
-end)
-
-SimpleUI:createSection(MiscellaneousPage, "Remove Barriers")
-
-SimpleUI:createButton(MiscellaneousPage, "Remove Vines", function()
-    local vines = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("Vines")
-    if vines then
-        vines:Destroy()
-    end
-end, {
-    Description = "Removes vines in Deeproot Area"
-})
-
-SimpleUI:createButton(MiscellaneousPage, "Remove Abyssal Gate", function()
-    local abyssAssets = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("AbyssAssets")
-    local gate = abyssAssets and abyssAssets:FindFirstChild("Gate")
-    if gate then
-        gate:Destroy()
-    end
-end, {
-    Description = "Removes the 25,000 items barrier in Abyssal Depths"
-})
-
-SimpleUI:createButton(MiscellaneousPage, "Remove Mountain Block", function()
-    local mountains = Map and Map:FindFirstChild("Mountains")
-    local added = mountains and mountains:FindFirstChild("Added")
-    local gateBlock = added and added:FindFirstChild("GateBlockScript") and
-                          added.GateBlockScript:FindFirstChild("GateBlockage")
-    if gateBlock then
-        gateBlock:Destroy()
-    end
-end, {
-    Description = "Removes the big final rock to reach the summit peak"
-})
-
-SimpleUI:createSection(OthersPage, "Server")
-
-SimpleUI:createToggle(OthersPage, "Anti-AFK", true, function(state)
-    local GC = getconnections or get_signal_cons
-    if state then
-        if GC then
-            for _, c in pairs(GC(LocalPlayer.Idled)) do
-                if c.Disable then
-                    c:Disable()
-                end
-                if c.Disconnect then
-                    c:Disconnect()
+            for _, obj in ipairs(folder:GetDescendants()) do
+                if obj:IsA("BillboardGui") and obj.Name == "ESPBillboard" then
+                    obj:Destroy()
                 end
             end
-        else
-            local VirtualUser = cloneref and cloneref(game:GetService("VirtualUser")) or game:GetService("VirtualUser")
-            getgenv().AntiAFKConnection = LocalPlayer.Idled:Connect(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new())
-            end)
-        end
-    else
-        if getgenv().AntiAFKConnection then
-            getgenv().AntiAFKConnection:Disconnect()
-            getgenv().AntiAFKConnection = nil
-        end
-    end
-end)
-
-SimpleUI:createButton(OthersPage, "Rejoin Server", function()
-    if #Players:GetPlayers() <= 1 then
-        LocalPlayer:Kick("Rejoining...")
-        task.wait()
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
-    else
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-    end
-end)
-
-SimpleUI:createButton(OthersPage, "Server Hop", function()
-    local servers = {}
-    local req = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId ..
-                                                        "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true"))
-
-    for _, v in pairs(req.data or {}) do
-        if v.id ~= game.JobId and v.playing < v.maxPlayers then
-            table.insert(servers, v.id)
-        end
-    end
-
-    if #servers > 0 then
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], LocalPlayer)
-    else
-        createNotification("No available servers found", 4)
-    end
-end)
-
-SimpleUI:createSection(SettingsPage, "User Interface")
-
-if SimpleUI:isMobile() then
-    local TweenService = (SimpleUI and SimpleUI.getService) and SimpleUI:getService("TweenService")
-    local UserInputService = (SimpleUI and SimpleUI.getService) and SimpleUI:getService("UserInputService")
-
-    local folderName = "SimpleScripts"
-    local fileName = folderName .. "/logo.png"
-    local iconUrl = "https://raw.githubusercontent.com/dawnpetal/website/refs/heads/main/assets/images/logo.png"
-    local logoAsset
-
-    local canUseFilesystem = makefolder and isfolder and listfiles and isfile and delfile and writefile and
-                                 getcustomasset
-
-    if canUseFilesystem then
-        if not isfolder(folderName) then
-            makefolder(folderName)
         end
 
-        for _, file in ipairs(listfiles("")) do
-            local cleanFile = file:gsub("^/", "")
-            if cleanFile:lower():find("simpleui") and isfile(cleanFile) then
-                delfile(cleanFile)
+        clearFromFolder(Services.Workspace:FindFirstChild("ActiveTotems"))
+        clearFromFolder(Services.Workspace:FindFirstChild("Characters"))
+
+        for _, bb in pairs(State.ESP.Players or {}) do
+            if bb and bb.Parent then
+                bb:Destroy()
             end
         end
+        State.ESP.Players = {}
 
-        if not isfile(fileName) then
-            local success, imageData = pcall(function()
-                return game:HttpGet(iconUrl)
-            end)
-            if success and imageData then
-                writefile(fileName, imageData)
+        for _, bb in pairs(State.ESP.Totems or {}) do
+            if bb and bb.Parent then
+                bb:Destroy()
             end
         end
+        State.ESP.Totems = {}
 
-        logoAsset = getcustomasset(fileName)
-    end
-
-    local toggleButton = Instance.new("ImageButton")
-    toggleButton.Name = "ToggleUIButton"
-    toggleButton.Size = UDim2.new(0, 40, 0, 40)
-    toggleButton.Position = UDim2.new(0, 30, 0.5, -20)
-    toggleButton.AnchorPoint = Vector2.new(0.5, 0.5)
-    toggleButton.BackgroundTransparency = 1
-    toggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    toggleButton.ScaleType = Enum.ScaleType.Fit
-    toggleButton.Active = true
-    toggleButton.Image = logoAsset or "rbxassetid://10734900011"
-    toggleButton.Parent = window.SimpleGUI
-
-    local dragging = false
-    local dragStart, startPos
-    local hasMoved = false
-    local normalSize = UDim2.new(0, 40, 0, 40)
-    local pressSize = UDim2.new(0, 50, 0, 50)
-    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-
-    if toggleButton and TweenService then
-        toggleButton.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = input.Position
-                startPos = toggleButton.Position
-                hasMoved = false
-                TweenService:Create(toggleButton, tweenInfo, {
-                    Size = pressSize
-                }):Play()
-            end
-        end)
-
-        toggleButton.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = false
-                TweenService:Create(toggleButton, tweenInfo, {
-                    Size = normalSize
-                }):Play()
-                if not hasMoved then
-                    if window.isVisible() then
-                        window.hide()
-                    else
-                        window.show()
-                    end
-                end
-            end
-        end)
-    end
-
-    if UserInputService then
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and
-                (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType ==
-                    Enum.UserInputType.Touch) then
-                local delta = input.Position - dragStart
-                if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
-                    hasMoved = true
-                    toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale,
-                        startPos.Y.Offset + delta.Y)
-                end
-            end
-        end)
-    end
-else
-    SimpleUI:createKeybind(SettingsPage, "UI visibility keybind", Enum.KeyCode.Q, function(key)
-        window.toggle()
-    end)
-end
-
-local inventory = game:GetService("Players").LocalPlayer.PlayerGui.BackpackGui.Backpack.Inventory
-local scrollingFrame = inventory.ScrollingFrame
-local gridFrame = scrollingFrame.UIGridFrame
-
-local FilterPanelToggle = SimpleUI:createToggle(SettingsPage, "Enable Inventory Filter", true, function(state)
-    local existingPanel = inventory:FindFirstChild("FilterPanel")
-    if existingPanel then
-        existingPanel:Destroy()
-        task.wait()
-    end
-
-    if not state then
-        return
-    end
-
-    local filterPanel = Instance.new("Frame")
-    filterPanel.Name = "FilterPanel"
-    filterPanel.Parent = inventory
-    filterPanel.AnchorPoint = Vector2.new(0, 0)
-    filterPanel.Position = UDim2.new(1, 0.02, 0, -30)
-    filterPanel.Size = UDim2.new(0.22, 0, 1.08, 0)
-    filterPanel.BackgroundTransparency = 1
-    filterPanel.BorderSizePixel = 0
-
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 0)
-    padding.PaddingBottom = UDim.new(0.04, 0)
-    padding.PaddingLeft = UDim.new(0.06, 0)
-    padding.PaddingRight = UDim.new(0.06, 0)
-    padding.Parent = filterPanel
-
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0.018, 0)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Parent = filterPanel
-
-    local fontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold,
-        Enum.FontStyle.Italic)
-
-    local title = Instance.new("TextLabel")
-    title.Name = "CurrentFilter"
-    title.Parent = filterPanel
-    title.Size = UDim2.new(1, 0, 0.16, 0)
-    title.BackgroundTransparency = 1
-    title.Text = "Filter: All Items"
-    title.TextWrapped = true
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.TextYAlignment = Enum.TextYAlignment.Center
-    title.FontFace = fontFace
-    title.TextScaled = true
-    title.LineHeight = 1
-    title.TextColor3 = Color3.fromRGB(245, 245, 245)
-    title.LayoutOrder = 1
-
-    local titleStroke = Instance.new("UIStroke")
-    titleStroke.Color = Color3.fromRGB(0, 0, 0)
-    titleStroke.Thickness = 1
-    titleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-    titleStroke.Parent = title
-
-    local function createFilterButton(text, color, order)
-        local button = Instance.new("TextButton")
-        button.Name = text .. "Filter"
-        button.Parent = filterPanel
-        button.Size = UDim2.new(1, 0, 0.075, 0)
-        button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
-        button.BorderSizePixel = 0
-        button.Text = text
-        button.FontFace = fontFace
-        button.TextScaled = true
-        button.LineHeight = 1
-        button.TextColor3 = color
-        button.AutoButtonColor = false
-        button.LayoutOrder = order
-
-        local stroke = Instance.new("UIStroke")
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Color = color
-        stroke.Thickness = 1
-        stroke.Parent = button
-
-        return button
-    end
-
-    local FILTER_BUTTONS = {{"Ores", Color3.fromRGB(190, 190, 190)}, {"Equipments", Color3.fromRGB(255, 90, 90)},
-                            {"Totems/Relics", Color3.fromRGB(120, 220, 120)}, {"Geodes", Color3.fromRGB(90, 170, 255)},
-                            {"Maps", Color3.fromRGB(200, 160, 255)}, {"Others", Color3.fromRGB(200, 120, 255)},
-                            {"All Items", Color3.fromRGB(245, 245, 245)}}
-
-    local ICON_CATEGORY = {
-        ["rbxassetid://71590406800942"] = "Equipments",
-        ["rbxassetid://128090935503267"] = "Equipments",
-        ["rbxassetid://95192688083586"] = "Equipments",
-        ["rbxassetid://84287308918508"] = "Ores",
-        ["rbxassetid://18624930841"] = "Totems/Relics",
-        ["rbxassetid://6947202399"] = "Totems/Relics",
-        ["rbxassetid://9019175526"] = "Geodes",
-        ["rbxassetid://8360687671"] = "Maps"
-    }
-
-    local connections = {}
-    local itemCache = {}
-    local currentFilter = "All Items"
-    local isUpdating = false
-    local filterChanged = false
-
-    local PADDING = 10
-    local originalCanvasSize = scrollingFrame.CanvasSize
-
-    local function getCategory(button)
-        local icon = button:FindFirstChild("TypeIcon")
-        if icon and icon:IsA("ImageLabel") then
-            return ICON_CATEGORY[icon.Image] or "Others"
-        end
-        return "Others"
-    end
-
-    local function cacheItem(button)
-        if not itemCache[button] then
-            itemCache[button] = {
-                pos = button.Position,
-                vis = button.Visible,
-                cat = getCategory(button)
-            }
-        end
-        return itemCache[button]
-    end
-
-    local function getAllItems()
-        local items = {}
-        for _, child in ipairs(gridFrame:GetChildren()) do
-            if child:IsA("TextButton") then
-                table.insert(items, child)
-            end
-        end
-        return items
-    end
-
-    local function calculateLayout(visibleItems)
-        if #visibleItems == 0 then
-            return 0
-        end
-
-        local firstItem = visibleItems[1]
-        local itemWidth = firstItem.AbsoluteSize.X
-        local itemHeight = firstItem.AbsoluteSize.Y
-        local frameWidth = gridFrame.AbsoluteSize.X
-
-        local cols = math.max(1, math.floor((frameWidth + PADDING) / (itemWidth + PADDING)))
-        local rows = math.ceil(#visibleItems / cols)
-
-        for i, item in ipairs(visibleItems) do
-            local row = math.floor((i - 1) / cols)
-            local col = (i - 1) % cols
-            item.Position = UDim2.fromOffset(col * (itemWidth + PADDING), row * (itemHeight + PADDING))
-        end
-
-        return rows * (itemHeight + PADDING)
-    end
-
-    local function applyFilter(filter)
-        if isUpdating then
-            return
-        end
-        isUpdating = true
-
-        local savedScroll = scrollingFrame.CanvasPosition
-        currentFilter = filter
-        local items = getAllItems()
-
-        if filter == "All Items" then
-            for _, item in ipairs(items) do
-                local cached = itemCache[item]
-                if cached then
-                    item.Visible = cached.vis
-                    item.Position = cached.pos
-                else
-                    item.Visible = true
-                end
-            end
-            scrollingFrame.CanvasSize = originalCanvasSize
-        else
-            local visible = {}
-            for _, item in ipairs(items) do
-                local cached = cacheItem(item)
-                if cached.cat == filter then
-                    item.Visible = true
-                    table.insert(visible, item)
-                else
-                    item.Visible = false
-                end
-            end
-            local canvasHeight = calculateLayout(visible)
-            scrollingFrame.CanvasSize = UDim2.fromOffset(0, canvasHeight)
-        end
-
-        if filterChanged then
-            scrollingFrame.CanvasPosition = Vector2.zero
-            filterChanged = false
-        else
-            scrollingFrame.CanvasPosition = savedScroll
-        end
-
-        isUpdating = false
-    end
-
-    local debounce = false
-    local function onItemsChanged(child)
-        if debounce then
-            return
-        end
-        if not child:IsA("TextButton") then
-            return
-        end
-        debounce = true
-        task.wait(0.05)
-        for _, item in ipairs(getAllItems()) do
-            cacheItem(item)
-        end
-        applyFilter(currentFilter)
-        debounce = false
-    end
-
-    for _, item in ipairs(getAllItems()) do
-        cacheItem(item)
-    end
-
-    for i, data in ipairs(FILTER_BUTTONS) do
-        local text, color = data[1], data[2]
-        local button = createFilterButton(text, color, i + 1)
-
-        table.insert(connections, button.MouseButton1Click:Connect(function()
-            filterChanged = true
-            title.Text = "Filter: " .. text
-            applyFilter(text)
-        end))
-
-        table.insert(connections, button.MouseEnter:Connect(function()
-            button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        end))
-
-        table.insert(connections, button.MouseLeave:Connect(function()
-            button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
-        end))
-    end
-
-    table.insert(connections, gridFrame.ChildAdded:Connect(onItemsChanged))
-    table.insert(connections, gridFrame.ChildRemoved:Connect(onItemsChanged))
-
-    table.insert(connections, filterPanel.Destroying:Connect(function()
-        for _, conn in ipairs(connections) do
-            if conn.Connected then
+        for _, conn in pairs(State.ESP.Connections or {}) do
+            if typeof(conn) == "RBXScriptConnection" then
                 conn:Disconnect()
             end
         end
-        table.clear(connections)
-        table.clear(itemCache)
-    end))
-end)
-
-SimpleUI:createSlider(SettingsPage, "UI Scale", 0.5, 2, window.getScale(), function(value)
-    window.setScale(value, true)
-end, {
-    Increment = 0.001
-})
-
-local themes = {}
-for name in pairs(SimpleUI.Themes) do
-    themes[#themes + 1] = name
+        State.ESP.Connections = {}
+    end
 end
 
-SimpleUI:createDropdown(SettingsPage, "Set Theme", themes, nil, function(val)
-    window:setTheme(val, true)
-end, {
-    Description = "Choose from " .. (#themes > 0 and #themes or "a variety of") .. " themes"
+local InventoryFilterModule = {}
+do
+    function InventoryFilterModule.create()
+        local inventory = PlayerGui.BackpackGui.Backpack.Inventory
+        local scrollingFrame = inventory.ScrollingFrame
+        local gridFrame = scrollingFrame.UIGridFrame
+
+        local existingPanel = inventory:FindFirstChild("FilterPanel")
+        if existingPanel then
+            existingPanel:Destroy()
+            task.wait()
+        end
+
+        local filterPanel = Instance.new("Frame")
+        filterPanel.Name = "FilterPanel"
+        filterPanel.Parent = inventory
+        filterPanel.AnchorPoint = Vector2.new(0, 0)
+        filterPanel.Position = UDim2.new(1, 0.02, 0, -30)
+        filterPanel.Size = UDim2.new(0.22, 0, 1.08, 0)
+        filterPanel.BackgroundTransparency = 1
+        filterPanel.BorderSizePixel = 0
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 0)
+        padding.PaddingBottom = UDim.new(0.04, 0)
+        padding.PaddingLeft = UDim.new(0.06, 0)
+        padding.PaddingRight = UDim.new(0.06, 0)
+        padding.Parent = filterPanel
+
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0.018, 0)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = filterPanel
+
+        local fontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold,
+            Enum.FontStyle.Italic)
+
+        local title = Instance.new("TextLabel")
+        title.Name = "CurrentFilter"
+        title.Parent = filterPanel
+        title.Size = UDim2.new(1, 0, 0.16, 0)
+        title.BackgroundTransparency = 1
+        title.Text = "Filter: All Items"
+        title.TextWrapped = true
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        title.TextYAlignment = Enum.TextYAlignment.Center
+        title.FontFace = fontFace
+        title.TextScaled = true
+        title.LineHeight = 1
+        title.TextColor3 = Color3.fromRGB(245, 245, 245)
+        title.LayoutOrder = 1
+
+        local titleStroke = Instance.new("UIStroke")
+        titleStroke.Color = Color3.fromRGB(0, 0, 0)
+        titleStroke.Thickness = 1
+        titleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+        titleStroke.Parent = title
+
+        local function createFilterButton(text, color, order)
+            local button = Instance.new("TextButton")
+            button.Name = text .. "Filter"
+            button.Parent = filterPanel
+            button.Size = UDim2.new(1, 0, 0.075, 0)
+            button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
+            button.BorderSizePixel = 0
+            button.Text = text
+            button.FontFace = fontFace
+            button.TextScaled = true
+            button.LineHeight = 1
+            button.TextColor3 = color
+            button.AutoButtonColor = false
+            button.LayoutOrder = order
+
+            local stroke = Instance.new("UIStroke")
+            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke.Color = color
+            stroke.Thickness = 1
+            stroke.Parent = button
+
+            return button
+        end
+
+        local FILTER_BUTTONS = {{"Ores", Color3.fromRGB(190, 190, 190)}, {"Equipments", Color3.fromRGB(255, 90, 90)},
+                                {"Totems/Relics", Color3.fromRGB(120, 220, 120)},
+                                {"Geodes", Color3.fromRGB(90, 170, 255)}, {"Maps", Color3.fromRGB(200, 160, 255)},
+                                {"Others", Color3.fromRGB(200, 120, 255)}, {"All Items", Color3.fromRGB(245, 245, 245)}}
+
+        local ICON_CATEGORY = {
+            ["rbxassetid://71590406800942"] = "Equipments",
+            ["rbxassetid://128090935503267"] = "Equipments",
+            ["rbxassetid://95192688083586"] = "Equipments",
+            ["rbxassetid://84287308918508"] = "Ores",
+            ["rbxassetid://18624930841"] = "Totems/Relics",
+            ["rbxassetid://6947202399"] = "Totems/Relics",
+            ["rbxassetid://9019175526"] = "Geodes",
+            ["rbxassetid://8360687671"] = "Maps"
+        }
+
+        local connections = {}
+        local itemCache = {}
+        local currentFilter = "All Items"
+        local isUpdating = false
+        local filterChanged = false
+
+        local PADDING = 10
+        local originalCanvasSize = scrollingFrame.CanvasSize
+
+        local function getCategory(button)
+            local icon = button:FindFirstChild("TypeIcon")
+            if icon and icon:IsA("ImageLabel") then
+                return ICON_CATEGORY[icon.Image] or "Others"
+            end
+            return "Others"
+        end
+
+        local function cacheItem(button)
+            if not itemCache[button] then
+                itemCache[button] = {
+                    pos = button.Position,
+                    vis = button.Visible,
+                    cat = getCategory(button)
+                }
+            end
+            return itemCache[button]
+        end
+
+        local function getAllItems()
+            local items = {}
+            for _, child in ipairs(gridFrame:GetChildren()) do
+                if child:IsA("TextButton") then
+                    table.insert(items, child)
+                end
+            end
+            return items
+        end
+
+        local function calculateLayout(visibleItems)
+            if #visibleItems == 0 then
+                return 0
+            end
+
+            local firstItem = visibleItems[1]
+            local itemWidth = firstItem.AbsoluteSize.X
+            local itemHeight = firstItem.AbsoluteSize.Y
+            local frameWidth = gridFrame.AbsoluteSize.X
+
+            local cols = math.max(1, math.floor((frameWidth + PADDING) / (itemWidth + PADDING)))
+            local rows = math.ceil(#visibleItems / cols)
+
+            for i, item in ipairs(visibleItems) do
+                local row = math.floor((i - 1) / cols)
+                local col = (i - 1) % cols
+                item.Position = UDim2.fromOffset(col * (itemWidth + PADDING), row * (itemHeight + PADDING))
+            end
+
+            return rows * (itemHeight + PADDING)
+        end
+
+        local function applyFilter(filter)
+            if isUpdating then
+                return
+            end
+            isUpdating = true
+
+            local savedScroll = scrollingFrame.CanvasPosition
+            currentFilter = filter
+            local items = getAllItems()
+
+            if filter == "All Items" then
+                for _, item in ipairs(items) do
+                    local cached = itemCache[item]
+                    if cached then
+                        item.Visible = cached.vis
+                        item.Position = cached.pos
+                    else
+                        item.Visible = true
+                    end
+                end
+                scrollingFrame.CanvasSize = originalCanvasSize
+            else
+                local visible = {}
+                for _, item in ipairs(items) do
+                    local cached = cacheItem(item)
+                    if cached.cat == filter then
+                        item.Visible = true
+                        table.insert(visible, item)
+                    else
+                        item.Visible = false
+                    end
+                end
+                local canvasHeight = calculateLayout(visible)
+                scrollingFrame.CanvasSize = UDim2.fromOffset(0, canvasHeight)
+            end
+
+            if filterChanged then
+                scrollingFrame.CanvasPosition = Vector2.zero
+                filterChanged = false
+            else
+                scrollingFrame.CanvasPosition = savedScroll
+            end
+
+            isUpdating = false
+        end
+
+        local debounce = false
+        local function onItemsChanged(child)
+            if debounce then
+                return
+            end
+            if not child:IsA("TextButton") then
+                return
+            end
+
+            debounce = true
+            task.wait(0.05)
+
+            for _, item in ipairs(getAllItems()) do
+                cacheItem(item)
+            end
+
+            applyFilter(currentFilter)
+            debounce = false
+        end
+
+        for _, item in ipairs(getAllItems()) do
+            cacheItem(item)
+        end
+
+        for i, data in ipairs(FILTER_BUTTONS) do
+            local text, color = data[1], data[2]
+            local button = createFilterButton(text, color, i + 1)
+
+            table.insert(connections, button.MouseButton1Click:Connect(function()
+                filterChanged = true
+                title.Text = "Filter: " .. text
+                applyFilter(text)
+            end))
+
+            table.insert(connections, button.MouseEnter:Connect(function()
+                button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            end))
+
+            table.insert(connections, button.MouseLeave:Connect(function()
+                button.BackgroundColor3 = Color3.fromRGB(47, 47, 47)
+            end))
+        end
+
+        table.insert(connections, gridFrame.ChildAdded:Connect(onItemsChanged))
+        table.insert(connections, gridFrame.ChildRemoved:Connect(onItemsChanged))
+
+        table.insert(connections, filterPanel.Destroying:Connect(function()
+            for _, conn in ipairs(connections) do
+                if conn.Connected then
+                    conn:Disconnect()
+                end
+            end
+            table.clear(connections)
+            table.clear(itemCache)
+        end))
+    end
+
+    function InventoryFilterModule.destroy()
+        local inventory = PlayerGui.BackpackGui.Backpack.Inventory
+        local existingPanel = inventory:FindFirstChild("FilterPanel")
+        if existingPanel then
+            existingPanel:Destroy()
+        end
+    end
+end
+
+local MobileUIModule = {}
+do
+    function MobileUIModule.createToggleButton(window)
+        if not SimpleUI.Utility:IsMobile() then
+            return
+        end
+
+        local TweenService = SimpleUI.Utility:GetService("TweenService")
+        local UserInputService = SimpleUI.Utility:GetService("UserInputService")
+
+        local folderName = "SimpleScripts"
+        local fileName = folderName .. "/logo.png"
+        local iconUrl = "https://raw.githubusercontent.com/dawnpetal/website/refs/heads/main/assets/images/logo.png"
+        local logoAsset
+
+        local canUseFilesystem = makefolder and isfolder and listfiles and isfile and delfile and writefile and
+                                     getcustomasset
+
+        if canUseFilesystem then
+            if not isfolder(folderName) then
+                makefolder(folderName)
+            end
+
+            for _, file in ipairs(listfiles("")) do
+                local cleanFile = file:gsub("^/", "")
+                if cleanFile:lower():find("simpleui") and isfile(cleanFile) then
+                    delfile(cleanFile)
+                end
+            end
+
+            if not isfile(fileName) then
+                local success, imageData = pcall(function()
+                    return game:HttpGet(iconUrl)
+                end)
+                if success and imageData then
+                    writefile(fileName, imageData)
+                end
+            end
+
+            logoAsset = getcustomasset(fileName)
+        end
+
+        local toggleButton = Instance.new("ImageButton")
+        toggleButton.Name = "ToggleUIButton"
+        toggleButton.Size = UDim2.new(0, 40, 0, 40)
+        toggleButton.Position = UDim2.new(0, 30, 0.5, -20)
+        toggleButton.AnchorPoint = Vector2.new(0.5, 0.5)
+        toggleButton.BackgroundTransparency = 1
+        toggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        toggleButton.ScaleType = Enum.ScaleType.Fit
+        toggleButton.Active = true
+        toggleButton.Image = logoAsset or "rbxassetid://10734900011"
+        toggleButton.Parent = window.Elements.screenGui
+
+        local dragging = false
+        local dragStart, startPos
+        local hasMoved = false
+        local normalSize = UDim2.new(0, 40, 0, 40)
+        local pressSize = UDim2.new(0, 50, 0, 50)
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+        if toggleButton and TweenService then
+            toggleButton.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType ==
+                    Enum.UserInputType.Touch then
+                    dragging = true
+                    dragStart = input.Position
+                    startPos = toggleButton.Position
+                    hasMoved = false
+                    TweenService:Create(toggleButton, tweenInfo, {
+                        Size = pressSize
+                    }):Play()
+                end
+            end)
+
+            toggleButton.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType ==
+                    Enum.UserInputType.Touch then
+                    dragging = false
+                    TweenService:Create(toggleButton, tweenInfo, {
+                        Size = normalSize
+                    }):Play()
+                    if not hasMoved then
+                        if window.IsVisible() then
+                            window.Hide()
+                        else
+                            window.Show()
+                        end
+                    end
+                end
+            end)
+        end
+
+        if UserInputService then
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and
+                    (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType ==
+                        Enum.UserInputType.Touch) then
+                    local delta = input.Position - dragStart
+                    if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                        hasMoved = true
+                        toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                            startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                    end
+                end
+            end)
+        end
+    end
+end
+
+local AutoFarmModule = {}
+do
+    function AutoFarmModule.moveToLocation(targetCFrame)
+        local completed = false
+        local success = false
+
+        local targetObj = {
+            Position = targetCFrame.Position,
+            CFrame = targetCFrame
+        }
+
+        if State.AutoFarm.travelMode == "Tween" then
+            Movement.tweenToTarget(targetObj, {
+                CruiseHeight = 4,
+                MinHeight = 1,
+                MaxHeight = 6,
+                LongDistanceThreshold = 100,
+                DirectFlightThreshold = 30,
+                AdaptiveHeight = false,
+                UseDirectFlight = true,
+                HoverDuration = 0,
+                LandingDuration = 0.3,
+                StopDistance = 5,
+                OnComplete = function(ok)
+                    success = ok or false
+                    completed = true
+                end
+            })
+        else
+            Movement.teleportToTarget(targetObj.Position, {
+                Mode = "Standard",
+                OnComplete = function(ok)
+                    success = ok or false
+                    completed = true
+                end
+            })
+        end
+
+        local elapsed = 0
+        while not completed and elapsed < 45 and State.AutoFarm.active do
+            task.wait(0.05)
+            elapsed = elapsed + 0.05
+        end
+
+        if success then
+            CharacterLock.lock(targetCFrame)
+            State.AutoFarm.locked = true
+        end
+
+        return success
+    end
+
+    function AutoFarmModule.doAction(actionType, expectedRegion)
+        local ok, result = pcall(function()
+            local pan = PanModule.equipPan()
+            if not pan then
+                return false
+            end
+
+            if PanModule.getRegion(HumanoidRootPart) ~= expectedRegion then
+                return false
+            end
+
+            local killSwitch = function()
+                return State.AutoFarm.active
+            end
+
+            local r = PanModule.handleAction(State.AutoFarm.actionMode, actionType, true, killSwitch)
+            return r ~= "MAX_RETRY_FAIL" and r ~= "KILLED"
+        end)
+
+        return ok and result
+    end
+
+    function AutoFarmModule.performTask(taskName, nextTask, targetCFrame, actionType, expectedRegion)
+        TaskManager:setCurrentTask(taskName)
+        TaskManager:setNextTask(nextTask)
+
+        if not AutoFarmModule.moveToLocation(targetCFrame) then
+            return false
+        end
+
+        task.wait(0.1)
+
+        if not AutoFarmModule.doAction(actionType, expectedRegion) then
+            return false
+        end
+
+        TaskManager:setCurrentTask("AutoFarm")
+        return true
+    end
+
+    function AutoFarmModule.checkAndDoSell()
+        if not State.Sell.autoSell then
+            return
+        end
+
+        local shouldSell = false
+        local mode = State.Sell.type or "Threshold"
+
+        if mode == "Threshold" then
+            shouldSell = SellModule.getInventoryCount() >= (tonumber(State.Sell.threshold) or 50)
+        elseif mode == "Time" then
+            shouldSell = State.Sell._scheduledSell or
+                             (os.clock() - (State.Sell._lastSell or 0) >= (tonumber(State.Sell.delay) or 300))
+        end
+
+        if shouldSell then
+            if SellModule.sell({}, State.Sell.mode or "Teleport") then
+                State.Sell._lastSell = os.clock()
+                State.Sell._scheduledSell = false
+
+                if Player and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                    CharacterLock.lock(Player.Character.HumanoidRootPart.CFrame)
+                    State.AutoFarm.locked = true
+                end
+            end
+        end
+    end
+
+    function AutoFarmModule.teardown()
+        if State.AutoFarm.locked then
+            CharacterLock.unlock()
+            State.AutoFarm.locked = false
+        end
+
+        if TaskManager:getMainTask() == "AutoFarm" then
+            TaskManager:finishTask("AutoFarm")
+        end
+
+        TaskManager:clearSubTasks()
+        State.AutoFarm.running = false
+    end
+
+    function AutoFarmModule.start()
+        if State.AutoFarm.running then
+            return
+        end
+
+        State.AutoFarm.active = true
+        State.AutoFarm.running = true
+        State.AutoFarm.interrupted = false
+
+        if not State.AutoFarm.travelMode or State.AutoFarm.travelMode == "" then
+            Utility.createNotification("❌ Select travel mode!")
+            State.AutoFarm.active = false
+            State.AutoFarm.running = false
+            return
+        end
+
+        if not State.AutoFarm.actionMode or State.AutoFarm.actionMode == "" then
+            Utility.createNotification("❌ Select farming mode!")
+            State.AutoFarm.active = false
+            State.AutoFarm.running = false
+            return
+        end
+
+        if not (State.AutoFarm.sandCFrame and State.AutoFarm.waterCFrame) then
+            Utility.createNotification("❌ Set locations!")
+            State.AutoFarm.active = false
+            State.AutoFarm.running = false
+            return
+        end
+
+        Utility.createNotification("🚀 Starting!")
+
+        task.spawn(function()
+            while State.AutoFarm.active do
+                local acquired = TaskManager:requestTask("AutoFarm", 1)
+
+                if acquired then
+                    local hasTurn = TaskManager:waitForTurn("AutoFarm", 5)
+
+                    if hasTurn then
+                        local started = TaskManager:startTask("AutoFarm")
+
+                        if started then
+                            while State.AutoFarm.active and TaskManager:canRun("AutoFarm") do
+                                if State.AutoFarm.interrupted then
+                                    if State.AutoFarm.locked then
+                                        CharacterLock.unlock()
+                                        State.AutoFarm.locked = false
+                                    end
+
+                                    while State.AutoFarm.interrupted and State.AutoFarm.active do
+                                        task.wait(0.1)
+                                    end
+                                end
+
+                                local ok = pcall(function()
+                                    local panStatus = PanModule.getStatus()
+                                    if not panStatus then
+                                        task.wait(0.05)
+                                        return
+                                    end
+
+                                    AutoFarmModule.checkAndDoSell()
+
+                                    if panStatus.isFull then
+                                        if not AutoFarmModule.performTask("MovingToWater", "WashPan",
+                                            State.AutoFarm.waterCFrame, "Wash", "Water") then
+                                            State.AutoFarm.active = false
+                                        end
+                                    else
+                                        if not AutoFarmModule.performTask("MovingToSand", "DigSand",
+                                            State.AutoFarm.sandCFrame, "Dig", "Deposit") then
+                                            State.AutoFarm.active = false
+                                        end
+                                    end
+                                end)
+
+                                if not ok then
+                                    if State.AutoFarm.locked then
+                                        CharacterLock.unlock()
+                                        State.AutoFarm.locked = false
+                                    end
+                                    task.wait(0.05)
+                                end
+
+                                task.wait(0.01)
+                            end
+
+                            TaskManager:finishTask("AutoFarm")
+                        else
+                            task.wait(0.1)
+                        end
+                    end
+                else
+                    task.wait(0.1)
+                end
+            end
+
+            AutoFarmModule.teardown()
+            Utility.createNotification("🛑 Stopped")
+        end)
+    end
+
+    function AutoFarmModule.stop()
+        State.AutoFarm.active = false
+    end
+end
+
+local ServerUtilityModule = {}
+do
+    function ServerUtilityModule.rejoin()
+        if #Services.Players:GetPlayers() <= 1 then
+            Player:Kick("Rejoining...")
+            task.wait()
+            Services.TeleportService:Teleport(game.PlaceId, Player)
+        else
+            Services.TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+        end
+    end
+
+    function ServerUtilityModule.serverHop()
+        local servers = {}
+        local req = Services.HttpService:JSONDecode(game:HttpGet(
+            "https://games.roblox.com/v1/games/" .. game.PlaceId ..
+                "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true"))
+
+        for _, v in pairs(req.data or {}) do
+            if v.id ~= game.JobId and v.playing < v.maxPlayers then
+                table.insert(servers, v.id)
+            end
+        end
+
+        if #servers > 0 then
+            Services.TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(#servers)], Player)
+        else
+            Utility.createNotification("No available servers found", 4)
+        end
+    end
+
+    function ServerUtilityModule.setupAntiAFK(enabled)
+        local GC = getconnections or get_signal_cons
+
+        if enabled then
+            if GC then
+                for _, c in pairs(GC(Player.Idled)) do
+                    if c.Disable then
+                        c:Disable()
+                    end
+                    if c.Disconnect then
+                        c:Disconnect()
+                    end
+                end
+            else
+                local VirtualUser = cloneref and cloneref(game:GetService("VirtualUser")) or
+                                        game:GetService("VirtualUser")
+                getgenv().AntiAFKConnection = Player.Idled:Connect(function()
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton2(Vector2.new())
+                end)
+            end
+        else
+            if getgenv().AntiAFKConnection then
+                getgenv().AntiAFKConnection:Disconnect()
+                getgenv().AntiAFKConnection = nil
+            end
+        end
+    end
+end
+
+local WaypointModule = {}
+do
+    function WaypointModule.getList()
+        local waypointFolder = Map:FindFirstChild("Waypoints")
+        if not waypointFolder then
+            return {}
+        end
+
+        local waypoints = {}
+        for _, wp in pairs(waypointFolder:GetChildren()) do
+            if wp:IsA("Model") then
+                table.insert(waypoints, wp.Name)
+            end
+        end
+
+        return waypoints
+    end
+
+    function WaypointModule.teleport(selection)
+        local waypointFolder = Map:FindFirstChild("Waypoints")
+        if not waypointFolder then
+            return
+        end
+
+        local attr = Player:GetAttribute("CurrentArea")
+        local currentWaypoint = nil
+
+        for _, w in pairs(waypointFolder:GetChildren()) do
+            if string.find(string.lower(attr), string.lower(w.Name)) then
+                currentWaypoint = w
+                break
+            end
+        end
+
+        currentWaypoint = currentWaypoint or waypointFolder["Museum"]
+        local targetWaypoint = waypointFolder:FindFirstChild(selection)
+
+        if currentWaypoint and targetWaypoint then
+            ReplicatedStorage.Remotes.Misc.FastTravel:FireServer(currentWaypoint, targetWaypoint)
+        end
+    end
+
+    function WaypointModule.unlockAll()
+        if not fireproximityprompt then
+            return SimpleUI:CreateNotification({
+                Title = "Not supported",
+                Type = "Error",
+                Description = "Your exploit does not support fireproximityprompt",
+                Duration = 4
+            })
+        end
+
+        local waypointFolder = Map:FindFirstChild("Waypoints")
+        if not waypointFolder then
+            return
+        end
+
+        local waypoints = waypointFolder:GetChildren()
+        local FastTravelDataRemote = ReplicatedStorage.Remotes.Misc.GetFastTravelData
+        local unlocked = {}
+
+        FastTravelDataRemote.OnClientEvent:Connect(function(data)
+            unlocked = data
+        end)
+
+        FastTravelDataRemote:FireServer()
+
+        local function unlock(model)
+            local prompt = model:FindFirstChild("WaypointPrompt", true)
+            if not prompt then
+                return
+            end
+
+            while unlocked[model.Name] ~= true do
+                HumanoidRootPart.CFrame = model:GetPivot() + Vector3.new(0, 5, 0)
+                fireproximityprompt(prompt)
+                Services.RunService.Heartbeat:Wait()
+            end
+        end
+
+        task.spawn(function()
+            while true do
+                for _, model in ipairs(waypoints) do
+                    if not unlocked[model.Name] then
+                        unlock(model)
+                    end
+                end
+
+                task.wait(1)
+                FastTravelDataRemote:FireServer()
+
+                if next(unlocked) and not table.find(unlocked, false) then
+                    break
+                end
+            end
+        end)
+    end
+end
+
+local BarrierRemovalModule = {}
+do
+    function BarrierRemovalModule.removeVines()
+        local vines = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("Vines")
+        if vines then
+            vines:Destroy()
+        end
+    end
+
+    function BarrierRemovalModule.removeAbyssalGate()
+        local abyssAssets = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("AbyssAssets")
+        local gate = abyssAssets and abyssAssets:FindFirstChild("Gate")
+        if gate then
+            gate:Destroy()
+        end
+    end
+
+    function BarrierRemovalModule.removeMountainBlock()
+        local mountains = Map and Map:FindFirstChild("Mountains")
+        local added = mountains and mountains:FindFirstChild("Added")
+        local gateBlock = added and added:FindFirstChild("GateBlockScript") and
+                              added.GateBlockScript:FindFirstChild("GateBlockage")
+        if gateBlock then
+            gateBlock:Destroy()
+        end
+    end
+
+    function BarrierRemovalModule.removeCrocodiles()
+        local crocsFolder = Map and Map:FindFirstChild("Crocodiles")
+        if crocsFolder then
+            crocsFolder:Destroy()
+            Utility.createNotification("Crocodiles removed!")
+            return
+        end
+        Utility.createNotification("Crocodiles not found, already removed?")
+    end
+end
+
+local amazong = ShoppingMart.new(SimpleUI.Utility:IsMobile() and 0.5 or 0.90)
+
+local window = SimpleUI:CreateWindow({
+    Name = "Prospecting!",
+    Brand = {
+        Name = "SimpleScripts"
+    },
+    DefaultScale = SimpleUI.Utility:IsMobile() and 0.750 or 1,
+    Theme = "Obsidian",
+    TabMode = "Dynamic",
+    CanResize = true,
+    Footer = true,
+    FooterItems = {{
+        Type = "Text",
+        Text = "SimpleUI v" .. SimpleUI.Version .. " - discord.gg/5BUTb4vYm3",
+        ColorTier = "TextSecondary",
+        Order = 1
+    }},
+    StartHidden = false,
+    IgnoreGuiInset = false,
+    DisplayOrder = 1
 })
+
+local Tabs = {
+    Main = SimpleUI:CreateTab(window, "Main", {
+        Description = "Auto farming and selling",
+        Icon = {
+            Image = "rbxassetid://16898613509",
+            Size = UDim2.new(0, 16, 0, 16),
+            ImageRectSize = Vector2.new(48, 48),
+            ImageRectOffset = Vector2.new(771, 759),
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        },
+        DualScroll = true
+    }),
+
+    Teleport = SimpleUI:CreateTab(window, "Teleport", {
+        Description = "Fast travel to waypoints; geodes, and runes",
+        Icon = {
+            Image = "rbxassetid://16898613777",
+            Size = UDim2.new(0, 16, 0, 16),
+            ImageRectSize = Vector2.new(48, 48),
+            ImageRectOffset = Vector2.new(771, 98),
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        },
+        DualScroll = true
+    }),
+
+    Tools = SimpleUI:CreateTab(window, "Tools", {
+        Description = "Equipment reforge, pan and shovel enchanting",
+        Icon = {
+            Image = "rbxassetid://16898613044",
+            Size = UDim2.new(0, 16, 0, 16),
+            ImageRectSize = Vector2.new(48, 48),
+            ImageRectOffset = Vector2.new(771, 955),
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        },
+        DualScroll = true
+    }),
+
+    Crafting = SimpleUI:CreateTab(window, "Crafting", {
+        Description = "Equipment crafting and firefly flare production",
+        Icon = {
+            Image = "rbxassetid://10723396542",
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        }
+    }),
+
+    Favourite = SimpleUI:CreateTab(window, "Favourite", {
+        Description = "Automatically lock valuable items by modifier or ore",
+        Icon = {
+            Image = "rbxassetid://10734966248",
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        }
+    }),
+
+    Shop = SimpleUI:CreateTab(window, "Shop", {
+        Description = "Open the shopping interface",
+        Icon = {
+            Image = "rbxassetid://10734952479",
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        }
+    }),
+
+    Miscellaneous = SimpleUI:CreateTab(window, "Miscellaneous", {
+        Description = "Excavation, barrier removal, and map utils",
+        Icon = {
+            Image = "rbxassetid://10734963191",
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        },
+        DualScroll = true
+    }),
+
+    Settings = SimpleUI:CreateTab(window, "SettingsTab", {
+        Description = "UI customization, themes, and keybinds",
+        Icon = {
+            Image = "rbxassetid://16898613777",
+            Size = UDim2.new(0, 16, 0, 16),
+            ImageRectSize = Vector2.new(48, 48),
+            ImageRectOffset = Vector2.new(771, 257),
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        }
+    })
+}
+
+local function initializeMainTab()
+    local page = Tabs.Main.Page
+
+    local LeftPage = page.Left
+    local RightPage = page.Right
+
+    local AutoFarmSection = SimpleUI:CreateSection(LeftPage, "Auto Farming", {
+        Style = "box",
+        Icon = "rbxassetid://10789587520",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    SimpleUI:CreateParagraph(AutoFarmSection.Container, "How Auto Farming Works",
+        {"Configure travel mode, set dig & wash points, then enable Auto Farm.", {
+            Text = "Teleport is faster and recommended.",
+            IsSubField = true
+        }, {
+            Text = "You must stand inside proper regions before saving locations.",
+            IsSubField = true
+        }, {
+            Text = "Use Unstuck if movement breaks or tween hangs.",
+            IsSubField = true
+        }})
+
+    SimpleUI:CreateDropdown(AutoFarmSection.Container, "Travel Mode", {"Tween", "Teleport"}, "Teleport",
+        function(selection)
+            State.AutoFarm.travelMode = selection
+        end)
+
+    SimpleUI:CreateButton(AutoFarmSection.Container, "Set Digging Location", function()
+        if PanModule.getRegion(HumanoidRootPart) == "Deposit" then
+            State.AutoFarm.sandCFrame = HumanoidRootPart.CFrame
+            SimpleUI:CreateNotification({
+                Type = "Success",
+                Title = "Notification",
+                Description = "Dig location saved",
+                Duration = 5
+            })
+        else
+            SimpleUI:CreateNotification({
+                Type = "Error",
+                Title = "Notification",
+                Description = "Stand inside deposit area",
+                Duration = 5
+            })
+        end
+    end)
+
+    SimpleUI:CreateButton(AutoFarmSection.Container, "Set Wash Location", function()
+        if PanModule.getRegion(HumanoidRootPart) == "Water" then
+            State.AutoFarm.waterCFrame = HumanoidRootPart.CFrame
+            SimpleUI:CreateNotification({
+                Type = "Success",
+                Title = "Notification",
+                Description = "Wash location saved",
+                Duration = 5
+            })
+        else
+            SimpleUI:CreateNotification({
+                Type = "Error",
+                Title = "Notification",
+                Description = "Stand inside water region",
+                Duration = 5
+            })
+        end
+    end)
+
+    SimpleUI:CreateToggle(AutoFarmSection.Container, "Auto Farm", false, function(state)
+        if state then
+            AutoFarmModule.start()
+        else
+            AutoFarmModule.stop()
+        end
+    end)
+
+    SimpleUI:CreateButton(AutoFarmSection.Container, "Unstuck Character", function()
+        CharacterLock.unlock()
+    end)
+
+    SimpleUI:CreateButton(AutoFarmSection.Container, "Remove Crocodiles", function()
+        BarrierRemovalModule.removeCrocodiles()
+    end)
+
+    local SellSection = SimpleUI:CreateSection(RightPage, "Selling", {
+        Style = "box",
+        Icon = "rbxassetid://2246496691",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    SimpleUI:CreateParagraph(SellSection.Container, "How Selling Works",
+        {"Choose sell trigger mode and configure value below.", {
+            Text = "Threshold = sell after X items.",
+            IsSubField = true
+        }, {
+            Text = "Duration = sell every X seconds.",
+            IsSubField = true
+        }, {
+            Text = "Manual sell waits for current task to finish.",
+            IsSubField = true
+        }})
+
+    SimpleUI:CreateDropdown(SellSection.Container, "Sell Type", {"Threshold", "Duration"}, "Threshold",
+        function(selection)
+            State.Sell.type = selection
+            Utility.createNotification("Sell type: " .. selection)
+        end)
+
+    SimpleUI:CreateTextInput(SellSection.Container, "Value", nil, function(input)
+        local result, kind = Utility.validateSellValue(input)
+        if result then
+            if kind == "time" then
+                State.Sell.delay = result
+                Utility.createNotification("Sell every " .. result .. " seconds", 10)
+            else
+                State.Sell.threshold = result
+                Utility.createNotification("Sell after " .. result .. " items", 10)
+            end
+        else
+            Utility.createNotification("Use 10–2000 items OR 30 sec to 1 day duration", 10)
+        end
+    end)
+
+    SimpleUI:CreateButton(SellSection.Container, "Sell All Inventory", function()
+        if TaskManager:getMainTask() then
+            return Utility.createNotification("Wait for current task to finish", 5)
+        end
+
+        if not TaskManager:requestTask("ManualSell", 3) then
+            return Utility.createNotification("Failed to start sell task", 5)
+        end
+
+        task.spawn(function()
+            if TaskManager:waitForTurn("ManualSell", 10) and TaskManager:startTask("ManualSell") then
+                TaskManager:setCurrentTask("Selling")
+                SellModule.sell({}, State.Sell.mode or "Teleport")
+                TaskManager:finishTask("ManualSell")
+            end
+        end)
+    end)
+
+    SimpleUI:CreateToggle(SellSection.Container, "Auto Sell", false, function(state)
+        State.Sell.autoSell = state
+        State.Sell._lastSell = State.Sell._lastSell or 0
+        State.Sell._scheduledSell = false
+
+        if state then
+            task.spawn(function()
+                while State.Sell.autoSell do
+                    if State.Sell.type == "Time" then
+                        local delay = tonumber(State.Sell.delay) or 300
+                        if os.clock() - State.Sell._lastSell >= delay then
+                            State.Sell._scheduledSell = true
+                        end
+                    end
+                    task.wait(5)
+                end
+            end)
+        end
+
+        Utility.createNotification(state and "Auto Sell Enabled" or "Auto Sell Disabled")
+    end)
+end
+
+local function initializeTeleportTab()
+    local page = Tabs.Teleport.Page
+
+    local LeftPage = page.Left
+    local RightPage = page.Right
+
+    local WaypointsSection = SimpleUI:CreateSection(LeftPage, "Waypoints", {
+        Style = "box",
+        Icon = "rbxassetid://102208106546256",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    local waypointsDropdown = SimpleUI:CreateDropdown(WaypointsSection.Container, "Select Waypoint",
+        WaypointModule.getList(), nil, function(selection)
+            WaypointModule.teleport(selection)
+        end, {
+            Description = "Refresh waypoints to load locations, only unlocked waypoints are available."
+        })
+
+    SimpleUI:CreateButton(WaypointsSection.Container, "Refresh waypoints", function()
+        waypointsDropdown.setOptions(WaypointModule.getList())
+    end)
+
+    SimpleUI:CreateButton(WaypointsSection.Container, "Unlock all waypoints", function()
+        WaypointModule.unlockAll()
+    end)
+
+    SimpleUI:CreateButton(WaypointsSection.Container, "EMERGENCY TELEPORT", function()
+        local waypointFolder = Map:FindFirstChild("Waypoints")
+        if waypointFolder then
+            ReplicatedStorage.Remotes.Misc.FastTravel:FireServer(waypointFolder["Museum"],
+                waypointFolder["Rubble Creek"])
+        end
+    end, {
+        Description = "Teleports to Starter Town in cases of emergency"
+    })
+
+    local GeodesSection = SimpleUI:CreateSection(RightPage, "Geodes", {
+        Style = "box",
+        Icon = "rbxassetid://9019175526",
+        DefaultExpanded = false,
+        TextSize = 15
+    })
+
+    local geodeStatus = SimpleUI:CreateParagraph(GeodesSection.Container, "Geode Teleporter", {"Scanning..."})
+
+    local geodes = GeodeModule.getModels()
+
+    geodeStatus:SetFields({#geodes > 0 and ("Found " .. #geodes .. " geodes") or "No geodes found"})
+
+    SimpleUI:CreateButton(GeodesSection.Container, "Teleport to Next Geode", function()
+        GeodeModule.teleportToNext(geodeStatus)
+    end)
+
+    SimpleUI:CreateToggle(GeodesSection.Container, "Auto Teleport", false, function(state)
+        State.Geode.autoLoopEnabled = state
+
+        if State.Geode.teleportConnection then
+            State.Geode.teleportConnection:Disconnect()
+            State.Geode.teleportConnection = nil
+        end
+
+        if not state then
+            local list = GeodeModule.getModels()
+            geodeStatus:SetFields({#list > 0 and ("Found " .. #list .. " geodes") or "No geodes found"})
+            return
+        end
+
+        geodeStatus:SetFields({"Auto Teleport: ON"})
+        State.Geode.lastTeleportTime = tick()
+
+        State.Geode.teleportConnection = Services.RunService.Heartbeat:Connect(function()
+            if tick() - State.Geode.lastTeleportTime >= Config.GEODE_AUTO_LOOP_DELAY then
+                GeodeModule.teleportToNext(geodeStatus)
+                State.Geode.lastTeleportTime = tick()
+            end
+        end)
+    end)
+
+    local RunesSection = SimpleUI:CreateSection(RightPage, "Runes", {
+        Style = "box",
+        Icon = "rbxassetid://104824630248708",
+        DefaultExpanded = false,
+        TextSize = 15
+    })
+
+    local runeStatus = SimpleUI:CreateParagraph(RunesSection.Container, "Rune Tracker", {"Scanning..."})
+
+    local runes = RuneModule.getList()
+    runeStatus:SetFields({#runes > 0 and ("Found " .. #runes .. " runes") or "No runes found"})
+
+    SimpleUI:CreateButton(RunesSection.Container, "Teleport to Next Rune", function()
+        RuneModule.teleportToNext(runeStatus)
+    end)
+
+    SimpleUI:CreateToggle(RunesSection.Container, "Auto Teleport", false, function(state)
+        State.Rune.autoLoopEnabled = state
+
+        if State.Rune.teleportConnection then
+            State.Rune.teleportConnection:Disconnect()
+            State.Rune.teleportConnection = nil
+        end
+
+        if not state then
+            local list = RuneModule.getList()
+            runeStatus:SetFields({#list > 0 and ("Found " .. #list .. " runes") or "No runes found"})
+            return
+        end
+
+        runeStatus:SetFields({"Auto Teleport: ON"})
+        State.Rune.lastTeleportTime = tick()
+
+        State.Rune.teleportConnection = Services.RunService.Heartbeat:Connect(function()
+            if tick() - State.Rune.lastTeleportTime >= Config.RUNE_AUTO_LOOP_DELAY then
+                RuneModule.teleportToNext(runeStatus)
+                State.Rune.lastTeleportTime = tick()
+            end
+        end)
+    end)
+end
+
+local function initializeToolsTab()
+    local page = Tabs.Tools.Page
+
+    local LeftPage = page.Left
+    local RightPage = page.Right
+
+    local ReforgeSection = SimpleUI:CreateSection(LeftPage, "Reforge", {
+        Style = "box",
+        Icon = "rbxassetid://10516069182",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    local selectedGUID = nil
+    local equipmentInfo = SimpleUI:CreateParagraph(ReforgeSection.Container, "Equipment Information", {})
+
+    local equipmentReforgeDropdown = SimpleUI:CreateDropdown(ReforgeSection.Container, "Select Equipment", {}, nil,
+        function(selection)
+            if type(selection) ~= "table" then
+                selectedGUID = nil
+                ReforgeModule.updateInfo(nil, equipmentInfo)
+                return
+            end
+            selectedGUID = selection.guid
+            ReforgeModule.updateInfo(selectedGUID, equipmentInfo)
+        end)
+
+    SimpleUI:CreateButton(ReforgeSection.Container, "Refresh Equipment", function()
+        local equipmentOptions = {}
+        local nameCounts = {}
+
+        if BackpackTwo and BackpackTwo.GetChildren then
+            for _, child in ipairs(BackpackTwo:GetChildren() or {}) do
+                if child and child.GetAttribute and child:GetAttribute("ItemType") == "Equipment" then
+                    local baseName = tostring(child.Name or "Unknown")
+                    nameCounts[baseName] = (nameCounts[baseName] or 0) + 1
+
+                    local displayName = baseName
+                    if nameCounts[baseName] > 1 then
+                        displayName = baseName .. " #" .. nameCounts[baseName]
+                    end
+
+                    table.insert(equipmentOptions, {
+                        text = displayName,
+                        guid = child:GetAttribute("GUID")
+                    })
+                end
+            end
+        end
+
+        selectedGUID = nil
+        pcall(function()
+            equipmentReforgeDropdown.setOptions(equipmentOptions)
+        end)
+        ReforgeModule.updateInfo(nil, equipmentInfo)
+    end)
+
+    SimpleUI:CreateButton(ReforgeSection.Container, "Reforge Equipment", function()
+        local guid = ReforgeModule.perform(selectedGUID)
+        if guid then
+            ReforgeModule.updateInfo(guid, equipmentInfo)
+            pcall(function()
+                equipmentReforgeDropdown.setOptions({})
+            end)
+        end
+    end)
+
+    local PanEnchantsSection = SimpleUI:CreateSection(RightPage, "Pan Enchants", {
+        Style = "box",
+        Icon = "rbxassetid://87273393473760",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    local selectedMaterial = "Aurorite"
+    local targetPanEnchant = "Prismatic"
+    local autoEnchantingPan = {false}
+
+    local PanEnchantRemote = ReplicatedStorage.Remotes.Crafting.Enchant
+
+    SimpleUI:CreateDropdown(PanEnchantsSection.Container, "Select Material", {{
+        text = "Aetherite"
+    }, {
+        text = "Aurorite"
+    }}, "Aurorite", function(selection)
+        if selection and selection.text then
+            selectedMaterial = selection.text
+        end
+    end)
+
+    SimpleUI:CreateDropdown(PanEnchantsSection.Container, "Target Enchant", EnchantModule.getNames("pan"), nil,
+        function(selection)
+            targetPanEnchant = selection
+        end, {
+            Description = "For obvious reasons you cannot get Book-Only enchants"
+        })
+
+    SimpleUI:CreateButton(PanEnchantsSection.Container, "Enchant Pan", function()
+        local match = EnchantModule.findPanMaterial(selectedMaterial)
+        if not match then
+            Utility.createNotification("Material not found: " .. selectedMaterial, 3)
+            return
+        end
+        EnchantModule.enchant(PanEnchantRemote, match, selectedMaterial)
+    end)
+
+    SimpleUI:CreateButton(PanEnchantsSection.Container, "Auto Enchant Pan", function()
+        if autoEnchantingPan[1] then
+            autoEnchantingPan[1] = false
+            Utility.createNotification("Stopped auto enchanting pan", 2)
+            return
+        end
+
+        autoEnchantingPan[1] = true
+        Utility.createNotification("Auto enchanting pan until " .. targetPanEnchant, 3)
+
+        EnchantModule.performAuto(function()
+            return EnchantModule.findPanMaterial(selectedMaterial)
+        end, PanEnchantRemote, selectedMaterial, targetPanEnchant, autoEnchantingPan)
+    end)
+
+    local ShovelEnchantsSection = SimpleUI:CreateSection(RightPage, "Shovel Enchants", {
+        Style = "box",
+        Icon = "rbxassetid://10098013519",
+        DefaultExpanded = false,
+        TextSize = 15
+    })
+
+    local selectedShovelModifier = "Iridescent"
+    local targetShovelEnchant = "WellBalanced"
+    local autoEnchantingShovel = {false}
+
+    local ShovelEnchantRemote = ReplicatedStorage.Remotes.Crafting.EnchantShovel
+
+    SimpleUI:CreateDropdown(ShovelEnchantsSection.Container, "Select Modifier", {{
+        text = "Iridescent"
+    }, {
+        text = "Voidtorn"
+    }, {
+        text = "Electrified"
+    }}, nil, function(sel)
+        if sel and sel.text then
+            selectedShovelModifier = sel.text
+        end
+    end)
+
+    SimpleUI:CreateDropdown(ShovelEnchantsSection.Container, "Target Enchant", EnchantModule.getNames("shovel"), nil,
+        function(selection)
+            targetShovelEnchant = selection
+        end)
+
+    SimpleUI:CreateButton(ShovelEnchantsSection.Container, "Enchant Shovel", function()
+        local shovel = EnchantModule.findShovelMaterial(selectedShovelModifier)
+        if not shovel then
+            Utility.createNotification("Shovel material not found", 3)
+            return
+        end
+        EnchantModule.enchant(ShovelEnchantRemote, shovel, selectedShovelModifier .. " Aetherite")
+    end)
+
+    SimpleUI:CreateButton(ShovelEnchantsSection.Container, "Auto Enchant Shovel", function()
+        if autoEnchantingShovel[1] then
+            autoEnchantingShovel[1] = false
+            Utility.createNotification("Stopped auto enchanting shovel", 2)
+            return
+        end
+
+        autoEnchantingShovel[1] = true
+        Utility.createNotification("Auto enchanting shovel until " .. targetShovelEnchant, 3)
+
+        EnchantModule.performAuto(function()
+            return EnchantModule.findShovelMaterial(selectedShovelModifier)
+        end, ShovelEnchantRemote, selectedShovelModifier .. " Aetherite", targetShovelEnchant, autoEnchantingShovel)
+    end)
+
+    SimpleUI:CreateButton(LeftPage, "Stop All Enchanting", function()
+        if autoEnchantingPan then
+            autoEnchantingPan[1] = false
+        end
+        if autoEnchantingShovel then
+            autoEnchantingShovel[1] = false
+        end
+        Utility.createNotification("EMERGENCY STOP - All auto enchanting terminated", 3)
+    end, {
+        Description = "You can stop auto enchants for both pans and shovels in case they get stuck or you change your mind mid-enchant"
+    })
+end
+
+local function initializeCraftingTab()
+    local page = Tabs.Crafting.Page
+
+    SimpleUI:CreateSection(page, "Equipment Crafting")
+
+    local craftingStatus = SimpleUI:CreateParagraph(page, "Crafting Status",
+        {"No equipment selected", "Select an equipment to begin"})
+
+    local equipmentDropdown = SimpleUI:CreateDropdown(page, "Select Equipment", {}, nil, function(selection)
+        for _, recipe in ipairs(State.Crafting.discoveredRecipes) do
+            if recipe.Name == selection then
+                State.Crafting.selectedEquipment = recipe
+                State.Crafting.selectedMaterials = {}
+                CraftingModule.updateStatus(craftingStatus)
+
+                if State.Crafting.selectBestOres then
+                    CraftingModule.selectBestMaterials(craftingStatus)
+                end
+
+                return
+            end
+        end
+    end)
+
+    SimpleUI:CreateButton(page, "Load Discovered Recipes", function()
+        State.Crafting.discoveredRecipes = CraftingModule.getDiscoveredRecipes()
+
+        local options = {}
+        for _, recipe in ipairs(State.Crafting.discoveredRecipes) do
+            table.insert(options, recipe.Name)
+        end
+
+        equipmentDropdown.setOptions(options)
+        Utility.createNotification("Loaded " .. #options .. " discovered recipes", 3)
+    end)
+
+    SimpleUI:CreateToggle(page, "Select Best Ores", false, function(state)
+        State.Crafting.selectBestOres = state
+
+        if state and State.Crafting.selectedEquipment then
+            CraftingModule.selectBestMaterials(craftingStatus)
+        end
+    end, {
+        Description = "Automatically select highest quality materials when equipment is chosen"
+    })
+
+    SimpleUI:CreateButton(page, "Craft Equipment", function()
+        if not CraftingModule.canCraft() then
+            Utility.createNotification("Cannot craft - missing materials or no equipment selected", 4)
+            return
+        end
+
+        local success, craftedItem = CraftingModule.perform(State.Crafting.selectedEquipment.Item,
+            State.Crafting.selectedEquipment.Data, State.Crafting.selectedMaterials)
+
+        if success then
+            Utility.createNotification("Successfully crafted " .. State.Crafting.selectedEquipment.Name, 4)
+            State.Crafting.selectedMaterials = {}
+            CraftingModule.updateStatus(craftingStatus)
+
+            if State.Crafting.selectBestOres then
+                task.wait(0.5)
+                CraftingModule.selectBestMaterials(craftingStatus)
+            end
+        else
+            Utility.createNotification("Crafting failed: " .. tostring(craftedItem), 4)
+        end
+    end)
+
+    SimpleUI:CreateToggle(page, "Auto Craft", false, function(state)
+        State.Crafting.autocraft = state
+
+        if not state then
+            return
+        end
+        if State.Crafting.autocraftRunning then
+            return
+        end
+
+        State.Crafting.autocraftRunning = true
+
+        task.spawn(function()
+            while State.Crafting.autocraft do
+                if State.Crafting.selectedEquipment then
+                    if State.Crafting.selectBestOres then
+                        CraftingModule.selectBestMaterials(craftingStatus)
+                    end
+
+                    while State.Crafting.autocraft and not CraftingModule.canCraft() do
+                        if State.Crafting.selectBestOres then
+                            CraftingModule.selectBestMaterials(craftingStatus)
+                        end
+
+                        CraftingModule.updateStatus(craftingStatus)
+                        task.wait(2)
+                    end
+
+                    if State.Crafting.autocraft then
+                        local success = CraftingModule.perform(State.Crafting.selectedEquipment.Item,
+                            State.Crafting.selectedEquipment.Data, State.Crafting.selectedMaterials)
+
+                        if success then
+                            State.Crafting.selectedMaterials = {}
+                            CraftingModule.updateStatus(craftingStatus)
+                            task.wait(1)
+                        else
+                            task.wait(3)
+                        end
+                    end
+                else
+                    CraftingModule.updateStatus(craftingStatus)
+                    task.wait(1)
+                end
+            end
+
+            State.Crafting.autocraftRunning = false
+        end)
+    end, {
+        Description = "Continuously craft selected equipment when materials are available"
+    })
+
+    SimpleUI:CreateParagraph(page, "About Select Best Ores",
+        {"This toggle acts like a two-step verification so you don't accidentally craft, you have to keep it enabled for craft to work"})
+
+    SimpleUI:CreateSection(page, "Firefly Flare")
+
+    local fireflyAmount = 1
+
+    SimpleUI:CreateTextInput(page, "Craft Amount", 1, function(input)
+        local value = tonumber(input)
+
+        if not value or value ~= math.floor(value) then
+            SimpleUI:CreateNotification({
+                Type = "Error",
+                Title = "Invalid Amount",
+                Description = "Please enter a natural number."
+            })
+            return
+        end
+
+        if value < 1 or value >= 1000 then
+            SimpleUI:CreateNotification({
+                Type = "Warning",
+                Title = "Out of Range",
+                Description = "Craft amount must be between 1 and 999."
+            })
+            return
+        end
+
+        fireflyAmount = value
+    end, {
+        Description = "The number of Firefly Flares to craft. 1 Firefly Stone = 1 Firefly Flare"
+    })
+
+    local FireflyCrafting = false
+    local FireflyStopRequested = false
+
+    SimpleUI:CreateButton(page, "Craft Firefly Flare", function()
+        if FireflyCrafting then
+            SimpleUI:CreateNotification({
+                Type = "Warning",
+                Title = "Already Crafting",
+                Description = "Firefly crafting is already running."
+            })
+            return
+        end
+
+        FireflyCrafting = true
+        FireflyStopRequested = false
+
+        task.spawn(function()
+            FireflyModule.craft(fireflyAmount)
+            FireflyCrafting = false
+            FireflyStopRequested = false
+        end)
+    end, {
+        Description = "Reminder: 1 Firefly Stone = 1 Firefly Flare"
+    })
+
+    SimpleUI:CreateButton(page, "Stop Crafting", function()
+        if not FireflyCrafting then
+            SimpleUI:CreateNotification({
+                Type = "Info",
+                Title = "Idle",
+                Description = "No crafting process is running."
+            })
+            return
+        end
+
+        FireflyStopRequested = true
+        SimpleUI:CreateNotification({
+            Type = "Warning",
+            Title = "Stopping",
+            Description = "Stopping Firefly crafting..."
+        })
+    end)
+
+    SimpleUI:CreateParagraph(page, "Information", {"You have to be near the firefly crafting table to convert."})
+end
+
+local function initializeFavouriteTab()
+    local page = Tabs.Favourite.Page
+
+    SimpleUI:CreateSection(page, "Favourite")
+
+    local selectedModifiers = {}
+    local selectedOre = nil
+    local autoFavEnabled = false
+
+    SimpleUI:CreateDropdown(page, "Select Modifier(s)", CraftingModule.getModifierNames(), nil, function(values)
+        selectedModifiers = {}
+        for _, v in pairs(values or {}) do
+            table.insert(selectedModifiers, v)
+        end
+    end, {
+        MultiSelect = true
+    })
+
+    SimpleUI:CreateButton(page, "Instant Favourite (Modifier)", function()
+        if #selectedModifiers == 0 then
+            SimpleUI:CreateNotification({
+                Type = "Warning",
+                Title = "No Modifiers Selected",
+                Description = "Select at least one modifier first."
+            })
+            return
+        end
+
+        for _, item in pairs(BackpackTwo:GetChildren()) do
+            for _, modifier in ipairs(selectedModifiers) do
+                if FavouriteModule.isValuable(item) and FavouriteModule.matchesModifier(item, modifier) then
+                    FavouriteModule.favourite(item)
+                    break
+                end
+            end
+        end
+
+        SimpleUI:CreateNotification({
+            Type = "Success",
+            Title = "Completed",
+            Description = "Items with selected modifiers were favourited."
+        })
+    end)
+
+    SimpleUI:CreateDropdown(page, "Select Ore", CraftingModule.getOreNames(), nil, function(value)
+        selectedOre = value
+    end)
+
+    SimpleUI:CreateButton(page, "Instant Favourite (Ore)", function()
+        if not selectedOre then
+            SimpleUI:CreateNotification({
+                Type = "Warning",
+                Title = "No Ore Selected",
+                Description = "Select an ore first."
+            })
+            return
+        end
+
+        for _, item in pairs(BackpackTwo:GetChildren()) do
+            if FavouriteModule.isValuable(item) and FavouriteModule.matchesOre(item, selectedOre) then
+                FavouriteModule.favourite(item)
+            end
+        end
+
+        SimpleUI:CreateNotification({
+            Type = "Success",
+            Title = "Completed",
+            Description = "All matching ores were favourited."
+        })
+    end)
+
+    SimpleUI:CreateButton(page, "Favourite Selected Ore with Selected Modifiers", function()
+        if not selectedOre or #selectedModifiers == 0 then
+            SimpleUI:CreateNotification({
+                Type = "Warning",
+                Title = "Selection Incomplete",
+                Description = "Select both an ore and at least one modifier."
+            })
+            return
+        end
+
+        for _, item in pairs(BackpackTwo:GetChildren()) do
+            if FavouriteModule.isValuable(item) and FavouriteModule.matchesOre(item, selectedOre) then
+                for _, modifier in ipairs(selectedModifiers) do
+                    if FavouriteModule.matchesModifier(item, modifier) then
+                        FavouriteModule.favourite(item)
+                        break
+                    end
+                end
+            end
+        end
+
+        SimpleUI:CreateNotification({
+            Type = "Success",
+            Title = "Completed",
+            Description = "Matching items were favourited."
+        })
+    end)
+
+    SimpleUI:CreateToggle(page, "Auto Favourite", false, function(state)
+        autoFavEnabled = state
+    end, {
+        Description = "Automatically favourite items as they are obtained."
+    })
+
+    BackpackTwo.ChildAdded:Connect(function(item)
+        if not autoFavEnabled then
+            return
+        end
+        if not FavouriteModule.isValuable(item) then
+            return
+        end
+
+        if selectedOre and #selectedModifiers > 0 then
+            if FavouriteModule.matchesOre(item, selectedOre) then
+                for _, modifier in ipairs(selectedModifiers) do
+                    if FavouriteModule.matchesModifier(item, modifier) then
+                        task.wait(0.1)
+                        FavouriteModule.favourite(item)
+                        break
+                    end
+                end
+            end
+        elseif selectedOre then
+            if FavouriteModule.matchesOre(item, selectedOre) then
+                task.wait(0.1)
+                FavouriteModule.favourite(item)
+            end
+        elseif #selectedModifiers > 0 then
+            for _, modifier in ipairs(selectedModifiers) do
+                if FavouriteModule.matchesModifier(item, modifier) then
+                    task.wait(0.1)
+                    FavouriteModule.favourite(item)
+                    break
+                end
+            end
+        end
+    end)
+
+    SimpleUI:CreateParagraph(page, "Auto Favourite System", {"Select Modifier: Choose which modifiers are affected.",
+                                                             "Instant Favourite (Modifier): Favourite all items with selected modifiers.",
+                                                             "Select Ore: Choose an ore type.",
+                                                             "Instant Favourite (Ore): Favourite all items of that ore.",
+                                                             "Favourite Selected Ore with Selected Modifiers: Requires both selections.",
+                                                             "Auto Favourite: Automatically favourites newly obtained items based on your selections.",
+                                                             {
+        text = "[BETA] Favorite System, full version will take a little time, sorry :_]",
+        isSubField = true
+    }})
+end
+
+local function initializeShopTab()
+    local page = Tabs.Shop.Page
+
+    SimpleUI:CreateSection(page, "Buy items LIKE A BOSS")
+
+    SimpleUI:CreateButton(page, "Open amazong", function()
+        amazong:Toggle()
+    end)
+end
+
+local function initializeMiscellaneousTab()
+    local page = Tabs.Miscellaneous.Page
+
+    local LeftPage = page.Left
+    local RightPage = page.Right
+
+    local ExcavationSection = SimpleUI:CreateSection(LeftPage, "Excavation", {
+        Style = "box",
+        Icon = "rbxassetid://14257565324",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    local excavationStatus = SimpleUI:CreateParagraph(ExcavationSection.Container, "Excavation Status",
+        {"Idle", "No site selected"})
+
+    SimpleUI:CreateDropdown(ExcavationSection.Container, "Select Excavation", ExcavationModule.getNames(), nil,
+        function(s)
+            State.Excavation.selected = s
+            excavationStatus:SetFields({"Status: Ready", "Selected: " .. tostring(s)})
+        end)
+
+    SimpleUI:CreateButton(ExcavationSection.Container, "Start Excavation", function()
+        if not State.Excavation.selected then
+            excavationStatus:SetFields({"Status: Error", "No excavation selected"})
+            return
+        end
+
+        local ok, msg = ExcavationModule.start()
+        if ok then
+            excavationStatus:SetFields({"Status: Running", "Site: " .. State.Excavation.selected})
+        else
+            excavationStatus:SetFields({"Status: Failed", tostring(msg)})
+        end
+    end)
+
+    SimpleUI:CreateToggle(ExcavationSection.Container, "Auto Claim", true, function(state)
+        State.Excavation.autoClaim = state
+        excavationStatus:SetFields({"Status: " .. (state and "Auto-Claim Enabled" or "Auto-Claim Disabled"),
+                                    "Site: " .. tostring(State.Excavation.selected)})
+
+        if not state then
+            return
+        end
+
+        task.spawn(function()
+            while State.Excavation.autoClaim do
+                if ExcavationModule.getCurrentStatus() == "Finished" then
+                    ExcavationModule.claim()
+                end
+                task.wait(1)
+            end
+        end)
+    end)
+
+    local PlayerSettingsSection = SimpleUI:CreateSection(LeftPage, "Player Settings", {
+        Style = "box",
+        DefaultExpanded = false,
+        TextSize = 15
+    })
+
+    SimpleUI:CreateSection(PlayerSettingsSection.Container, "Humanoid")
+
+    local jumpPower = Humanoid.JumpPower or 50
+    local walkSpeedValue = Humanoid and Humanoid.WalkSpeed or 16
+
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Walk Speed", 0, 100, walkSpeedValue, function(val)
+        pcall(function()
+            walkSpeedValue = val
+            if Humanoid then
+                Humanoid.WalkSpeed = val
+            end
+        end)
+    end)
+
+    if Humanoid then
+        Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+            if Humanoid.WalkSpeed ~= walkSpeedValue then
+                Humanoid.WalkSpeed = walkSpeedValue
+            end
+        end)
+    end
+
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Jump Power", 1, 100, jumpPower, function(val)
+        pcall(function()
+            jumpPower = val
+            if Humanoid then
+                Humanoid.UseJumpPower = true
+                Humanoid.JumpPower = val
+            end
+        end)
+    end)
+
+    if Humanoid then
+        Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+            if Humanoid.JumpPower ~= jumpPower then
+                Humanoid.UseJumpPower = true
+                Humanoid.JumpPower = jumpPower
+            end
+        end)
+    end
+
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Adjust FOV", 30, 120, Camera.FieldOfView, function(value)
+        Camera.FieldOfView = value
+    end, {
+        Increment = 1
+    })
+
+    local fogDensity = 0.1
+    local atmosphere = Services.Lighting:FindFirstChildWhichIsA("Atmosphere") or
+                           Instance.new("Atmosphere", Services.Lighting)
+
+    Services.RunService.RenderStepped:Connect(function()
+        if atmosphere then
+            atmosphere.Density = math.clamp(fogDensity, 0, 1)
+        end
+    end)
+
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Fog Density", 0.30, 1, 0.40, function(value)
+        fogDensity = value
+    end, {
+        Increment = 0.01
+    })
+
+    SimpleUI:CreateSection(PlayerSettingsSection.Container, "ESP")
+
+    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Players ESP", false, function(enabled)
+        if enabled then
+            ESPModule.enablePlayers()
+        else
+            ESPModule.disablePlayers()
+        end
+    end)
+
+    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Totems ESP", false, function(enabled)
+        if enabled then
+            ESPModule.enableTotems()
+        else
+            ESPModule.disableTotems()
+        end
+    end)
+
+    SimpleUI:CreateButton(PlayerSettingsSection.Container, "Clear All ESP", function()
+        ESPModule.clearAll()
+    end)
+
+    local RemoveBarriersSection = SimpleUI:CreateSection(RightPage, "Remove Barriers", {
+        Style = "box",
+        Icon = {
+            Image = "rbxassetid://16898613869",
+            ImageRectSize = Vector2.new(48, 48),
+            ImageRectOffset = Vector2.new(98, 967)
+        },
+        DefaultExpanded = false,
+        TextSize = 15
+    })
+
+    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Vines", function()
+        BarrierRemovalModule.removeVines()
+    end, {
+        Description = "Removes vines in Deeproot Area"
+    })
+
+    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Abyssal Gate", function()
+        BarrierRemovalModule.removeAbyssalGate()
+    end, {
+        Description = "Removes the 25,000 items barrier in Abyssal Depths"
+    })
+
+    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Mountain Block", function()
+        BarrierRemovalModule.removeMountainBlock()
+    end, {
+        Description = "Removes the big final rock to reach the summit peak"
+    })
+
+    local ServerSection = SimpleUI:CreateSection(RightPage, "Server", {
+        Style = "box",
+        Icon = "rbxassetid://10723405749",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    SimpleUI:CreateToggle(ServerSection.Container, "Anti-AFK", true, function(state)
+        ServerUtilityModule.setupAntiAFK(state)
+    end)
+
+    SimpleUI:CreateButton(ServerSection.Container, "Rejoin Server", function()
+        ServerUtilityModule.rejoin()
+    end)
+
+    SimpleUI:CreateButton(ServerSection.Container, "Server Hop", function()
+        ServerUtilityModule.serverHop()
+    end)
+end
+
+local function initializeSettingsTab()
+    local page = Tabs.Settings.Page
+
+    SimpleUI:CreateSection(page, "User Interface")
+
+    SimpleUI:CreateToggle(page, "Enable Inventory Filter", true, function(state)
+        if state then
+            InventoryFilterModule.create()
+        else
+            InventoryFilterModule.destroy()
+        end
+    end)
+
+    SimpleUI:CreateSlider(page, "UI Scale", 0.5, 2, window.GetScale(), function(value)
+        window:SetScale(value, true)
+    end, {
+        Increment = 0.001
+    })
+
+    local themes = {}
+    for name in pairs(SimpleUI.Themes) do
+        themes[#themes + 1] = name
+    end
+
+    SimpleUI:CreateDropdown(page, "Set Theme", themes, nil, function(val)
+        window:SetTheme(val, true)
+    end, {
+        Description = "Choose from " .. (#themes > 0 and #themes or "a variety of") .. " themes"
+    })
+
+    if not SimpleUI.Utility:IsMobile() then
+        SimpleUI:CreateKeybind(page, "UI visibility keybind", Enum.KeyCode.Q, function(key)
+            window.Toggle()
+        end)
+    end
+end
+
+initializeMainTab()
+initializeTeleportTab()
+initializeToolsTab()
+initializeCraftingTab()
+initializeFavouriteTab()
+initializeShopTab()
+initializeMiscellaneousTab()
+initializeSettingsTab()
+
+if SimpleUI.Utility:IsMobile() then
+    MobileUIModule.createToggleButton(window)
+end
