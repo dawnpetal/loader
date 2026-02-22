@@ -15,7 +15,7 @@ end
 
 local SimpleUI = {}
 
-SimpleUI.Version = "2.2.4"
+SimpleUI.Version = "2.2.5"
 SimpleUI.Loaded = SimpleUI.Loaded or {}
 SimpleUI.Windows = SimpleUI.Windows or {}
 
@@ -49,6 +49,10 @@ SimpleUI.Constants = {
             Fixed = "Fixed",
             Dynamic = "Dynamic",
             Closed = "Closed"
+        },
+        ResizeModes = {
+            BottomRight = "BottomRight",
+            Center = "Center"
         },
         TabDynamicThreshold = 2,
         TabIconSizeExpanded = 20,
@@ -2646,15 +2650,18 @@ do
             end
         end
 
-        function SimpleUI.WindowBuilder:SetupResizing(MainFrame, UIScale, Options, ResizeParent)
+        function SimpleUI.WindowBuilder:SetupResizing(MainFrame, UIScale, Options, ResizeParent, ResizeMode)
             if not Options.CanResize or not ResizeParent then
-                return
+                return nil, nil
             end
+
+            local IsCenter = ResizeMode == SimpleUI.Constants.Window.ResizeModes.Center
+
             local ResizeHandle = SimpleUI.Utility:CreateInstance("TextButton", {
                 Name = "ResizeHandle",
                 Size = UDim2.fromOffset(16, 16),
-                Position = UDim2.fromScale(0.5, 0.5),
-                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.fromScale(1, 1),
+                AnchorPoint = Vector2.new(1, 1),
                 BackgroundTransparency = 0.8,
                 BackgroundColor3 = Color3.fromRGB(100, 100, 110),
                 BorderSizePixel = 0,
@@ -2662,10 +2669,12 @@ do
                 AutoButtonColor = false,
                 ZIndex = SimpleUI.Constants.ZIndex.Modal
             }, ResizeParent)
+
             SimpleUI.Utility:CreateInstance("UICorner", {
                 CornerRadius = UDim.new(1, 0)
             }, ResizeHandle)
-            SimpleUI.Utility:CreateInstance("ImageLabel", {
+
+            local IconImage = SimpleUI.Utility:CreateInstance("ImageLabel", {
                 Size = UDim2.fromScale(0.7, 0.7),
                 Position = UDim2.fromScale(0.5, 0.5),
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -2673,61 +2682,85 @@ do
                 Image = "rbxassetid://16898613613",
                 ImageRectSize = Vector2.new(48, 48),
                 ImageRectOffset = Vector2.new(967, 49),
+                ImageColor3 = Color3.fromRGB(200, 200, 200),
                 ZIndex = SimpleUI.Constants.ZIndex.Modal + 1
             }, ResizeHandle)
 
-            local resizing = false
-            local startMousePos
-            local startSize
-            local inputConnection
+            local StartPos
+            local FrameSize
+            local FramePos
+            local Dragging = false
+            local Changed
 
             ResizeHandle.InputBegan:Connect(function(input)
                 if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~=
                     Enum.UserInputType.Touch then
                     return
                 end
-                resizing = true
-                startMousePos = Vector2.new(input.Position.X, input.Position.Y)
-                startSize = MainFrame.AbsoluteSize
 
-                if inputConnection then
-                    inputConnection:Disconnect()
+                StartPos = input.Position
+                FrameSize = MainFrame.Size
+                FramePos = MainFrame.Position
+                Dragging = true
+
+                if IsCenter then
+                    MainFrame.AnchorPoint = Vector2.new(0, 0)
+                    MainFrame.Position = UDim2.new(FramePos.X.Scale, FramePos.X.Offset - FrameSize.X.Offset / 2,
+                        FramePos.Y.Scale, FramePos.Y.Offset - FrameSize.Y.Offset / 2)
+                    FramePos = MainFrame.Position
                 end
 
-                inputConnection = UserInputService.InputChanged:Connect(function(changeInput)
-                    if not resizing then
-                        return
-                    end
-                    if changeInput.UserInputType ~= Enum.UserInputType.MouseMovement and changeInput.UserInputType ~=
-                        Enum.UserInputType.Touch then
+                Changed = input.Changed:Connect(function()
+                    if input.UserInputState ~= Enum.UserInputState.End then
                         return
                     end
 
-                    local currentMousePos = Vector2.new(changeInput.Position.X, changeInput.Position.Y)
-                    local mouseDelta = currentMousePos - startMousePos
-
-                    local minSize = SimpleUI.Constants.Window.MinSize
-                    local maxSize = SimpleUI.Constants.Window.MaxSize
-
-                    local newWidth = math.clamp(startSize.X + mouseDelta.X, minSize.X, maxSize.X)
-                    local newHeight = math.clamp(startSize.Y + mouseDelta.Y, minSize.Y, maxSize.Y)
-
-                    MainFrame.Size = UDim2.fromOffset(newWidth, newHeight)
+                    Dragging = false
+                    if IsCenter then
+                        local centerX = FramePos.X.Offset + MainFrame.Size.X.Offset / 2
+                        local centerY = FramePos.Y.Offset + MainFrame.Size.Y.Offset / 2
+                        MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+                        MainFrame.Position = UDim2.new(FramePos.X.Scale, centerX, FramePos.Y.Scale, centerY)
+                    end
+                    if Changed and Changed.Connected then
+                        Changed:Disconnect()
+                        Changed = nil
+                    end
                 end)
             end)
 
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType ==
-                    Enum.UserInputType.Touch then
-                    if resizing then
-                        resizing = false
-                        if inputConnection then
-                            inputConnection:Disconnect()
-                            inputConnection = nil
-                        end
+            UserInputService.InputChanged:Connect(function(input)
+                if not MainFrame.Visible then
+                    Dragging = false
+                    if Changed and Changed.Connected then
+                        Changed:Disconnect()
+                        Changed = nil
                     end
+                    return
+                end
+
+                if Dragging and
+                    (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType ==
+                        Enum.UserInputType.Touch) then
+                    local Delta = input.Position - StartPos
+
+                    local newWidth = math.clamp(FrameSize.X.Offset + Delta.X, SimpleUI.Constants.Window.MinSize.X,
+                        SimpleUI.Constants.Window.MaxSize.X)
+                    local newHeight = math.clamp(FrameSize.Y.Offset + Delta.Y, SimpleUI.Constants.Window.MinSize.Y,
+                        SimpleUI.Constants.Window.MaxSize.Y)
+
+                    MainFrame.Size = UDim2.new(FrameSize.X.Scale, newWidth, FrameSize.Y.Scale, newHeight)
                 end
             end)
+
+            return ResizeHandle, IconImage, {
+                [ResizeHandle] = {
+                    BackgroundColor3 = "TextSecondary"
+                },
+                [IconImage] = {
+                    ImageColor3 = "TextPrimary"
+                }
+            }
         end
 
         function SimpleUI.WindowBuilder:SetupScrollUpdates(WindowInstance)
@@ -3953,6 +3986,7 @@ function SimpleUI:CreateWindow(options)
 
     local footer, footerBindings, footerContent, separatorBindings, resizeContainer =
         self.WindowBuilder:CreateFooter(mainFrame, options, theme)
+    local ResizeMode = options.ResizeMode or self.Constants.Window.ResizeModes.BottomRight
 
     local mainContainer = self.WindowBuilder:CreateMainContainer(mainFrame, options, theme, topBarHeight, footerHeight)
 
@@ -4225,20 +4259,35 @@ function SimpleUI:CreateWindow(options)
             elseif mode == modes.Dynamic then
                 setExpanded(false, animate)
                 local mouseInside = false
+                local expandConnection = nil
+
+                local function scheduleExpand()
+                    if expandConnection then
+                        expandConnection:Disconnect()
+                    end
+                    expandConnection = task.spawn(function()
+                        task.wait(threshold)
+                        if mouseInside and self.TabMode == modes.Dynamic then
+                            setExpanded(true, true)
+                        end
+                        expandConnection = nil
+                    end)
+                end
 
                 tabsContainer.MouseEnter:Connect(function()
                     if self.TabMode ~= modes.Dynamic then
                         return
                     end
                     mouseInside = true
-                    task.wait(threshold)
-                    if mouseInside and self.TabMode == modes.Dynamic then
-                        setExpanded(true, true)
-                    end
+                    scheduleExpand()
                 end)
 
                 tabsContainer.MouseLeave:Connect(function()
                     mouseInside = false
+                    if expandConnection then
+                        task.cancel(expandConnection)
+                        expandConnection = nil
+                    end
                     if self.TabMode == modes.Dynamic then
                         setExpanded(false, true)
                     end
@@ -4484,8 +4533,15 @@ function SimpleUI:CreateWindow(options)
     self.WindowControlBuilder:RegisterIconBindings(window, controlButtons, options)
 
     self.WindowBuilder:SetupDragging(topBar, mainFrame)
-    self.WindowBuilder:SetupResizing(mainFrame, uiScale, options, window.Elements.FooterResizeArea)
+
+    local resizeHandle, resizeIcon, resizeBindings = self.WindowBuilder:SetupResizing(mainFrame, uiScale, options,
+        window.Elements.FooterResizeArea, ResizeMode)
+
     self.WindowBuilder:SetupScrollUpdates(window)
+
+    if resizeBindings then
+        self.ThemeManager:RegisterMultiple(window, resizeBindings)
+    end
 
     for _, methodName in ipairs({"Destroy", "SetTheme", "SetScale", "Hide", "Show", "Toggle", "IsVisible", "SetTitle",
                                  "SetSubtitle", "AddFooterButton", "ClearFooter", "SetFooterAlignment", "SetOpacity",

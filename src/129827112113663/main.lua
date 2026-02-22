@@ -15,7 +15,7 @@ end
 
 local SimpleUI = {}
 
-SimpleUI.Version = "2.2.4"
+SimpleUI.Version = "2.2.5"
 SimpleUI.Loaded = SimpleUI.Loaded or {}
 SimpleUI.Windows = SimpleUI.Windows or {}
 
@@ -49,6 +49,10 @@ SimpleUI.Constants = {
             Fixed = "Fixed",
             Dynamic = "Dynamic",
             Closed = "Closed"
+        },
+        ResizeModes = {
+            BottomRight = "BottomRight",
+            Center = "Center"
         },
         TabDynamicThreshold = 2,
         TabIconSizeExpanded = 20,
@@ -2646,15 +2650,18 @@ do
             end
         end
 
-        function SimpleUI.WindowBuilder:SetupResizing(MainFrame, UIScale, Options, ResizeParent)
+        function SimpleUI.WindowBuilder:SetupResizing(MainFrame, UIScale, Options, ResizeParent, ResizeMode)
             if not Options.CanResize or not ResizeParent then
-                return
+                return nil, nil
             end
+
+            local IsCenter = ResizeMode == SimpleUI.Constants.Window.ResizeModes.Center
+
             local ResizeHandle = SimpleUI.Utility:CreateInstance("TextButton", {
                 Name = "ResizeHandle",
                 Size = UDim2.fromOffset(16, 16),
-                Position = UDim2.fromScale(0.5, 0.5),
-                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.fromScale(1, 1),
+                AnchorPoint = Vector2.new(1, 1),
                 BackgroundTransparency = 0.8,
                 BackgroundColor3 = Color3.fromRGB(100, 100, 110),
                 BorderSizePixel = 0,
@@ -2662,10 +2669,12 @@ do
                 AutoButtonColor = false,
                 ZIndex = SimpleUI.Constants.ZIndex.Modal
             }, ResizeParent)
+
             SimpleUI.Utility:CreateInstance("UICorner", {
                 CornerRadius = UDim.new(1, 0)
             }, ResizeHandle)
-            SimpleUI.Utility:CreateInstance("ImageLabel", {
+
+            local IconImage = SimpleUI.Utility:CreateInstance("ImageLabel", {
                 Size = UDim2.fromScale(0.7, 0.7),
                 Position = UDim2.fromScale(0.5, 0.5),
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -2673,61 +2682,85 @@ do
                 Image = "rbxassetid://16898613613",
                 ImageRectSize = Vector2.new(48, 48),
                 ImageRectOffset = Vector2.new(967, 49),
+                ImageColor3 = Color3.fromRGB(200, 200, 200),
                 ZIndex = SimpleUI.Constants.ZIndex.Modal + 1
             }, ResizeHandle)
 
-            local resizing = false
-            local startMousePos
-            local startSize
-            local inputConnection
+            local StartPos
+            local FrameSize
+            local FramePos
+            local Dragging = false
+            local Changed
 
             ResizeHandle.InputBegan:Connect(function(input)
                 if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~=
                     Enum.UserInputType.Touch then
                     return
                 end
-                resizing = true
-                startMousePos = Vector2.new(input.Position.X, input.Position.Y)
-                startSize = MainFrame.AbsoluteSize
 
-                if inputConnection then
-                    inputConnection:Disconnect()
+                StartPos = input.Position
+                FrameSize = MainFrame.Size
+                FramePos = MainFrame.Position
+                Dragging = true
+
+                if IsCenter then
+                    MainFrame.AnchorPoint = Vector2.new(0, 0)
+                    MainFrame.Position = UDim2.new(FramePos.X.Scale, FramePos.X.Offset - FrameSize.X.Offset / 2,
+                        FramePos.Y.Scale, FramePos.Y.Offset - FrameSize.Y.Offset / 2)
+                    FramePos = MainFrame.Position
                 end
 
-                inputConnection = UserInputService.InputChanged:Connect(function(changeInput)
-                    if not resizing then
-                        return
-                    end
-                    if changeInput.UserInputType ~= Enum.UserInputType.MouseMovement and changeInput.UserInputType ~=
-                        Enum.UserInputType.Touch then
+                Changed = input.Changed:Connect(function()
+                    if input.UserInputState ~= Enum.UserInputState.End then
                         return
                     end
 
-                    local currentMousePos = Vector2.new(changeInput.Position.X, changeInput.Position.Y)
-                    local mouseDelta = currentMousePos - startMousePos
-
-                    local minSize = SimpleUI.Constants.Window.MinSize
-                    local maxSize = SimpleUI.Constants.Window.MaxSize
-
-                    local newWidth = math.clamp(startSize.X + mouseDelta.X, minSize.X, maxSize.X)
-                    local newHeight = math.clamp(startSize.Y + mouseDelta.Y, minSize.Y, maxSize.Y)
-
-                    MainFrame.Size = UDim2.fromOffset(newWidth, newHeight)
+                    Dragging = false
+                    if IsCenter then
+                        local centerX = FramePos.X.Offset + MainFrame.Size.X.Offset / 2
+                        local centerY = FramePos.Y.Offset + MainFrame.Size.Y.Offset / 2
+                        MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+                        MainFrame.Position = UDim2.new(FramePos.X.Scale, centerX, FramePos.Y.Scale, centerY)
+                    end
+                    if Changed and Changed.Connected then
+                        Changed:Disconnect()
+                        Changed = nil
+                    end
                 end)
             end)
 
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType ==
-                    Enum.UserInputType.Touch then
-                    if resizing then
-                        resizing = false
-                        if inputConnection then
-                            inputConnection:Disconnect()
-                            inputConnection = nil
-                        end
+            UserInputService.InputChanged:Connect(function(input)
+                if not MainFrame.Visible then
+                    Dragging = false
+                    if Changed and Changed.Connected then
+                        Changed:Disconnect()
+                        Changed = nil
                     end
+                    return
+                end
+
+                if Dragging and
+                    (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType ==
+                        Enum.UserInputType.Touch) then
+                    local Delta = input.Position - StartPos
+
+                    local newWidth = math.clamp(FrameSize.X.Offset + Delta.X, SimpleUI.Constants.Window.MinSize.X,
+                        SimpleUI.Constants.Window.MaxSize.X)
+                    local newHeight = math.clamp(FrameSize.Y.Offset + Delta.Y, SimpleUI.Constants.Window.MinSize.Y,
+                        SimpleUI.Constants.Window.MaxSize.Y)
+
+                    MainFrame.Size = UDim2.new(FrameSize.X.Scale, newWidth, FrameSize.Y.Scale, newHeight)
                 end
             end)
+
+            return ResizeHandle, IconImage, {
+                [ResizeHandle] = {
+                    BackgroundColor3 = "TextSecondary"
+                },
+                [IconImage] = {
+                    ImageColor3 = "TextPrimary"
+                }
+            }
         end
 
         function SimpleUI.WindowBuilder:SetupScrollUpdates(WindowInstance)
@@ -3953,6 +3986,7 @@ function SimpleUI:CreateWindow(options)
 
     local footer, footerBindings, footerContent, separatorBindings, resizeContainer =
         self.WindowBuilder:CreateFooter(mainFrame, options, theme)
+    local ResizeMode = options.ResizeMode or self.Constants.Window.ResizeModes.BottomRight
 
     local mainContainer = self.WindowBuilder:CreateMainContainer(mainFrame, options, theme, topBarHeight, footerHeight)
 
@@ -4225,20 +4259,35 @@ function SimpleUI:CreateWindow(options)
             elseif mode == modes.Dynamic then
                 setExpanded(false, animate)
                 local mouseInside = false
+                local expandConnection = nil
+
+                local function scheduleExpand()
+                    if expandConnection then
+                        expandConnection:Disconnect()
+                    end
+                    expandConnection = task.spawn(function()
+                        task.wait(threshold)
+                        if mouseInside and self.TabMode == modes.Dynamic then
+                            setExpanded(true, true)
+                        end
+                        expandConnection = nil
+                    end)
+                end
 
                 tabsContainer.MouseEnter:Connect(function()
                     if self.TabMode ~= modes.Dynamic then
                         return
                     end
                     mouseInside = true
-                    task.wait(threshold)
-                    if mouseInside and self.TabMode == modes.Dynamic then
-                        setExpanded(true, true)
-                    end
+                    scheduleExpand()
                 end)
 
                 tabsContainer.MouseLeave:Connect(function()
                     mouseInside = false
+                    if expandConnection then
+                        task.cancel(expandConnection)
+                        expandConnection = nil
+                    end
                     if self.TabMode == modes.Dynamic then
                         setExpanded(false, true)
                     end
@@ -4484,8 +4533,15 @@ function SimpleUI:CreateWindow(options)
     self.WindowControlBuilder:RegisterIconBindings(window, controlButtons, options)
 
     self.WindowBuilder:SetupDragging(topBar, mainFrame)
-    self.WindowBuilder:SetupResizing(mainFrame, uiScale, options, window.Elements.FooterResizeArea)
+
+    local resizeHandle, resizeIcon, resizeBindings = self.WindowBuilder:SetupResizing(mainFrame, uiScale, options,
+        window.Elements.FooterResizeArea, ResizeMode)
+
     self.WindowBuilder:SetupScrollUpdates(window)
+
+    if resizeBindings then
+        self.ThemeManager:RegisterMultiple(window, resizeBindings)
+    end
 
     for _, methodName in ipairs({"Destroy", "SetTheme", "SetScale", "Hide", "Show", "Toggle", "IsVisible", "SetTitle",
                                  "SetSubtitle", "AddFooterButton", "ClearFooter", "SetFooterAlignment", "SetOpacity",
@@ -7299,7 +7355,8 @@ local Services = {
     Workspace = SimpleUI.Utility:GetService("Workspace"),
     RunService = SimpleUI.Utility:GetService("RunService"),
     HttpService = SimpleUI.Utility:GetService("HttpService"),
-    Lighting = SimpleUI.Utility:GetService("Lighting")
+    Lighting = SimpleUI.Utility:GetService("Lighting"),
+    VirtualUser = SimpleUI.Utility:GetService("VirtualUser")
 }
 
 local Player = Services.Players.LocalPlayer
@@ -7390,6 +7447,10 @@ local State = {
         autoLoopEnabled = false,
         lastTeleportTime = 0,
         teleportConnection = nil
+    },
+
+    Hunting = {
+        autoGeode = false
     }
 }
 
@@ -10176,8 +10237,8 @@ end
 
 local MobileUIModule = {}
 do
-    function MobileUIModule.createToggleButton(window)
-        if not SimpleUI.Utility:IsMobile() then
+    function MobileUIModule.createToggleButton(window, forceMobile)
+        if not forceMobile and not SimpleUI.Utility:IsMobile() then
             return
         end
 
@@ -10226,7 +10287,7 @@ do
         toggleButton.ScaleType = Enum.ScaleType.Fit
         toggleButton.Active = true
         toggleButton.Image = logoAsset or "rbxassetid://10734900011"
-        toggleButton.Parent = window.Elements.screenGui
+        toggleButton.Parent = window.Elements.ScreenGui
 
         local dragging = false
         local dragStart, startPos
@@ -10526,6 +10587,246 @@ do
     end
 end
 
+local HuntingModule = {}
+do
+    HuntingModule.geodeState = {
+        isOpening = false,
+        currentGeode = nil,
+        startTime = nil,
+        lastInventoryUpdate = 0,
+        cachedInventoryCount = 0,
+        cachedMaxCapacity = 0
+    }
+
+    function HuntingModule.getInventoryCount()
+        local count = 0
+
+        for _, item in ipairs(BackpackTwo:GetChildren()) do
+            local t = item:GetAttribute("ItemType")
+            if t == "Valuable" or t == "Equipment" then
+                count = count + 1
+            end
+        end
+
+        local character = Character
+        if character then
+            local equipped = character:FindFirstChildOfClass("Tool")
+            if equipped then
+                local t = equipped:GetAttribute("ItemType")
+                if t == "Valuable" or t == "Equipment" then
+                    count = count + 1
+                end
+            end
+        end
+
+        return count
+    end
+
+    function HuntingModule.updateInventoryCache()
+        HuntingModule.geodeState.cachedInventoryCount = HuntingModule.getInventoryCount()
+        HuntingModule.geodeState.cachedMaxCapacity = Player:GetAttribute("InventorySize") or 100
+        HuntingModule.geodeState.lastInventoryUpdate = tick()
+    end
+
+    function HuntingModule.getCachedInventoryCount()
+        return HuntingModule.geodeState.cachedInventoryCount
+    end
+
+    function HuntingModule.getCachedMaxCapacity()
+        return HuntingModule.geodeState.cachedMaxCapacity
+    end
+
+    function HuntingModule.getInventoryPercentage()
+        local current = HuntingModule.getCachedInventoryCount()
+        local max = HuntingModule.getCachedMaxCapacity()
+        if max == 0 then
+            return 0
+        end
+        return math.floor((current / max) * 100)
+    end
+
+    function HuntingModule.isBackpackFull()
+        return HuntingModule.getCachedInventoryCount() >= HuntingModule.getCachedMaxCapacity()
+    end
+
+    function HuntingModule.findGeodeInBackpack()
+        for _, item in ipairs(BackpackTwo:GetChildren()) do
+            if item.Name == "Geode" then
+                return item
+            end
+        end
+        return nil
+    end
+
+    function HuntingModule.isGeodeEquipped()
+        if not Character then
+            return false
+        end
+
+        for _, item in ipairs(Character:GetChildren()) do
+            if item:GetAttribute("ItemType") == "Geode" then
+                return true
+            end
+        end
+        return false
+    end
+
+    function HuntingModule.isGeodeInHotbar()
+        for _, item in ipairs(Player.Backpack:GetChildren()) do
+            if item.Name == "Geode" then
+                return true
+            end
+        end
+        return false
+    end
+
+    function HuntingModule.waitForGeodeInCharacter(timeout)
+        timeout = timeout or 50
+        if not Character then
+            return false
+        end
+
+        local elapsed = 0
+        while elapsed < timeout do
+            for _, item in ipairs(Character:GetChildren()) do
+                if item:GetAttribute("ItemType") == "Geode" then
+                    return true
+                end
+            end
+            task.wait(0.01)
+            elapsed = elapsed + 1
+        end
+        return false
+    end
+
+    function HuntingModule.isGeodeDepleted()
+        if not Character then
+            return true
+        end
+
+        for _, item in ipairs(Character:GetChildren()) do
+            if item:GetAttribute("ItemType") == "Geode" then
+                local stacks = item:GetAttribute("Stacks")
+                if stacks and stacks > 0 then
+                    return false
+                end
+            end
+        end
+        return true
+    end
+
+    function HuntingModule.waitForGeodes(maxWait)
+        maxWait = maxWait or 30
+        local elapsed = 0
+        while elapsed < maxWait do
+            local hasGeode = HuntingModule.findGeodeInBackpack() ~= nil
+            if hasGeode then
+                return true
+            end
+            task.wait(0.5)
+            elapsed = elapsed + 0.5
+        end
+        return false
+    end
+
+    function HuntingModule.startGeodeOpening()
+        if HuntingModule.geodeState.isOpening then
+            return false
+        end
+
+        local geode = HuntingModule.findGeodeInBackpack()
+        if not geode and not HuntingModule.isGeodeEquipped() and not HuntingModule.isGeodeInHotbar() then
+            return false
+        end
+
+        HuntingModule.updateInventoryCache()
+        HuntingModule.geodeState.isOpening = true
+        HuntingModule.geodeState.startTime = tick()
+
+        task.spawn(function()
+            while HuntingModule.geodeState.isOpening do
+                if HuntingModule.isBackpackFull() then
+                    break
+                end
+
+                local geode = HuntingModule.findGeodeInBackpack()
+                if not geode then
+                    break
+                end
+
+                pcall(function()
+                    ReplicatedStorage.Remotes.CustomBackpack.EquipRemote:FireServer(geode)
+                end)
+
+                if not HuntingModule.waitForGeodeInCharacter() then
+                    break
+                end
+
+                local clickCount = 0
+                while HuntingModule.geodeState.isOpening do
+                    if HuntingModule.isGeodeDepleted() or HuntingModule.isBackpackFull() then
+                        break
+                    end
+                    Services.VirtualUser:ClickButton1(Vector2.new(math.random(100, 900), math.random(100, 700)))
+                    clickCount = clickCount + 1
+                    if clickCount % 100 == 0 then
+                        HuntingModule.updateInventoryCache()
+                    end
+                    task.wait(0.01)
+                end
+            end
+
+            HuntingModule.geodeState.isOpening = false
+            HuntingModule.geodeState.currentGeode = nil
+        end)
+
+        return true
+    end
+
+    function HuntingModule.stopGeodeOpening()
+        HuntingModule.geodeState.isOpening = false
+    end
+
+    function HuntingModule.isGeodeOpening()
+        return HuntingModule.geodeState.isOpening
+    end
+
+    function HuntingModule.getFormattedInventoryStatus()
+        local toolUI = Player.PlayerGui:FindFirstChild("ToolUI")
+        if toolUI then
+            local fillingPan = toolUI:FindFirstChild("FillingPan")
+            if fillingPan then
+                local inventorySpace = fillingPan:FindFirstChild("InventorySpace")
+                if inventorySpace and inventorySpace:IsA("TextLabel") then
+                    return inventorySpace.Text
+                end
+            end
+        end
+        return "Inventory: N/A"
+    end
+
+    function HuntingModule.getGeodeProgress()
+        if HuntingModule.geodeState.isOpening then
+            return {
+                isOpening = true,
+                duration = tick() - HuntingModule.geodeState.startTime,
+                hasGeodes = HuntingModule.findGeodeInBackpack() ~= nil,
+                inventoryCount = HuntingModule.getCachedInventoryCount(),
+                maxCapacity = HuntingModule.getCachedMaxCapacity(),
+                isBackpackFull = HuntingModule.isBackpackFull()
+            }
+        end
+        return {
+            isOpening = false,
+            duration = 0,
+            hasGeodes = HuntingModule.findGeodeInBackpack() ~= nil,
+            inventoryCount = HuntingModule.getCachedInventoryCount(),
+            maxCapacity = HuntingModule.getCachedMaxCapacity(),
+            isBackpackFull = HuntingModule.isBackpackFull()
+        }
+    end
+end
+
 local ServerUtilityModule = {}
 do
     function ServerUtilityModule.rejoin()
@@ -10749,19 +11050,27 @@ local window = SimpleUI:CreateWindow({
 
 local Tabs = {
     Main = SimpleUI:CreateTab(window, "Main", {
-        Description = "Auto farming and selling",
+        Description = "Auto Farm and Auto Sell",
         Icon = {
-            Image = "rbxassetid://16898613509",
+            Image = "rbxassetid://10734975692",
             Size = UDim2.new(0, 16, 0, 16),
-            ImageRectSize = Vector2.new(48, 48),
-            ImageRectOffset = Vector2.new(771, 759),
             ImageColor3 = Color3.fromRGB(255, 255, 255)
         },
         DualScroll = true
     }),
-
+    Hunting = SimpleUI:CreateTab(window, "Hunting", {
+        Description = "Treasure map hunting and geode opening",
+        Icon = {
+            Image = "rbxassetid://16898613613",
+            Size = UDim2.new(0, 16, 0, 16),
+            ImageRectSize = Vector2.new(48, 48),
+            ImageRectOffset = Vector2.new(306, 771),
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
+        },
+        DualScroll = true
+    }),
     Teleport = SimpleUI:CreateTab(window, "Teleport", {
-        Description = "Fast travel to waypoints; geodes, and runes",
+        Description = "Fast travel network, geode locations, and runes",
         Icon = {
             Image = "rbxassetid://16898613777",
             Size = UDim2.new(0, 16, 0, 16),
@@ -10771,9 +11080,8 @@ local Tabs = {
         },
         DualScroll = true
     }),
-
     Tools = SimpleUI:CreateTab(window, "Tools", {
-        Description = "Equipment reforge, pan and shovel enchanting",
+        Description = "Equipment reforging and tool enchantment",
         Icon = {
             Image = "rbxassetid://16898613044",
             Size = UDim2.new(0, 16, 0, 16),
@@ -10783,42 +11091,37 @@ local Tabs = {
         },
         DualScroll = true
     }),
-
     Crafting = SimpleUI:CreateTab(window, "Crafting", {
-        Description = "Equipment crafting and firefly flare production",
+        Description = "Equipment crafting and resource conversion",
         Icon = {
             Image = "rbxassetid://10723396542",
             ImageColor3 = Color3.fromRGB(255, 255, 255)
         }
     }),
-
     Favourite = SimpleUI:CreateTab(window, "Favourite", {
-        Description = "Automatically lock valuable items by modifier or ore",
+        Description = "Favourite valuable items",
         Icon = {
             Image = "rbxassetid://10734966248",
             ImageColor3 = Color3.fromRGB(255, 255, 255)
         }
     }),
-
     Shop = SimpleUI:CreateTab(window, "Shop", {
-        Description = "Open the shopping interface",
+        Description = "Amazong - Credits: Jeff Bozo",
         Icon = {
             Image = "rbxassetid://10734952479",
             ImageColor3 = Color3.fromRGB(255, 255, 255)
         }
     }),
-
     Miscellaneous = SimpleUI:CreateTab(window, "Miscellaneous", {
-        Description = "Excavation, barrier removal, and map utils",
+        Description = "Excavation sites, environmental barriers, and utilities",
         Icon = {
             Image = "rbxassetid://10734963191",
             ImageColor3 = Color3.fromRGB(255, 255, 255)
         },
         DualScroll = true
     }),
-
-    Settings = SimpleUI:CreateTab(window, "SettingsTab", {
-        Description = "UI customization, themes, and keybinds",
+    Settings = SimpleUI:CreateTab(window, "Settings", {
+        Description = "Interface customization and control configuration",
         Icon = {
             Image = "rbxassetid://16898613777",
             Size = UDim2.new(0, 16, 0, 16),
@@ -10831,73 +11134,73 @@ local Tabs = {
 
 local function initializeMainTab()
     local page = Tabs.Main.Page
-
     local LeftPage = page.Left
     local RightPage = page.Right
 
-    local AutoFarmSection = SimpleUI:CreateSection(LeftPage, "Auto Farming", {
+    local AutoFarmSection = SimpleUI:CreateSection(LeftPage, "Auto Farm", {
         Style = "box",
         Icon = "rbxassetid://10789587520",
         DefaultExpanded = true,
         TextSize = 15
     })
 
-    SimpleUI:CreateParagraph(AutoFarmSection.Container, "How Auto Farming Works",
-        {"Configure travel mode, set dig & wash points, then enable Auto Farm.", {
-            Text = "Teleport is faster and recommended.",
+    SimpleUI:CreateParagraph(AutoFarmSection.Container, "How Automated Farm Works",
+        {"Configure your movement method, set digging and washing locations, then activate the system to begin the continuous cycle.",
+         {
+            Text = "Teleport mode is significantly faster and recommended for efficiency.",
             IsSubField = true
         }, {
-            Text = "You must stand inside proper regions before saving locations.",
+            Text = "You must stand within the correct region before saving each location to ensure proper positioning.",
             IsSubField = true
         }, {
-            Text = "Use Unstuck if movement breaks or tween hangs.",
+            Text = "Use Unstuck Character if movement freezes or the tweening animation becomes unresponsive.",
             IsSubField = true
         }})
 
-    SimpleUI:CreateDropdown(AutoFarmSection.Container, "Travel Mode", {"Tween", "Teleport"}, "Teleport",
+    SimpleUI:CreateDropdown(AutoFarmSection.Container, "Movement Method", {"Tween", "Teleport"}, "Teleport",
         function(selection)
             State.AutoFarm.travelMode = selection
         end)
 
-    SimpleUI:CreateButton(AutoFarmSection.Container, "Set Digging Location", function()
+    SimpleUI:CreateButton(AutoFarmSection.Container, "Save Dig Location", function()
         if PanModule.getRegion(HumanoidRootPart) == "Deposit" then
             State.AutoFarm.sandCFrame = HumanoidRootPart.CFrame
             SimpleUI:CreateNotification({
                 Type = "Success",
-                Title = "Notification",
-                Description = "Dig location saved",
+                Title = "Location Saved",
+                Description = "Dig location has been saved successfully.",
                 Duration = 5
             })
         else
             SimpleUI:CreateNotification({
                 Type = "Error",
-                Title = "Notification",
-                Description = "Stand inside deposit area",
+                Title = "Invalid Location",
+                Description = "You must stand within a deposit area to save this location.",
                 Duration = 5
             })
         end
     end)
 
-    SimpleUI:CreateButton(AutoFarmSection.Container, "Set Wash Location", function()
+    SimpleUI:CreateButton(AutoFarmSection.Container, "Save Washing Location", function()
         if PanModule.getRegion(HumanoidRootPart) == "Water" then
             State.AutoFarm.waterCFrame = HumanoidRootPart.CFrame
             SimpleUI:CreateNotification({
                 Type = "Success",
-                Title = "Notification",
-                Description = "Wash location saved",
+                Title = "Location Saved",
+                Description = "Washing location has been saved successfully.",
                 Duration = 5
             })
         else
             SimpleUI:CreateNotification({
                 Type = "Error",
-                Title = "Notification",
-                Description = "Stand inside water region",
+                Title = "Invalid Location",
+                Description = "You must stand within a water region to save this location.",
                 Duration = 5
             })
         end
     end)
 
-    SimpleUI:CreateToggle(AutoFarmSection.Container, "Auto Farm", false, function(state)
+    SimpleUI:CreateToggle(AutoFarmSection.Container, "Enable Auto Farm", false, function(state)
         if state then
             AutoFarmModule.start()
         else
@@ -10913,53 +11216,53 @@ local function initializeMainTab()
         BarrierRemovalModule.removeCrocodiles()
     end)
 
-    local SellSection = SimpleUI:CreateSection(RightPage, "Selling", {
+    local SellSection = SimpleUI:CreateSection(RightPage, "Auto Sell", {
         Style = "box",
         Icon = "rbxassetid://2246496691",
         DefaultExpanded = true,
         TextSize = 15
     })
 
-    SimpleUI:CreateParagraph(SellSection.Container, "How Selling Works",
-        {"Choose sell trigger mode and configure value below.", {
-            Text = "Threshold = sell after X items.",
+    SimpleUI:CreateParagraph(SellSection.Container, "Selling Configuration",
+        {"Select your selling trigger method and configure the corresponding threshold or duration below.", {
+            Text = "Threshold Mode: Automatically sells when your inventory reaches a specified item count.",
             IsSubField = true
         }, {
-            Text = "Duration = sell every X seconds.",
+            Text = "Duration Mode: Automatically sells at regular intervals you define.",
             IsSubField = true
         }, {
-            Text = "Manual sell waits for current task to finish.",
+            Text = "Manual Selling: Waits for the current farming task to complete before initiating the sale.",
             IsSubField = true
         }})
 
-    SimpleUI:CreateDropdown(SellSection.Container, "Sell Type", {"Threshold", "Duration"}, "Threshold",
+    SimpleUI:CreateDropdown(SellSection.Container, "Selling Trigger Mode", {"Threshold", "Duration"}, "Threshold",
         function(selection)
             State.Sell.type = selection
-            Utility.createNotification("Sell type: " .. selection)
+            Utility.createNotification("Selling mode changed to: " .. selection)
         end)
 
-    SimpleUI:CreateTextInput(SellSection.Container, "Value", nil, function(input)
+    SimpleUI:CreateTextInput(SellSection.Container, "Configure Threshold or Duration", nil, function(input)
         local result, kind = Utility.validateSellValue(input)
         if result then
             if kind == "time" then
                 State.Sell.delay = result
-                Utility.createNotification("Sell every " .. result .. " seconds", 10)
+                Utility.createNotification("Inventory will be sold every " .. result .. " seconds.", 10)
             else
                 State.Sell.threshold = result
-                Utility.createNotification("Sell after " .. result .. " items", 10)
+                Utility.createNotification("Inventory will be sold after collecting " .. result .. " items.", 10)
             end
         else
-            Utility.createNotification("Use 10–2000 items OR 30 sec to 1 day duration", 10)
+            Utility.createNotification("Enter a value between 10-2000 items or 30 seconds to 1 day.", 10)
         end
     end)
 
-    SimpleUI:CreateButton(SellSection.Container, "Sell All Inventory", function()
+    SimpleUI:CreateButton(SellSection.Container, "Sell All Items Now", function()
         if TaskManager:getMainTask() then
-            return Utility.createNotification("Wait for current task to finish", 5)
+            return Utility.createNotification("Please wait for the current task to finish before selling.", 5)
         end
 
         if not TaskManager:requestTask("ManualSell", 3) then
-            return Utility.createNotification("Failed to start sell task", 5)
+            return Utility.createNotification("Unable to initiate selling sequence.", 5)
         end
 
         task.spawn(function()
@@ -10971,7 +11274,7 @@ local function initializeMainTab()
         end)
     end)
 
-    SimpleUI:CreateToggle(SellSection.Container, "Auto Sell", false, function(state)
+    SimpleUI:CreateToggle(SellSection.Container, "Enable Automatic Selling", false, function(state)
         State.Sell.autoSell = state
         State.Sell._lastSell = State.Sell._lastSell or 0
         State.Sell._scheduledSell = false
@@ -10990,66 +11293,210 @@ local function initializeMainTab()
             end)
         end
 
-        Utility.createNotification(state and "Auto Sell Enabled" or "Auto Sell Disabled")
+        Utility.createNotification(state and "Automatic Selling Enabled" or "Automatic Selling Disabled")
     end)
+end
+
+local function initializeHuntingTab()
+    local page = Tabs.Hunting.Page
+    local LeftPage = page.Left
+    local RightPage = page.Right
+
+    local GeodeSection = SimpleUI:CreateSection(LeftPage, "Geode Extraction", {
+        Style = "box",
+        Icon = "rbxassetid://9019175526",
+        DefaultExpanded = true,
+        TextSize = 15
+    })
+
+    local geodeStatus = SimpleUI:CreateParagraph(GeodeSection.Container, "Extraction Status",
+        {"Idle", "No geodes located"})
+
+    local inventoryDisplay = SimpleUI:CreateParagraph(GeodeSection.Container, "Inventory Status",
+        {HuntingModule.getFormattedInventoryStatus()})
+
+    SimpleUI:CreateParagraph(GeodeSection.Container, "Geode Extraction Guide",
+        {"Geodes are automatically detected when available in your inventory.", {
+            Text = "The system will equip geodes and automate clicking to extract contents.",
+            IsSubField = true
+        }, {
+            Text = "Extraction continues until all geodes in inventory are fully depleted or backpack is full.",
+            IsSubField = true
+        }})
+
+    SimpleUI:CreateButton(GeodeSection.Container, "Start Geode Opening", function()
+        if HuntingModule.isGeodeOpening() then
+            geodeStatus:SetFields({"Status: Already Running", "Geode extraction in progress"})
+            return
+        end
+
+        local hasGeode = HuntingModule.findGeodeInBackpack() ~= nil
+        local isEquipped = HuntingModule.isGeodeEquipped()
+        local inHotbar = HuntingModule.isGeodeInHotbar()
+
+        if not hasGeode and not isEquipped and not inHotbar then
+            geodeStatus:SetFields({"Status: Failed", "No geodes found in inventory, hotbar, or equipped"})
+            return
+        end
+
+        HuntingModule.updateInventoryCache()
+
+        if HuntingModule.isBackpackFull() then
+            geodeStatus:SetFields({"Status: Failed", "Backpack is full, cannot extract geodes"})
+            return
+        end
+
+        if HuntingModule.startGeodeOpening() then
+            geodeStatus:SetFields({"Status: Active", "Opening geodes"})
+            inventoryDisplay:SetFields({HuntingModule.getFormattedInventoryStatus()})
+
+            task.spawn(function()
+                while HuntingModule.isGeodeOpening() do
+                    inventoryDisplay:SetFields({HuntingModule.getFormattedInventoryStatus()})
+                    task.wait(0.5)
+                end
+                inventoryDisplay:SetFields({HuntingModule.getFormattedInventoryStatus()})
+            end)
+        else
+            geodeStatus:SetFields({"Status: Failed", "Unable to start geode opening"})
+        end
+    end)
+
+    SimpleUI:CreateButton(GeodeSection.Container, "Stop Geode Opening", function()
+        if not HuntingModule.isGeodeOpening() then
+            geodeStatus:SetFields({"Status: Idle", "No extraction in progress"})
+            return
+        end
+
+        HuntingModule.stopGeodeOpening()
+        geodeStatus:SetFields({"Status: Stopped", "Extraction halted"})
+        HuntingModule.updateInventoryCache()
+        inventoryDisplay:SetFields({HuntingModule.getFormattedInventoryStatus()})
+    end)
+
+    SimpleUI:CreateToggle(GeodeSection.Container, "Enable Auto Opening", false, function(state)
+        State.Hunting.autoGeode = state
+
+        if state then
+            HuntingModule.updateInventoryCache()
+
+            task.spawn(function()
+                while State.Hunting.autoGeode do
+                    local hasGeode = HuntingModule.findGeodeInBackpack() ~= nil
+                    local isEquipped = HuntingModule.isGeodeEquipped()
+                    local inHotbar = HuntingModule.isGeodeInHotbar()
+                    local isFull = HuntingModule.isBackpackFull()
+
+                    inventoryDisplay:SetFields({HuntingModule.getFormattedInventoryStatus()})
+
+                    if isFull then
+                        if HuntingModule.isGeodeOpening() then
+                            HuntingModule.stopGeodeOpening()
+                        end
+                        geodeStatus:SetFields({"Status: Paused", "Backpack full, waiting for space"})
+                    elseif hasGeode or isEquipped or inHotbar then
+                        if not HuntingModule.isGeodeOpening() then
+                            HuntingModule.startGeodeOpening()
+                            geodeStatus:SetFields({"Status: Running", "Auto-opening in progress"})
+                        end
+                    else
+                        if HuntingModule.isGeodeOpening() then
+                            HuntingModule.stopGeodeOpening()
+                        end
+                        geodeStatus:SetFields({"Status: Waiting", "Waiting for geodes to arrive"})
+
+                        if HuntingModule.waitForGeodes(5) then
+                            if HuntingModule.startGeodeOpening() then
+                                geodeStatus:SetFields({"Status: Running", "Auto-opening in progress"})
+                            end
+                        end
+                    end
+
+                    HuntingModule.updateInventoryCache()
+                    task.wait(1)
+                end
+
+                if HuntingModule.isGeodeOpening() then
+                    HuntingModule.stopGeodeOpening()
+                end
+                HuntingModule.updateInventoryCache()
+                geodeStatus:SetFields({"Status: Idle", "Auto-opening disabled"})
+                inventoryDisplay:SetFields({HuntingModule.getFormattedInventoryStatus()})
+            end)
+        else
+            if HuntingModule.isGeodeOpening() then
+                HuntingModule.stopGeodeOpening()
+            end
+            HuntingModule.updateInventoryCache()
+            geodeStatus:SetFields({"Status: Idle", "Auto-opening disabled"})
+            inventoryDisplay:SetFields({HuntingModule.getFormattedInventoryStatus()})
+        end
+    end)
+
+    local EmptySection = SimpleUI:CreateSection(RightPage, "Reserved", {
+        Style = "box",
+        DefaultExpanded = false,
+        TextSize = 15
+    })
+
+    SimpleUI:CreateParagraph(EmptySection.Container, "Future Features",
+        {"Additional hunting features will be added here in future updates. Treasure Maps are hard to get (for me since i don't farm this game or even roblox atp) and required more testing to implement properly. Stay tuned for updates!"})
 end
 
 local function initializeTeleportTab()
     local page = Tabs.Teleport.Page
-
     local LeftPage = page.Left
     local RightPage = page.Right
 
-    local WaypointsSection = SimpleUI:CreateSection(LeftPage, "Waypoints", {
+    local WaypointsSection = SimpleUI:CreateSection(LeftPage, "Fast Travel", {
         Style = "box",
         Icon = "rbxassetid://102208106546256",
         DefaultExpanded = true,
         TextSize = 15
     })
 
-    local waypointsDropdown = SimpleUI:CreateDropdown(WaypointsSection.Container, "Select Waypoint",
+    local waypointsDropdown = SimpleUI:CreateDropdown(WaypointsSection.Container, "Select Destination",
         WaypointModule.getList(), nil, function(selection)
             WaypointModule.teleport(selection)
         end, {
-            Description = "Refresh waypoints to load locations, only unlocked waypoints are available."
+            Description = "Choose a waypoint to initiate fast travel. Refresh the list to load newly unlocked destinations."
         })
 
-    SimpleUI:CreateButton(WaypointsSection.Container, "Refresh waypoints", function()
+    SimpleUI:CreateButton(WaypointsSection.Container, "Refresh Destinations", function()
         waypointsDropdown.setOptions(WaypointModule.getList())
     end)
 
-    SimpleUI:CreateButton(WaypointsSection.Container, "Unlock all waypoints", function()
+    SimpleUI:CreateButton(WaypointsSection.Container, "Unlock All Waypoints", function()
         WaypointModule.unlockAll()
     end)
 
-    SimpleUI:CreateButton(WaypointsSection.Container, "EMERGENCY TELEPORT", function()
+    SimpleUI:CreateButton(WaypointsSection.Container, "Emergency Return", function()
         local waypointFolder = Map:FindFirstChild("Waypoints")
         if waypointFolder then
             ReplicatedStorage.Remotes.Misc.FastTravel:FireServer(waypointFolder["Museum"],
                 waypointFolder["Rubble Creek"])
         end
     end, {
-        Description = "Teleports to Starter Town in cases of emergency"
+        Description = "Instantly return to the starter town in emergencies or when stuck in difficult terrain."
     })
 
-    local GeodesSection = SimpleUI:CreateSection(RightPage, "Geodes", {
+    local GeodesSection = SimpleUI:CreateSection(RightPage, "Geode Locations", {
         Style = "box",
         Icon = "rbxassetid://9019175526",
         DefaultExpanded = false,
         TextSize = 15
     })
 
-    local geodeStatus = SimpleUI:CreateParagraph(GeodesSection.Container, "Geode Teleporter", {"Scanning..."})
+    local geodeStatus = SimpleUI:CreateParagraph(GeodesSection.Container, "Geode Scanner", {"Scanning..."})
 
     local geodes = GeodeModule.getModels()
-
     geodeStatus:SetFields({#geodes > 0 and ("Found " .. #geodes .. " geodes") or "No geodes found"})
 
     SimpleUI:CreateButton(GeodesSection.Container, "Teleport to Next Geode", function()
         GeodeModule.teleportToNext(geodeStatus)
     end)
 
-    SimpleUI:CreateToggle(GeodesSection.Container, "Auto Teleport", false, function(state)
+    SimpleUI:CreateToggle(GeodesSection.Container, "Auto Teleport to Geodes", false, function(state)
         State.Geode.autoLoopEnabled = state
 
         if State.Geode.teleportConnection then
@@ -11063,7 +11510,7 @@ local function initializeTeleportTab()
             return
         end
 
-        geodeStatus:SetFields({"Auto Teleport: ON"})
+        geodeStatus:SetFields({"Auto Navigation: Active"})
         State.Geode.lastTeleportTime = tick()
 
         State.Geode.teleportConnection = Services.RunService.Heartbeat:Connect(function()
@@ -11090,7 +11537,7 @@ local function initializeTeleportTab()
         RuneModule.teleportToNext(runeStatus)
     end)
 
-    SimpleUI:CreateToggle(RunesSection.Container, "Auto Teleport", false, function(state)
+    SimpleUI:CreateToggle(RunesSection.Container, "Auto Teleport to Runes", false, function(state)
         State.Rune.autoLoopEnabled = state
 
         if State.Rune.teleportConnection then
@@ -11104,7 +11551,7 @@ local function initializeTeleportTab()
             return
         end
 
-        runeStatus:SetFields({"Auto Teleport: ON"})
+        runeStatus:SetFields({"Auto Navigation: Active"})
         State.Rune.lastTeleportTime = tick()
 
         State.Rune.teleportConnection = Services.RunService.Heartbeat:Connect(function()
@@ -11118,11 +11565,10 @@ end
 
 local function initializeToolsTab()
     local page = Tabs.Tools.Page
-
     local LeftPage = page.Left
     local RightPage = page.Right
 
-    local ReforgeSection = SimpleUI:CreateSection(LeftPage, "Reforge", {
+    local ReforgeSection = SimpleUI:CreateSection(LeftPage, "Equipment Reforging", {
         Style = "box",
         Icon = "rbxassetid://10516069182",
         DefaultExpanded = true,
@@ -11130,9 +11576,9 @@ local function initializeToolsTab()
     })
 
     local selectedGUID = nil
-    local equipmentInfo = SimpleUI:CreateParagraph(ReforgeSection.Container, "Equipment Information", {})
+    local equipmentInfo = SimpleUI:CreateParagraph(ReforgeSection.Container, "Equipment Details", {})
 
-    local equipmentReforgeDropdown = SimpleUI:CreateDropdown(ReforgeSection.Container, "Select Equipment", {}, nil,
+    local equipmentReforgeDropdown = SimpleUI:CreateDropdown(ReforgeSection.Container, "Choose Equipment", {}, nil,
         function(selection)
             if type(selection) ~= "table" then
                 selectedGUID = nil
@@ -11143,7 +11589,7 @@ local function initializeToolsTab()
             ReforgeModule.updateInfo(selectedGUID, equipmentInfo)
         end)
 
-    SimpleUI:CreateButton(ReforgeSection.Container, "Refresh Equipment", function()
+    SimpleUI:CreateButton(ReforgeSection.Container, "Load Inventory Equipment", function()
         local equipmentOptions = {}
         local nameCounts = {}
 
@@ -11173,7 +11619,7 @@ local function initializeToolsTab()
         ReforgeModule.updateInfo(nil, equipmentInfo)
     end)
 
-    SimpleUI:CreateButton(ReforgeSection.Container, "Reforge Equipment", function()
+    SimpleUI:CreateButton(ReforgeSection.Container, "Reforge Selected Equipment", function()
         local guid = ReforgeModule.perform(selectedGUID)
         if guid then
             ReforgeModule.updateInfo(guid, equipmentInfo)
@@ -11183,7 +11629,7 @@ local function initializeToolsTab()
         end
     end)
 
-    local PanEnchantsSection = SimpleUI:CreateSection(RightPage, "Pan Enchants", {
+    local PanEnchantsSection = SimpleUI:CreateSection(RightPage, "Pan Enchantment", {
         Style = "box",
         Icon = "rbxassetid://87273393473760",
         DefaultExpanded = true,
@@ -11196,7 +11642,7 @@ local function initializeToolsTab()
 
     local PanEnchantRemote = ReplicatedStorage.Remotes.Crafting.Enchant
 
-    SimpleUI:CreateDropdown(PanEnchantsSection.Container, "Select Material", {{
+    SimpleUI:CreateDropdown(PanEnchantsSection.Container, "Enchantment Material", {{
         text = "Aetherite"
     }, {
         text = "Aurorite"
@@ -11206,38 +11652,38 @@ local function initializeToolsTab()
         end
     end)
 
-    SimpleUI:CreateDropdown(PanEnchantsSection.Container, "Target Enchant", EnchantModule.getNames("pan"), nil,
+    SimpleUI:CreateDropdown(PanEnchantsSection.Container, "Target Enchantment", EnchantModule.getNames("pan"), nil,
         function(selection)
             targetPanEnchant = selection
         end, {
-            Description = "For obvious reasons you cannot get Book-Only enchants"
+            Description = "Select your desired enchantment. Book-exclusive enchantments OBVIOUSLY cannot be obtained through this method."
         })
 
-    SimpleUI:CreateButton(PanEnchantsSection.Container, "Enchant Pan", function()
+    SimpleUI:CreateButton(PanEnchantsSection.Container, "Apply Enchantment", function()
         local match = EnchantModule.findPanMaterial(selectedMaterial)
         if not match then
-            Utility.createNotification("Material not found: " .. selectedMaterial, 3)
+            Utility.createNotification("The selected material was not found in your inventory.", 3)
             return
         end
         EnchantModule.enchant(PanEnchantRemote, match, selectedMaterial)
     end)
 
-    SimpleUI:CreateButton(PanEnchantsSection.Container, "Auto Enchant Pan", function()
+    SimpleUI:CreateButton(PanEnchantsSection.Container, "Auto Enchant Until Target", function()
         if autoEnchantingPan[1] then
             autoEnchantingPan[1] = false
-            Utility.createNotification("Stopped auto enchanting pan", 2)
+            Utility.createNotification("Pan enchantment process has been stopped.", 2)
             return
         end
 
         autoEnchantingPan[1] = true
-        Utility.createNotification("Auto enchanting pan until " .. targetPanEnchant, 3)
+        Utility.createNotification("Automatically enchanting pan until " .. targetPanEnchant .. " is achieved.", 3)
 
         EnchantModule.performAuto(function()
             return EnchantModule.findPanMaterial(selectedMaterial)
         end, PanEnchantRemote, selectedMaterial, targetPanEnchant, autoEnchantingPan)
     end)
 
-    local ShovelEnchantsSection = SimpleUI:CreateSection(RightPage, "Shovel Enchants", {
+    local ShovelEnchantsSection = SimpleUI:CreateSection(RightPage, "Shovel Enchantment", {
         Style = "box",
         Icon = "rbxassetid://10098013519",
         DefaultExpanded = false,
@@ -11250,7 +11696,7 @@ local function initializeToolsTab()
 
     local ShovelEnchantRemote = ReplicatedStorage.Remotes.Crafting.EnchantShovel
 
-    SimpleUI:CreateDropdown(ShovelEnchantsSection.Container, "Select Modifier", {{
+    SimpleUI:CreateDropdown(ShovelEnchantsSection.Container, "Aetherite Modifier", {{
         text = "Iridescent"
     }, {
         text = "Voidtorn"
@@ -11262,29 +11708,29 @@ local function initializeToolsTab()
         end
     end)
 
-    SimpleUI:CreateDropdown(ShovelEnchantsSection.Container, "Target Enchant", EnchantModule.getNames("shovel"), nil,
-        function(selection)
+    SimpleUI:CreateDropdown(ShovelEnchantsSection.Container, "Target Enchantment", EnchantModule.getNames("shovel"),
+        nil, function(selection)
             targetShovelEnchant = selection
         end)
 
-    SimpleUI:CreateButton(ShovelEnchantsSection.Container, "Enchant Shovel", function()
+    SimpleUI:CreateButton(ShovelEnchantsSection.Container, "Apply Enchantment", function()
         local shovel = EnchantModule.findShovelMaterial(selectedShovelModifier)
         if not shovel then
-            Utility.createNotification("Shovel material not found", 3)
+            Utility.createNotification("The selected Aetherite variant is not in your inventory.", 3)
             return
         end
         EnchantModule.enchant(ShovelEnchantRemote, shovel, selectedShovelModifier .. " Aetherite")
     end)
 
-    SimpleUI:CreateButton(ShovelEnchantsSection.Container, "Auto Enchant Shovel", function()
+    SimpleUI:CreateButton(ShovelEnchantsSection.Container, "Auto Enchant Until Target", function()
         if autoEnchantingShovel[1] then
             autoEnchantingShovel[1] = false
-            Utility.createNotification("Stopped auto enchanting shovel", 2)
+            Utility.createNotification("Shovel enchantment process has been stopped.", 2)
             return
         end
 
         autoEnchantingShovel[1] = true
-        Utility.createNotification("Auto enchanting shovel until " .. targetShovelEnchant, 3)
+        Utility.createNotification("Automatically enchanting shovel until " .. targetShovelEnchant .. " is achieved.", 3)
 
         EnchantModule.performAuto(function()
             return EnchantModule.findShovelMaterial(selectedShovelModifier)
@@ -11298,9 +11744,9 @@ local function initializeToolsTab()
         if autoEnchantingShovel then
             autoEnchantingShovel[1] = false
         end
-        Utility.createNotification("EMERGENCY STOP - All auto enchanting terminated", 3)
+        Utility.createNotification("All active enchantment processes have been terminated.", 3)
     end, {
-        Description = "You can stop auto enchants for both pans and shovels in case they get stuck or you change your mind mid-enchant"
+        Description = "Immediately halts all automatic enchanting for both pan and shovel tools in case of interruption or preference change."
     })
 end
 
@@ -11340,7 +11786,7 @@ local function initializeCraftingTab()
         Utility.createNotification("Loaded " .. #options .. " discovered recipes", 3)
     end)
 
-    SimpleUI:CreateToggle(page, "Select Best Ores", false, function(state)
+    SimpleUI:CreateToggle(page, "Auto Select Best Materials", false, function(state)
         State.Crafting.selectBestOres = state
 
         if state and State.Crafting.selectedEquipment then
@@ -11373,7 +11819,7 @@ local function initializeCraftingTab()
         end
     end)
 
-    SimpleUI:CreateToggle(page, "Auto Craft", false, function(state)
+    SimpleUI:CreateToggle(page, "Enable Automatic Crafting", false, function(state)
         State.Crafting.autocraft = state
 
         if not state then
@@ -11425,21 +11871,21 @@ local function initializeCraftingTab()
         Description = "Continuously craft selected equipment when materials are available"
     })
 
-    SimpleUI:CreateParagraph(page, "About Select Best Ores",
-        {"This toggle acts like a two-step verification so you don't accidentally craft, you have to keep it enabled for craft to work"})
+    SimpleUI:CreateParagraph(page, "About Auto Select",
+        {"This toggle acts like a two-step verification to prevent accidental crafting. You must keep it enabled for crafting to function."})
 
-    SimpleUI:CreateSection(page, "Firefly Flare")
+    SimpleUI:CreateSection(page, "Firefly Flare Conversion")
 
     local fireflyAmount = 1
 
-    SimpleUI:CreateTextInput(page, "Craft Amount", 1, function(input)
+    SimpleUI:CreateTextInput(page, "Conversion Amount", 1, function(input)
         local value = tonumber(input)
 
         if not value or value ~= math.floor(value) then
             SimpleUI:CreateNotification({
                 Type = "Error",
                 Title = "Invalid Amount",
-                Description = "Please enter a natural number."
+                Description = "Please enter a whole number."
             })
             return
         end
@@ -11448,25 +11894,25 @@ local function initializeCraftingTab()
             SimpleUI:CreateNotification({
                 Type = "Warning",
                 Title = "Out of Range",
-                Description = "Craft amount must be between 1 and 999."
+                Description = "Conversion amount must be between 1 and 999."
             })
             return
         end
 
         fireflyAmount = value
     end, {
-        Description = "The number of Firefly Flares to craft. 1 Firefly Stone = 1 Firefly Flare"
+        Description = "The number of Firefly Flares to convert. One Firefly Stone produces one Firefly Flare."
     })
 
     local FireflyCrafting = false
     local FireflyStopRequested = false
 
-    SimpleUI:CreateButton(page, "Craft Firefly Flare", function()
+    SimpleUI:CreateButton(page, "Begin Conversion", function()
         if FireflyCrafting then
             SimpleUI:CreateNotification({
                 Type = "Warning",
-                Title = "Already Crafting",
-                Description = "Firefly crafting is already running."
+                Title = "Already Converting",
+                Description = "Firefly conversion is already in progress."
             })
             return
         end
@@ -11480,15 +11926,15 @@ local function initializeCraftingTab()
             FireflyStopRequested = false
         end)
     end, {
-        Description = "Reminder: 1 Firefly Stone = 1 Firefly Flare"
+        Description = "Begin converting Firefly Stones to Firefly Flares at the conversion table."
     })
 
-    SimpleUI:CreateButton(page, "Stop Crafting", function()
+    SimpleUI:CreateButton(page, "Stop Conversion", function()
         if not FireflyCrafting then
             SimpleUI:CreateNotification({
                 Type = "Info",
                 Title = "Idle",
-                Description = "No crafting process is running."
+                Description = "No conversion process is running."
             })
             return
         end
@@ -11497,17 +11943,18 @@ local function initializeCraftingTab()
         SimpleUI:CreateNotification({
             Type = "Warning",
             Title = "Stopping",
-            Description = "Stopping Firefly crafting..."
+            Description = "Firefly conversion is being halted."
         })
     end)
 
-    SimpleUI:CreateParagraph(page, "Information", {"You have to be near the firefly crafting table to convert."})
+    SimpleUI:CreateParagraph(page, "Conversion Requirements",
+        {"You must be near the firefly conversion table to begin converting materials."})
 end
 
 local function initializeFavouriteTab()
     local page = Tabs.Favourite.Page
 
-    SimpleUI:CreateSection(page, "Favourite")
+    SimpleUI:CreateSection(page, "Item Preservation System")
 
     local selectedModifiers = {}
     local selectedOre = nil
@@ -11522,7 +11969,7 @@ local function initializeFavouriteTab()
         MultiSelect = true
     })
 
-    SimpleUI:CreateButton(page, "Instant Favourite (Modifier)", function()
+    SimpleUI:CreateButton(page, "Preserve Items By Modifier", function()
         if #selectedModifiers == 0 then
             SimpleUI:CreateNotification({
                 Type = "Warning",
@@ -11543,21 +11990,21 @@ local function initializeFavouriteTab()
 
         SimpleUI:CreateNotification({
             Type = "Success",
-            Title = "Completed",
-            Description = "Items with selected modifiers were favourited."
+            Title = "Complete",
+            Description = "Items with selected modifiers have been preserved."
         })
     end)
 
-    SimpleUI:CreateDropdown(page, "Select Ore", CraftingModule.getOreNames(), nil, function(value)
+    SimpleUI:CreateDropdown(page, "Select Ore Type", CraftingModule.getOreNames(), nil, function(value)
         selectedOre = value
     end)
 
-    SimpleUI:CreateButton(page, "Instant Favourite (Ore)", function()
+    SimpleUI:CreateButton(page, "Preserve Items By Ore", function()
         if not selectedOre then
             SimpleUI:CreateNotification({
                 Type = "Warning",
                 Title = "No Ore Selected",
-                Description = "Select an ore first."
+                Description = "Select an ore type first."
             })
             return
         end
@@ -11570,17 +12017,17 @@ local function initializeFavouriteTab()
 
         SimpleUI:CreateNotification({
             Type = "Success",
-            Title = "Completed",
-            Description = "All matching ores were favourited."
+            Title = "Complete",
+            Description = "All matching ore items have been preserved."
         })
     end)
 
-    SimpleUI:CreateButton(page, "Favourite Selected Ore with Selected Modifiers", function()
+    SimpleUI:CreateButton(page, "Preserve Ore with Modifiers", function()
         if not selectedOre or #selectedModifiers == 0 then
             SimpleUI:CreateNotification({
                 Type = "Warning",
                 Title = "Selection Incomplete",
-                Description = "Select both an ore and at least one modifier."
+                Description = "Select both an ore type and at least one modifier."
             })
             return
         end
@@ -11598,15 +12045,15 @@ local function initializeFavouriteTab()
 
         SimpleUI:CreateNotification({
             Type = "Success",
-            Title = "Completed",
-            Description = "Matching items were favourited."
+            Title = "Complete",
+            Description = "Matching items have been preserved."
         })
     end)
 
-    SimpleUI:CreateToggle(page, "Auto Favourite", false, function(state)
+    SimpleUI:CreateToggle(page, "Enable Automatic Preservation", false, function(state)
         autoFavEnabled = state
     end, {
-        Description = "Automatically favourite items as they are obtained."
+        Description = "Automatically preserve items as they are obtained."
     })
 
     BackpackTwo.ChildAdded:Connect(function(item)
@@ -11643,53 +12090,50 @@ local function initializeFavouriteTab()
         end
     end)
 
-    SimpleUI:CreateParagraph(page, "Auto Favourite System", {"Select Modifier: Choose which modifiers are affected.",
-                                                             "Instant Favourite (Modifier): Favourite all items with selected modifiers.",
-                                                             "Select Ore: Choose an ore type.",
-                                                             "Instant Favourite (Ore): Favourite all items of that ore.",
-                                                             "Favourite Selected Ore with Selected Modifiers: Requires both selections.",
-                                                             "Auto Favourite: Automatically favourites newly obtained items based on your selections.",
-                                                             {
-        text = "[BETA] Favorite System, full version will take a little time, sorry :_]",
-        isSubField = true
-    }})
+    SimpleUI:CreateParagraph(page, "Preservation Guide", {"Select Modifier: Choose which modifiers to protect.",
+                                                          "Preserve Items By Modifier: Protects all items with selected modifiers.",
+                                                          "Select Ore Type: Choose an ore category.",
+                                                          "Preserve Items By Ore: Protects all items of that ore.",
+                                                          "Preserve Ore with Modifiers: Requires both ore and modifier selections.",
+                                                          "Enable Automatic Preservation: Protects newly obtained items based on your selections."})
 end
 
 local function initializeShopTab()
     local page = Tabs.Shop.Page
 
-    SimpleUI:CreateSection(page, "Buy items LIKE A BOSS")
+    SimpleUI:CreateSection(page, "Marketplace")
 
-    SimpleUI:CreateButton(page, "Open amazong", function()
+    SimpleUI:CreateParagraph(page, "Marketplace Access", {"Browse and purchase items from the amazong marketplace."})
+
+    SimpleUI:CreateButton(page, "Open Marketplace", function()
         amazong:Toggle()
     end)
 end
 
 local function initializeMiscellaneousTab()
     local page = Tabs.Miscellaneous.Page
-
     local LeftPage = page.Left
     local RightPage = page.Right
 
-    local ExcavationSection = SimpleUI:CreateSection(LeftPage, "Excavation", {
+    local ExcavationSection = SimpleUI:CreateSection(LeftPage, "Archaeological Sites", {
         Style = "box",
         Icon = "rbxassetid://14257565324",
         DefaultExpanded = true,
         TextSize = 15
     })
 
-    local excavationStatus = SimpleUI:CreateParagraph(ExcavationSection.Container, "Excavation Status",
+    local excavationStatus = SimpleUI:CreateParagraph(ExcavationSection.Container, "Site Status",
         {"Idle", "No site selected"})
 
-    SimpleUI:CreateDropdown(ExcavationSection.Container, "Select Excavation", ExcavationModule.getNames(), nil,
+    SimpleUI:CreateDropdown(ExcavationSection.Container, "Select Excavation Site", ExcavationModule.getNames(), nil,
         function(s)
             State.Excavation.selected = s
             excavationStatus:SetFields({"Status: Ready", "Selected: " .. tostring(s)})
         end)
 
-    SimpleUI:CreateButton(ExcavationSection.Container, "Start Excavation", function()
+    SimpleUI:CreateButton(ExcavationSection.Container, "Begin Excavation", function()
         if not State.Excavation.selected then
-            excavationStatus:SetFields({"Status: Error", "No excavation selected"})
+            excavationStatus:SetFields({"Status: Error", "No site selected"})
             return
         end
 
@@ -11701,7 +12145,7 @@ local function initializeMiscellaneousTab()
         end
     end)
 
-    SimpleUI:CreateToggle(ExcavationSection.Container, "Auto Claim", true, function(state)
+    SimpleUI:CreateToggle(ExcavationSection.Container, "Auto Claim Rewards", true, function(state)
         State.Excavation.autoClaim = state
         excavationStatus:SetFields({"Status: " .. (state and "Auto-Claim Enabled" or "Auto-Claim Disabled"),
                                     "Site: " .. tostring(State.Excavation.selected)})
@@ -11720,18 +12164,18 @@ local function initializeMiscellaneousTab()
         end)
     end)
 
-    local PlayerSettingsSection = SimpleUI:CreateSection(LeftPage, "Player Settings", {
+    local PlayerSettingsSection = SimpleUI:CreateSection(LeftPage, "Character Settings", {
         Style = "box",
         DefaultExpanded = false,
         TextSize = 15
     })
 
-    SimpleUI:CreateSection(PlayerSettingsSection.Container, "Humanoid")
+    SimpleUI:CreateSection(PlayerSettingsSection.Container, "Humanoid Properties")
 
     local jumpPower = Humanoid.JumpPower or 50
     local walkSpeedValue = Humanoid and Humanoid.WalkSpeed or 16
 
-    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Walk Speed", 0, 100, walkSpeedValue, function(val)
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Movement Speed", 0, 100, walkSpeedValue, function(val)
         pcall(function()
             walkSpeedValue = val
             if Humanoid then
@@ -11748,7 +12192,7 @@ local function initializeMiscellaneousTab()
         end)
     end
 
-    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Jump Power", 1, 100, jumpPower, function(val)
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Jump Height", 1, 100, jumpPower, function(val)
         pcall(function()
             jumpPower = val
             if Humanoid then
@@ -11767,11 +12211,12 @@ local function initializeMiscellaneousTab()
         end)
     end
 
-    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Adjust FOV", 30, 120, Camera.FieldOfView, function(value)
-        Camera.FieldOfView = value
-    end, {
-        Increment = 1
-    })
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Camera Field of View", 30, 120, Camera.FieldOfView,
+        function(value)
+            Camera.FieldOfView = value
+        end, {
+            Increment = 1
+        })
 
     local fogDensity = 0.1
     local atmosphere = Services.Lighting:FindFirstChildWhichIsA("Atmosphere") or
@@ -11783,15 +12228,15 @@ local function initializeMiscellaneousTab()
         end
     end)
 
-    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Fog Density", 0.30, 1, 0.40, function(value)
+    SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Environmental Fog Density", 0.30, 1, 0.40, function(value)
         fogDensity = value
     end, {
         Increment = 0.01
     })
 
-    SimpleUI:CreateSection(PlayerSettingsSection.Container, "ESP")
+    SimpleUI:CreateSection(PlayerSettingsSection.Container, "Entity Highlighting")
 
-    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Players ESP", false, function(enabled)
+    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Highlight Players", false, function(enabled)
         if enabled then
             ESPModule.enablePlayers()
         else
@@ -11799,7 +12244,7 @@ local function initializeMiscellaneousTab()
         end
     end)
 
-    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Totems ESP", false, function(enabled)
+    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Highlight Totems", false, function(enabled)
         if enabled then
             ESPModule.enableTotems()
         else
@@ -11807,51 +12252,53 @@ local function initializeMiscellaneousTab()
         end
     end)
 
-    SimpleUI:CreateButton(PlayerSettingsSection.Container, "Clear All ESP", function()
+    SimpleUI:CreateButton(PlayerSettingsSection.Container, "Clear All Highlights", function()
         ESPModule.clearAll()
     end)
 
-    local RemoveBarriersSection = SimpleUI:CreateSection(RightPage, "Remove Barriers", {
+    local RemoveBarriersSection = SimpleUI:CreateSection(RightPage, "Environmental Barriers", {
         Style = "box",
         Icon = {
             Image = "rbxassetid://16898613869",
+            Size = UDim2.new(0, 16, 0, 16),
             ImageRectSize = Vector2.new(48, 48),
-            ImageRectOffset = Vector2.new(98, 967)
+            ImageRectOffset = Vector2.new(820, 355),
+            ImageColor3 = Color3.fromRGB(255, 255, 255)
         },
         DefaultExpanded = false,
         TextSize = 15
     })
 
-    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Vines", function()
+    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Vine Blockades", function()
         BarrierRemovalModule.removeVines()
     end, {
-        Description = "Removes vines in Deeproot Area"
+        Description = "Clears vine obstacles in the Deeproot region."
     })
 
     SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Abyssal Gate", function()
         BarrierRemovalModule.removeAbyssalGate()
     end, {
-        Description = "Removes the 25,000 items barrier in Abyssal Depths"
+        Description = "Removes the 25,000 item barrier blocking access to Abyssal Depths."
     })
 
-    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Mountain Block", function()
+    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Peak Obstruction", function()
         BarrierRemovalModule.removeMountainBlock()
     end, {
-        Description = "Removes the big final rock to reach the summit peak"
+        Description = "Removes the final rock barrier to reach the summit peak."
     })
 
-    local ServerSection = SimpleUI:CreateSection(RightPage, "Server", {
+    local ServerSection = SimpleUI:CreateSection(RightPage, "Server Management", {
         Style = "box",
         Icon = "rbxassetid://10723405749",
         DefaultExpanded = true,
         TextSize = 15
     })
 
-    SimpleUI:CreateToggle(ServerSection.Container, "Anti-AFK", true, function(state)
+    SimpleUI:CreateToggle(ServerSection.Container, "Enable Anti-AFK Protection", true, function(state)
         ServerUtilityModule.setupAntiAFK(state)
     end)
 
-    SimpleUI:CreateButton(ServerSection.Container, "Rejoin Server", function()
+    SimpleUI:CreateButton(ServerSection.Container, "Rejoin Current Server", function()
         ServerUtilityModule.rejoin()
     end)
 
@@ -11863,9 +12310,9 @@ end
 local function initializeSettingsTab()
     local page = Tabs.Settings.Page
 
-    SimpleUI:CreateSection(page, "User Interface")
+    SimpleUI:CreateSection(page, "Interface Customization")
 
-    SimpleUI:CreateToggle(page, "Enable Inventory Filter", true, function(state)
+    SimpleUI:CreateToggle(page, "Enable Inventory Filtering", true, function(state)
         if state then
             InventoryFilterModule.create()
         else
@@ -11873,7 +12320,7 @@ local function initializeSettingsTab()
         end
     end)
 
-    SimpleUI:CreateSlider(page, "UI Scale", 0.5, 2, window.GetScale(), function(value)
+    SimpleUI:CreateSlider(page, "Interface Scale", 0.5, 2, window.GetScale(), function(value)
         window:SetScale(value, true)
     end, {
         Increment = 0.001
@@ -11884,20 +12331,21 @@ local function initializeSettingsTab()
         themes[#themes + 1] = name
     end
 
-    SimpleUI:CreateDropdown(page, "Set Theme", themes, nil, function(val)
+    SimpleUI:CreateDropdown(page, "Select Color Theme", themes, nil, function(val)
         window:SetTheme(val, true)
     end, {
-        Description = "Choose from " .. (#themes > 0 and #themes or "a variety of") .. " themes"
+        Description = "Choose from " .. (#themes > 0 and #themes or "a variety of") .. " available themes."
     })
 
     if not SimpleUI.Utility:IsMobile() then
-        SimpleUI:CreateKeybind(page, "UI visibility keybind", Enum.KeyCode.Q, function(key)
+        SimpleUI:CreateKeybind(page, "Toggle Interface Visibility", Enum.KeyCode.Q, function(key)
             window.Toggle()
         end)
     end
 end
 
 initializeMainTab()
+initializeHuntingTab()
 initializeTeleportTab()
 initializeToolsTab()
 initializeCraftingTab()
