@@ -15,7 +15,7 @@ end
 
 local SimpleUI = {}
 
-SimpleUI.Version = "2.2.5"
+SimpleUI.Version = "2.2.6"
 SimpleUI.Loaded = SimpleUI.Loaded or {}
 SimpleUI.Windows = SimpleUI.Windows or {}
 
@@ -234,39 +234,6 @@ SimpleUI.Themes = {
         TransparencyTertiary = 0.45
     },
 
-    Midnight = {
-        Primary = Color3.fromRGB(8, 9, 14),
-        Secondary = Color3.fromRGB(15, 17, 26),
-        SecondaryHover = Color3.fromRGB(22, 25, 38),
-        SecondaryActive = Color3.fromRGB(32, 36, 54),
-        SecondaryPressed = Color3.fromRGB(12, 14, 21),
-        Tertiary = Color3.fromRGB(20, 23, 35),
-        TertiaryHover = Color3.fromRGB(30, 34, 52),
-        TertiaryActive = Color3.fromRGB(42, 48, 72),
-        TertiaryPressed = Color3.fromRGB(16, 18, 29),
-        Quaternary = Color3.fromRGB(10, 12, 18),
-        QuaternaryHover = Color3.fromRGB(18, 21, 32),
-        Separator = Color3.fromRGB(38, 44, 66),
-        SeparatorTransparency = 0.20,
-        BoxBackground = Color3.fromRGB(6, 7, 11),
-        TextPrimary = Color3.fromRGB(220, 225, 245),
-        TextSecondary = Color3.fromRGB(148, 158, 195),
-        TextInactive = Color3.fromRGB(90, 98, 130),
-        TextActive = Color3.fromRGB(240, 244, 255),
-        Accent = Color3.fromRGB(99, 179, 237),
-        TabAccent = Color3.fromRGB(140, 200, 252),
-        TabIconActive = Color3.fromRGB(140, 200, 252),
-        TabIconHover = Color3.fromRGB(180, 195, 230),
-        TabIconInactive = Color3.fromRGB(90, 98, 130),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.0,
-        TransparencySecondary = 0.78,
-        TransparencyTertiary = 0.50
-    },
-
     Ember = {
         Primary = Color3.fromRGB(16, 10, 8),
         Secondary = Color3.fromRGB(28, 18, 14),
@@ -396,39 +363,6 @@ SimpleUI.Themes = {
         FontSizeSecondary = 16,
         TransparencyPrimary = 0.02,
         TransparencySecondary = 0.74,
-        TransparencyTertiary = 0.46
-    },
-
-    Graphite = {
-        Primary = Color3.fromRGB(18, 18, 20),
-        Secondary = Color3.fromRGB(30, 30, 34),
-        SecondaryHover = Color3.fromRGB(42, 42, 48),
-        SecondaryActive = Color3.fromRGB(56, 56, 64),
-        SecondaryPressed = Color3.fromRGB(24, 24, 28),
-        Tertiary = Color3.fromRGB(38, 38, 44),
-        TertiaryHover = Color3.fromRGB(52, 52, 60),
-        TertiaryActive = Color3.fromRGB(68, 68, 78),
-        TertiaryPressed = Color3.fromRGB(32, 32, 37),
-        Quaternary = Color3.fromRGB(22, 22, 26),
-        QuaternaryHover = Color3.fromRGB(34, 34, 40),
-        Separator = Color3.fromRGB(62, 62, 72),
-        SeparatorTransparency = 0.18,
-        BoxBackground = Color3.fromRGB(13, 13, 15),
-        TextPrimary = Color3.fromRGB(238, 238, 242),
-        TextSecondary = Color3.fromRGB(172, 172, 182),
-        TextInactive = Color3.fromRGB(112, 112, 124),
-        TextActive = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(168, 168, 255),
-        TabAccent = Color3.fromRGB(192, 192, 255),
-        TabIconActive = Color3.fromRGB(192, 192, 255),
-        TabIconHover = Color3.fromRGB(210, 210, 230),
-        TabIconInactive = Color3.fromRGB(112, 112, 124),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.02,
-        TransparencySecondary = 0.76,
         TransparencyTertiary = 0.46
     },
 
@@ -564,171 +498,6 @@ SimpleUI.Themes = {
         TransparencyTertiary = 0.43
     },
 
-    Onyx = {
-        Primary = Color3.fromRGB(10, 10, 12),
-        Secondary = Color3.fromRGB(18, 18, 22),
-        SecondaryHover = Color3.fromRGB(26, 27, 33),
-        SecondaryActive = Color3.fromRGB(36, 38, 46),
-        SecondaryPressed = Color3.fromRGB(14, 14, 17),
-        Tertiary = Color3.fromRGB(23, 24, 30),
-        TertiaryHover = Color3.fromRGB(33, 35, 44),
-        TertiaryActive = Color3.fromRGB(45, 48, 60),
-        TertiaryPressed = Color3.fromRGB(19, 20, 25),
-        Quaternary = Color3.fromRGB(13, 13, 16),
-        QuaternaryHover = Color3.fromRGB(23, 24, 29),
-        Separator = Color3.fromRGB(42, 44, 56),
-        SeparatorTransparency = 0.16,
-        BoxBackground = Color3.fromRGB(7, 7, 9),
-        TextPrimary = Color3.fromRGB(230, 232, 240),
-        TextSecondary = Color3.fromRGB(162, 165, 180),
-        TextInactive = Color3.fromRGB(100, 102, 118),
-        TextActive = Color3.fromRGB(248, 250, 255),
-        Accent = Color3.fromRGB(255, 255, 255),
-        TabAccent = Color3.fromRGB(235, 238, 255),
-        TabIconActive = Color3.fromRGB(255, 255, 255),
-        TabIconHover = Color3.fromRGB(195, 200, 220),
-        TabIconInactive = Color3.fromRGB(100, 102, 118),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.0,
-        TransparencySecondary = 0.80,
-        TransparencyTertiary = 0.50
-    },
-
-    CobaltSteel = {
-        Primary = Color3.fromRGB(10, 16, 28),
-        Secondary = Color3.fromRGB(16, 26, 46),
-        SecondaryHover = Color3.fromRGB(22, 38, 66),
-        SecondaryActive = Color3.fromRGB(30, 52, 90),
-        SecondaryPressed = Color3.fromRGB(13, 21, 38),
-        Tertiary = Color3.fromRGB(20, 33, 58),
-        TertiaryHover = Color3.fromRGB(28, 48, 82),
-        TertiaryActive = Color3.fromRGB(38, 64, 108),
-        TertiaryPressed = Color3.fromRGB(16, 27, 48),
-        Quaternary = Color3.fromRGB(13, 20, 36),
-        QuaternaryHover = Color3.fromRGB(20, 32, 56),
-        Separator = Color3.fromRGB(40, 64, 108),
-        SeparatorTransparency = 0.22,
-        BoxBackground = Color3.fromRGB(8, 12, 22),
-        TextPrimary = Color3.fromRGB(210, 228, 255),
-        TextSecondary = Color3.fromRGB(150, 180, 225),
-        TextInactive = Color3.fromRGB(88, 120, 172),
-        TextActive = Color3.fromRGB(232, 242, 255),
-        Accent = Color3.fromRGB(59, 198, 255),
-        TabAccent = Color3.fromRGB(100, 215, 255),
-        TabIconActive = Color3.fromRGB(100, 215, 255),
-        TabIconHover = Color3.fromRGB(162, 198, 238),
-        TabIconInactive = Color3.fromRGB(88, 120, 172),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.02,
-        TransparencySecondary = 0.76,
-        TransparencyTertiary = 0.48
-    },
-
-    Sakura = {
-        Primary = Color3.fromRGB(20, 12, 16),
-        Secondary = Color3.fromRGB(34, 20, 28),
-        SecondaryHover = Color3.fromRGB(48, 29, 40),
-        SecondaryActive = Color3.fromRGB(64, 39, 54),
-        SecondaryPressed = Color3.fromRGB(27, 16, 22),
-        Tertiary = Color3.fromRGB(43, 26, 36),
-        TertiaryHover = Color3.fromRGB(59, 36, 50),
-        TertiaryActive = Color3.fromRGB(76, 48, 66),
-        TertiaryPressed = Color3.fromRGB(36, 22, 30),
-        Quaternary = Color3.fromRGB(24, 15, 20),
-        QuaternaryHover = Color3.fromRGB(38, 24, 32),
-        Separator = Color3.fromRGB(90, 54, 74),
-        SeparatorTransparency = 0.22,
-        BoxBackground = Color3.fromRGB(15, 9, 12),
-        TextPrimary = Color3.fromRGB(252, 228, 236),
-        TextSecondary = Color3.fromRGB(210, 172, 188),
-        TextInactive = Color3.fromRGB(148, 108, 126),
-        TextActive = Color3.fromRGB(255, 242, 248),
-        Accent = Color3.fromRGB(255, 145, 175),
-        TabAccent = Color3.fromRGB(255, 178, 200),
-        TabIconActive = Color3.fromRGB(255, 178, 200),
-        TabIconHover = Color3.fromRGB(228, 185, 202),
-        TabIconInactive = Color3.fromRGB(148, 108, 126),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.02,
-        TransparencySecondary = 0.72,
-        TransparencyTertiary = 0.45
-    },
-
-    Nebula = {
-        Primary = Color3.fromRGB(12, 8, 22),
-        Secondary = Color3.fromRGB(22, 14, 40),
-        SecondaryHover = Color3.fromRGB(32, 21, 58),
-        SecondaryActive = Color3.fromRGB(44, 30, 78),
-        SecondaryPressed = Color3.fromRGB(17, 11, 32),
-        Tertiary = Color3.fromRGB(28, 18, 52),
-        TertiaryHover = Color3.fromRGB(40, 27, 74),
-        TertiaryActive = Color3.fromRGB(54, 37, 98),
-        TertiaryPressed = Color3.fromRGB(23, 15, 43),
-        Quaternary = Color3.fromRGB(15, 10, 28),
-        QuaternaryHover = Color3.fromRGB(26, 18, 48),
-        Separator = Color3.fromRGB(72, 48, 130),
-        SeparatorTransparency = 0.24,
-        BoxBackground = Color3.fromRGB(9, 6, 17),
-        TextPrimary = Color3.fromRGB(222, 210, 255),
-        TextSecondary = Color3.fromRGB(172, 155, 218),
-        TextInactive = Color3.fromRGB(110, 94, 158),
-        TextActive = Color3.fromRGB(240, 232, 255),
-        Accent = Color3.fromRGB(196, 100, 255),
-        TabAccent = Color3.fromRGB(216, 140, 255),
-        TabIconActive = Color3.fromRGB(216, 140, 255),
-        TabIconHover = Color3.fromRGB(185, 162, 228),
-        TabIconInactive = Color3.fromRGB(110, 94, 158),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.02,
-        TransparencySecondary = 0.74,
-        TransparencyTertiary = 0.47
-    },
-
-    Copper = {
-        Primary = Color3.fromRGB(18, 12, 8),
-        Secondary = Color3.fromRGB(30, 20, 13),
-        SecondaryHover = Color3.fromRGB(44, 30, 19),
-        SecondaryActive = Color3.fromRGB(60, 41, 26),
-        SecondaryPressed = Color3.fromRGB(24, 16, 10),
-        Tertiary = Color3.fromRGB(38, 26, 17),
-        TertiaryHover = Color3.fromRGB(54, 37, 24),
-        TertiaryActive = Color3.fromRGB(70, 49, 32),
-        TertiaryPressed = Color3.fromRGB(32, 21, 14),
-        Quaternary = Color3.fromRGB(21, 14, 9),
-        QuaternaryHover = Color3.fromRGB(34, 23, 15),
-        Separator = Color3.fromRGB(88, 60, 38),
-        SeparatorTransparency = 0.20,
-        BoxBackground = Color3.fromRGB(14, 9, 6),
-        TextPrimary = Color3.fromRGB(248, 230, 210),
-        TextSecondary = Color3.fromRGB(200, 174, 148),
-        TextInactive = Color3.fromRGB(136, 112, 90),
-        TextActive = Color3.fromRGB(255, 245, 230),
-        Accent = Color3.fromRGB(218, 138, 72),
-        TabAccent = Color3.fromRGB(238, 165, 105),
-        TabIconActive = Color3.fromRGB(238, 165, 105),
-        TabIconHover = Color3.fromRGB(210, 178, 148),
-        TabIconInactive = Color3.fromRGB(136, 112, 90),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.02,
-        TransparencySecondary = 0.72,
-        TransparencyTertiary = 0.45
-    },
-
     Phantom = {
         Primary = Color3.fromRGB(6, 6, 8),
         Secondary = Color3.fromRGB(14, 14, 18),
@@ -795,30 +564,195 @@ SimpleUI.Themes = {
         TransparencyTertiary = 0.46
     },
 
-    Arctic = {
-        Primary = Color3.fromRGB(14, 22, 30),
-        Secondary = Color3.fromRGB(22, 36, 50),
-        SecondaryHover = Color3.fromRGB(32, 52, 72),
-        SecondaryActive = Color3.fromRGB(44, 70, 96),
-        SecondaryPressed = Color3.fromRGB(17, 29, 40),
-        Tertiary = Color3.fromRGB(28, 45, 62),
-        TertiaryHover = Color3.fromRGB(40, 64, 88),
-        TertiaryActive = Color3.fromRGB(54, 84, 114),
-        TertiaryPressed = Color3.fromRGB(23, 37, 52),
-        Quaternary = Color3.fromRGB(17, 27, 38),
-        QuaternaryHover = Color3.fromRGB(28, 44, 60),
-        Separator = Color3.fromRGB(56, 86, 118),
+    Nebula = {
+        Primary = Color3.fromRGB(12, 8, 22),
+        Secondary = Color3.fromRGB(22, 14, 40),
+        SecondaryHover = Color3.fromRGB(32, 21, 58),
+        SecondaryActive = Color3.fromRGB(44, 30, 78),
+        SecondaryPressed = Color3.fromRGB(17, 11, 32),
+        Tertiary = Color3.fromRGB(28, 18, 52),
+        TertiaryHover = Color3.fromRGB(40, 27, 74),
+        TertiaryActive = Color3.fromRGB(54, 37, 98),
+        TertiaryPressed = Color3.fromRGB(23, 15, 43),
+        Quaternary = Color3.fromRGB(15, 10, 28),
+        QuaternaryHover = Color3.fromRGB(26, 18, 48),
+        Separator = Color3.fromRGB(72, 48, 130),
         SeparatorTransparency = 0.24,
-        BoxBackground = Color3.fromRGB(10, 17, 24),
-        TextPrimary = Color3.fromRGB(215, 234, 248),
-        TextSecondary = Color3.fromRGB(156, 188, 218),
-        TextInactive = Color3.fromRGB(94, 130, 164),
-        TextActive = Color3.fromRGB(235, 248, 255),
-        Accent = Color3.fromRGB(148, 210, 255),
-        TabAccent = Color3.fromRGB(178, 225, 255),
-        TabIconActive = Color3.fromRGB(178, 225, 255),
-        TabIconHover = Color3.fromRGB(172, 202, 228),
-        TabIconInactive = Color3.fromRGB(94, 130, 164),
+        BoxBackground = Color3.fromRGB(9, 6, 17),
+        TextPrimary = Color3.fromRGB(222, 210, 255),
+        TextSecondary = Color3.fromRGB(172, 155, 218),
+        TextInactive = Color3.fromRGB(110, 94, 158),
+        TextActive = Color3.fromRGB(240, 232, 255),
+        Accent = Color3.fromRGB(196, 100, 255),
+        TabAccent = Color3.fromRGB(216, 140, 255),
+        TabIconActive = Color3.fromRGB(216, 140, 255),
+        TabIconHover = Color3.fromRGB(185, 162, 228),
+        TabIconInactive = Color3.fromRGB(110, 94, 158),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.74,
+        TransparencyTertiary = 0.47
+    },
+
+    Sakura = {
+        Primary = Color3.fromRGB(20, 12, 16),
+        Secondary = Color3.fromRGB(34, 20, 28),
+        SecondaryHover = Color3.fromRGB(48, 29, 40),
+        SecondaryActive = Color3.fromRGB(64, 39, 54),
+        SecondaryPressed = Color3.fromRGB(27, 16, 22),
+        Tertiary = Color3.fromRGB(43, 26, 36),
+        TertiaryHover = Color3.fromRGB(59, 36, 50),
+        TertiaryActive = Color3.fromRGB(76, 48, 66),
+        TertiaryPressed = Color3.fromRGB(36, 22, 30),
+        Quaternary = Color3.fromRGB(24, 15, 20),
+        QuaternaryHover = Color3.fromRGB(38, 24, 32),
+        Separator = Color3.fromRGB(90, 54, 74),
+        SeparatorTransparency = 0.22,
+        BoxBackground = Color3.fromRGB(15, 9, 12),
+        TextPrimary = Color3.fromRGB(252, 228, 236),
+        TextSecondary = Color3.fromRGB(210, 172, 188),
+        TextInactive = Color3.fromRGB(148, 108, 126),
+        TextActive = Color3.fromRGB(255, 242, 248),
+        Accent = Color3.fromRGB(255, 145, 175),
+        TabAccent = Color3.fromRGB(255, 178, 200),
+        TabIconActive = Color3.fromRGB(255, 178, 200),
+        TabIconHover = Color3.fromRGB(228, 185, 202),
+        TabIconInactive = Color3.fromRGB(148, 108, 126),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.72,
+        TransparencyTertiary = 0.45
+    },
+
+    Crimson = {
+        Primary = Color3.fromRGB(18, 5, 5),
+        Secondary = Color3.fromRGB(34, 9, 9),
+        SecondaryHover = Color3.fromRGB(52, 14, 14),
+        SecondaryActive = Color3.fromRGB(72, 20, 20),
+        SecondaryPressed = Color3.fromRGB(26, 7, 7),
+        Tertiary = Color3.fromRGB(44, 12, 12),
+        TertiaryHover = Color3.fromRGB(62, 18, 18),
+        TertiaryActive = Color3.fromRGB(82, 26, 26),
+        TertiaryPressed = Color3.fromRGB(36, 10, 10),
+        Quaternary = Color3.fromRGB(22, 7, 7),
+        QuaternaryHover = Color3.fromRGB(38, 12, 12),
+        Separator = Color3.fromRGB(90, 28, 28),
+        SeparatorTransparency = 0.18,
+        BoxBackground = Color3.fromRGB(12, 3, 3),
+        TextPrimary = Color3.fromRGB(255, 224, 224),
+        TextSecondary = Color3.fromRGB(210, 160, 160),
+        TextInactive = Color3.fromRGB(148, 98, 98),
+        TextActive = Color3.fromRGB(255, 240, 240),
+        Accent = Color3.fromRGB(255, 55, 55),
+        TabAccent = Color3.fromRGB(255, 100, 100),
+        TabIconActive = Color3.fromRGB(255, 100, 100),
+        TabIconHover = Color3.fromRGB(225, 170, 170),
+        TabIconInactive = Color3.fromRGB(148, 98, 98),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.72,
+        TransparencyTertiary = 0.45
+    },
+
+    Amber = {
+        Primary = Color3.fromRGB(14, 11, 4),
+        Secondary = Color3.fromRGB(26, 20, 6),
+        SecondaryHover = Color3.fromRGB(40, 31, 9),
+        SecondaryActive = Color3.fromRGB(56, 44, 13),
+        SecondaryPressed = Color3.fromRGB(20, 16, 5),
+        Tertiary = Color3.fromRGB(34, 27, 8),
+        TertiaryHover = Color3.fromRGB(50, 40, 12),
+        TertiaryActive = Color3.fromRGB(68, 54, 16),
+        TertiaryPressed = Color3.fromRGB(28, 22, 6),
+        Quaternary = Color3.fromRGB(17, 13, 4),
+        QuaternaryHover = Color3.fromRGB(30, 24, 8),
+        Separator = Color3.fromRGB(80, 62, 18),
+        SeparatorTransparency = 0.20,
+        BoxBackground = Color3.fromRGB(10, 8, 2),
+        TextPrimary = Color3.fromRGB(255, 240, 190),
+        TextSecondary = Color3.fromRGB(210, 185, 120),
+        TextInactive = Color3.fromRGB(148, 124, 72),
+        TextActive = Color3.fromRGB(255, 252, 220),
+        Accent = Color3.fromRGB(255, 204, 0),
+        TabAccent = Color3.fromRGB(255, 220, 60),
+        TabIconActive = Color3.fromRGB(255, 220, 60),
+        TabIconHover = Color3.fromRGB(220, 195, 140),
+        TabIconInactive = Color3.fromRGB(148, 124, 72),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.72,
+        TransparencyTertiary = 0.45
+    },
+
+    Dusk = {
+        Primary = Color3.fromRGB(14, 10, 20),
+        Secondary = Color3.fromRGB(26, 16, 36),
+        SecondaryHover = Color3.fromRGB(40, 24, 52),
+        SecondaryActive = Color3.fromRGB(56, 34, 70),
+        SecondaryPressed = Color3.fromRGB(20, 13, 28),
+        Tertiary = Color3.fromRGB(34, 21, 48),
+        TertiaryHover = Color3.fromRGB(50, 31, 68),
+        TertiaryActive = Color3.fromRGB(68, 43, 90),
+        TertiaryPressed = Color3.fromRGB(28, 17, 40),
+        Quaternary = Color3.fromRGB(17, 12, 24),
+        QuaternaryHover = Color3.fromRGB(30, 21, 42),
+        Separator = Color3.fromRGB(80, 50, 110),
+        SeparatorTransparency = 0.20,
+        BoxBackground = Color3.fromRGB(10, 7, 15),
+        TextPrimary = Color3.fromRGB(248, 224, 210),
+        TextSecondary = Color3.fromRGB(200, 165, 185),
+        TextInactive = Color3.fromRGB(138, 108, 128),
+        TextActive = Color3.fromRGB(255, 240, 225),
+        Accent = Color3.fromRGB(255, 110, 60),
+        TabAccent = Color3.fromRGB(255, 148, 80),
+        TabIconActive = Color3.fromRGB(255, 148, 80),
+        TabIconHover = Color3.fromRGB(215, 175, 185),
+        TabIconInactive = Color3.fromRGB(138, 108, 128),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.02,
+        TransparencySecondary = 0.73,
+        TransparencyTertiary = 0.46
+    },
+
+    Verdant = {
+        Primary = Color3.fromRGB(6, 18, 8),
+        Secondary = Color3.fromRGB(10, 30, 13),
+        SecondaryHover = Color3.fromRGB(16, 44, 20),
+        SecondaryActive = Color3.fromRGB(22, 60, 28),
+        SecondaryPressed = Color3.fromRGB(8, 24, 10),
+        Tertiary = Color3.fromRGB(13, 38, 17),
+        TertiaryHover = Color3.fromRGB(20, 55, 26),
+        TertiaryActive = Color3.fromRGB(28, 74, 36),
+        TertiaryPressed = Color3.fromRGB(10, 31, 14),
+        Quaternary = Color3.fromRGB(8, 22, 10),
+        QuaternaryHover = Color3.fromRGB(14, 36, 17),
+        Separator = Color3.fromRGB(30, 90, 42),
+        SeparatorTransparency = 0.20,
+        BoxBackground = Color3.fromRGB(4, 13, 6),
+        TextPrimary = Color3.fromRGB(200, 255, 210),
+        TextSecondary = Color3.fromRGB(140, 205, 155),
+        TextInactive = Color3.fromRGB(80, 140, 96),
+        TextActive = Color3.fromRGB(220, 255, 228),
+        Accent = Color3.fromRGB(50, 220, 80),
+        TabAccent = Color3.fromRGB(90, 240, 118),
+        TabIconActive = Color3.fromRGB(90, 240, 118),
+        TabIconHover = Color3.fromRGB(148, 210, 162),
+        TabIconInactive = Color3.fromRGB(80, 140, 96),
         FontPrimary = Enum.Font.GothamBold,
         FontSecondary = Enum.Font.GothamMedium,
         FontSizePrimary = 18,
@@ -826,6 +760,39 @@ SimpleUI.Themes = {
         TransparencyPrimary = 0.02,
         TransparencySecondary = 0.74,
         TransparencyTertiary = 0.46
+    },
+
+    Tungsten = {
+        Primary = Color3.fromRGB(20, 20, 20),
+        Secondary = Color3.fromRGB(36, 36, 36),
+        SecondaryHover = Color3.fromRGB(52, 52, 52),
+        SecondaryActive = Color3.fromRGB(70, 70, 70),
+        SecondaryPressed = Color3.fromRGB(28, 28, 28),
+        Tertiary = Color3.fromRGB(46, 46, 46),
+        TertiaryHover = Color3.fromRGB(64, 64, 64),
+        TertiaryActive = Color3.fromRGB(84, 84, 84),
+        TertiaryPressed = Color3.fromRGB(38, 38, 38),
+        Quaternary = Color3.fromRGB(26, 26, 26),
+        QuaternaryHover = Color3.fromRGB(42, 42, 42),
+        Separator = Color3.fromRGB(80, 80, 80),
+        SeparatorTransparency = 0.18,
+        BoxBackground = Color3.fromRGB(14, 14, 14),
+        TextPrimary = Color3.fromRGB(230, 230, 230),
+        TextSecondary = Color3.fromRGB(170, 170, 170),
+        TextInactive = Color3.fromRGB(108, 108, 108),
+        TextActive = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(220, 180, 60),
+        TabAccent = Color3.fromRGB(240, 205, 90),
+        TabIconActive = Color3.fromRGB(240, 205, 90),
+        TabIconHover = Color3.fromRGB(195, 190, 170),
+        TabIconInactive = Color3.fromRGB(108, 108, 108),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.01,
+        TransparencySecondary = 0.76,
+        TransparencyTertiary = 0.48
     },
 
     Pearl = {
@@ -960,72 +927,6 @@ SimpleUI.Themes = {
         TransparencyTertiary = 0.15
     },
 
-    Frost = {
-        Primary = Color3.fromRGB(240, 246, 252),
-        Secondary = Color3.fromRGB(226, 236, 248),
-        SecondaryHover = Color3.fromRGB(210, 224, 244),
-        SecondaryActive = Color3.fromRGB(192, 210, 238),
-        SecondaryPressed = Color3.fromRGB(220, 231, 246),
-        Tertiary = Color3.fromRGB(206, 220, 242),
-        TertiaryHover = Color3.fromRGB(188, 207, 238),
-        TertiaryActive = Color3.fromRGB(168, 192, 232),
-        TertiaryPressed = Color3.fromRGB(198, 214, 240),
-        Quaternary = Color3.fromRGB(234, 242, 250),
-        QuaternaryHover = Color3.fromRGB(220, 232, 246),
-        Separator = Color3.fromRGB(172, 198, 228),
-        SeparatorTransparency = 0.26,
-        BoxBackground = Color3.fromRGB(250, 254, 255),
-        TextPrimary = Color3.fromRGB(16, 34, 58),
-        TextSecondary = Color3.fromRGB(60, 96, 142),
-        TextInactive = Color3.fromRGB(120, 154, 196),
-        TextActive = Color3.fromRGB(6, 20, 38),
-        Accent = Color3.fromRGB(14, 116, 208),
-        TabAccent = Color3.fromRGB(30, 140, 240),
-        TabIconActive = Color3.fromRGB(14, 116, 208),
-        TabIconHover = Color3.fromRGB(20, 52, 100),
-        TabIconInactive = Color3.fromRGB(120, 154, 196),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.0,
-        TransparencySecondary = 0.36,
-        TransparencyTertiary = 0.17
-    },
-
-    Porcelain = {
-        Primary = Color3.fromRGB(252, 252, 254),
-        Secondary = Color3.fromRGB(242, 242, 248),
-        SecondaryHover = Color3.fromRGB(230, 230, 240),
-        SecondaryActive = Color3.fromRGB(214, 214, 230),
-        SecondaryPressed = Color3.fromRGB(238, 238, 245),
-        Tertiary = Color3.fromRGB(226, 226, 236),
-        TertiaryHover = Color3.fromRGB(212, 212, 226),
-        TertiaryActive = Color3.fromRGB(196, 196, 214),
-        TertiaryPressed = Color3.fromRGB(220, 220, 232),
-        Quaternary = Color3.fromRGB(248, 248, 252),
-        QuaternaryHover = Color3.fromRGB(236, 236, 244),
-        Separator = Color3.fromRGB(196, 196, 218),
-        SeparatorTransparency = 0.32,
-        BoxBackground = Color3.fromRGB(255, 255, 255),
-        TextPrimary = Color3.fromRGB(24, 24, 36),
-        TextSecondary = Color3.fromRGB(80, 80, 110),
-        TextInactive = Color3.fromRGB(148, 148, 174),
-        TextActive = Color3.fromRGB(8, 8, 16),
-        Accent = Color3.fromRGB(99, 55, 200),
-        TabAccent = Color3.fromRGB(118, 72, 220),
-        TabIconActive = Color3.fromRGB(99, 55, 200),
-        TabIconHover = Color3.fromRGB(40, 30, 80),
-        TabIconInactive = Color3.fromRGB(148, 148, 174),
-        FontPrimary = Enum.Font.GothamBold,
-        FontSecondary = Enum.Font.GothamMedium,
-        FontSizePrimary = 18,
-        FontSizeSecondary = 16,
-        TransparencyPrimary = 0.0,
-        TransparencySecondary = 0.38,
-        TransparencyTertiary = 0.18
-    },
-
     Sage = {
         Primary = Color3.fromRGB(238, 244, 240),
         Secondary = Color3.fromRGB(224, 234, 228),
@@ -1059,30 +960,162 @@ SimpleUI.Themes = {
         TransparencyTertiary = 0.16
     },
 
-    Ivory = {
-        Primary = Color3.fromRGB(254, 252, 244),
-        Secondary = Color3.fromRGB(244, 240, 228),
-        SecondaryHover = Color3.fromRGB(232, 226, 212),
-        SecondaryActive = Color3.fromRGB(218, 210, 194),
-        SecondaryPressed = Color3.fromRGB(240, 235, 222),
-        Tertiary = Color3.fromRGB(228, 222, 206),
-        TertiaryHover = Color3.fromRGB(213, 205, 187),
-        TertiaryActive = Color3.fromRGB(196, 186, 166),
-        TertiaryPressed = Color3.fromRGB(222, 216, 200),
-        Quaternary = Color3.fromRGB(250, 247, 238),
-        QuaternaryHover = Color3.fromRGB(238, 234, 220),
-        Separator = Color3.fromRGB(196, 184, 160),
-        SeparatorTransparency = 0.25,
-        BoxBackground = Color3.fromRGB(255, 255, 250),
-        TextPrimary = Color3.fromRGB(34, 28, 14),
-        TextSecondary = Color3.fromRGB(96, 82, 52),
-        TextInactive = Color3.fromRGB(158, 142, 112),
-        TextActive = Color3.fromRGB(16, 12, 4),
-        Accent = Color3.fromRGB(168, 72, 0),
-        TabAccent = Color3.fromRGB(196, 92, 14),
-        TabIconActive = Color3.fromRGB(168, 72, 0),
-        TabIconHover = Color3.fromRGB(58, 38, 8),
-        TabIconInactive = Color3.fromRGB(158, 142, 112),
+    Harajuku = {
+        Primary = Color3.fromRGB(255, 240, 248),
+        Secondary = Color3.fromRGB(255, 224, 240),
+        SecondaryHover = Color3.fromRGB(255, 206, 230),
+        SecondaryActive = Color3.fromRGB(254, 186, 218),
+        SecondaryPressed = Color3.fromRGB(255, 216, 236),
+        Tertiary = Color3.fromRGB(252, 210, 232),
+        TertiaryHover = Color3.fromRGB(248, 190, 220),
+        TertiaryActive = Color3.fromRGB(242, 168, 206),
+        TertiaryPressed = Color3.fromRGB(251, 202, 227),
+        Quaternary = Color3.fromRGB(255, 232, 244),
+        QuaternaryHover = Color3.fromRGB(255, 218, 236),
+        Separator = Color3.fromRGB(240, 160, 210),
+        SeparatorTransparency = 0.28,
+        BoxBackground = Color3.fromRGB(255, 248, 252),
+        TextPrimary = Color3.fromRGB(100, 20, 60),
+        TextSecondary = Color3.fromRGB(180, 60, 120),
+        TextInactive = Color3.fromRGB(210, 140, 175),
+        TextActive = Color3.fromRGB(70, 8, 40),
+        Accent = Color3.fromRGB(255, 60, 140),
+        TabAccent = Color3.fromRGB(255, 100, 168),
+        TabIconActive = Color3.fromRGB(255, 60, 140),
+        TabIconHover = Color3.fromRGB(90, 16, 52),
+        TabIconInactive = Color3.fromRGB(210, 140, 175),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.34,
+        TransparencyTertiary = 0.16
+    },
+
+    Pastel = {
+        Primary = Color3.fromRGB(252, 244, 255),
+        Secondary = Color3.fromRGB(244, 228, 255),
+        SecondaryHover = Color3.fromRGB(234, 210, 255),
+        SecondaryActive = Color3.fromRGB(222, 190, 252),
+        SecondaryPressed = Color3.fromRGB(239, 220, 255),
+        Tertiary = Color3.fromRGB(228, 200, 252),
+        TertiaryHover = Color3.fromRGB(214, 178, 248),
+        TertiaryActive = Color3.fromRGB(198, 154, 242),
+        TertiaryPressed = Color3.fromRGB(222, 192, 250),
+        Quaternary = Color3.fromRGB(248, 236, 255),
+        QuaternaryHover = Color3.fromRGB(238, 220, 255),
+        Separator = Color3.fromRGB(204, 158, 240),
+        SeparatorTransparency = 0.30,
+        BoxBackground = Color3.fromRGB(255, 250, 255),
+        TextPrimary = Color3.fromRGB(52, 14, 80),
+        TextSecondary = Color3.fromRGB(118, 48, 162),
+        TextInactive = Color3.fromRGB(174, 120, 210),
+        TextActive = Color3.fromRGB(32, 6, 52),
+        Accent = Color3.fromRGB(188, 80, 255),
+        TabAccent = Color3.fromRGB(210, 120, 255),
+        TabIconActive = Color3.fromRGB(188, 80, 255),
+        TabIconHover = Color3.fromRGB(56, 12, 90),
+        TabIconInactive = Color3.fromRGB(174, 120, 210),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.35,
+        TransparencyTertiary = 0.17
+    },
+
+    Bubblegum = {
+        Primary = Color3.fromRGB(255, 238, 248),
+        Secondary = Color3.fromRGB(255, 214, 238),
+        SecondaryHover = Color3.fromRGB(255, 190, 226),
+        SecondaryActive = Color3.fromRGB(252, 164, 212),
+        SecondaryPressed = Color3.fromRGB(255, 204, 233),
+        Tertiary = Color3.fromRGB(250, 178, 222),
+        TertiaryHover = Color3.fromRGB(244, 154, 208),
+        TertiaryActive = Color3.fromRGB(236, 128, 192),
+        TertiaryPressed = Color3.fromRGB(248, 168, 216),
+        Quaternary = Color3.fromRGB(255, 228, 243),
+        QuaternaryHover = Color3.fromRGB(255, 210, 234),
+        Separator = Color3.fromRGB(238, 130, 196),
+        SeparatorTransparency = 0.26,
+        BoxBackground = Color3.fromRGB(255, 246, 252),
+        TextPrimary = Color3.fromRGB(96, 10, 56),
+        TextSecondary = Color3.fromRGB(192, 40, 120),
+        TextInactive = Color3.fromRGB(226, 130, 178),
+        TextActive = Color3.fromRGB(64, 4, 36),
+        Accent = Color3.fromRGB(255, 20, 120),
+        TabAccent = Color3.fromRGB(255, 70, 155),
+        TabIconActive = Color3.fromRGB(255, 20, 120),
+        TabIconHover = Color3.fromRGB(80, 6, 44),
+        TabIconInactive = Color3.fromRGB(226, 130, 178),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.34,
+        TransparencyTertiary = 0.16
+    },
+
+    CottonCandy = {
+        Primary = Color3.fromRGB(240, 248, 255),
+        Secondary = Color3.fromRGB(220, 236, 255),
+        SecondaryHover = Color3.fromRGB(198, 222, 255),
+        SecondaryActive = Color3.fromRGB(174, 206, 255),
+        SecondaryPressed = Color3.fromRGB(210, 230, 255),
+        Tertiary = Color3.fromRGB(192, 218, 255),
+        TertiaryHover = Color3.fromRGB(166, 202, 252),
+        TertiaryActive = Color3.fromRGB(140, 184, 248),
+        TertiaryPressed = Color3.fromRGB(180, 212, 254),
+        Quaternary = Color3.fromRGB(230, 242, 255),
+        QuaternaryHover = Color3.fromRGB(212, 230, 255),
+        Separator = Color3.fromRGB(148, 196, 255),
+        SeparatorTransparency = 0.28,
+        BoxBackground = Color3.fromRGB(248, 252, 255),
+        TextPrimary = Color3.fromRGB(10, 36, 80),
+        TextSecondary = Color3.fromRGB(40, 100, 190),
+        TextInactive = Color3.fromRGB(110, 158, 220),
+        TextActive = Color3.fromRGB(4, 20, 56),
+        Accent = Color3.fromRGB(80, 160, 255),
+        TabAccent = Color3.fromRGB(116, 184, 255),
+        TabIconActive = Color3.fromRGB(80, 160, 255),
+        TabIconHover = Color3.fromRGB(8, 32, 80),
+        TabIconInactive = Color3.fromRGB(110, 158, 220),
+        FontPrimary = Enum.Font.GothamBold,
+        FontSecondary = Enum.Font.GothamMedium,
+        FontSizePrimary = 18,
+        FontSizeSecondary = 16,
+        TransparencyPrimary = 0.0,
+        TransparencySecondary = 0.35,
+        TransparencyTertiary = 0.17
+    },
+
+    Matcha = {
+        Primary = Color3.fromRGB(236, 248, 238),
+        Secondary = Color3.fromRGB(214, 238, 218),
+        SecondaryHover = Color3.fromRGB(190, 226, 196),
+        SecondaryActive = Color3.fromRGB(164, 212, 172),
+        SecondaryPressed = Color3.fromRGB(204, 233, 209),
+        Tertiary = Color3.fromRGB(180, 220, 188),
+        TertiaryHover = Color3.fromRGB(156, 206, 166),
+        TertiaryActive = Color3.fromRGB(130, 190, 142),
+        TertiaryPressed = Color3.fromRGB(170, 214, 178),
+        Quaternary = Color3.fromRGB(226, 244, 228),
+        QuaternaryHover = Color3.fromRGB(206, 234, 210),
+        Separator = Color3.fromRGB(130, 196, 142),
+        SeparatorTransparency = 0.28,
+        BoxBackground = Color3.fromRGB(246, 254, 248),
+        TextPrimary = Color3.fromRGB(10, 44, 18),
+        TextSecondary = Color3.fromRGB(34, 110, 52),
+        TextInactive = Color3.fromRGB(96, 164, 110),
+        TextActive = Color3.fromRGB(4, 26, 10),
+        Accent = Color3.fromRGB(60, 168, 84),
+        TabAccent = Color3.fromRGB(88, 196, 112),
+        TabIconActive = Color3.fromRGB(60, 168, 84),
+        TabIconHover = Color3.fromRGB(10, 50, 20),
+        TabIconInactive = Color3.fromRGB(96, 164, 110),
         FontPrimary = Enum.Font.GothamBold,
         FontSecondary = Enum.Font.GothamMedium,
         FontSizePrimary = 18,
@@ -1110,16 +1143,18 @@ do
             [ErrorLevels.ERROR] = "255,100,100",
             [ErrorLevels.CRITICAL] = "255,0,0"
         }
-        RunService.Heartbeat:Connect(function()
-            local Console = CoreGui:FindFirstChild("DevConsoleMaster")
-            if Console then
-                for _, v in pairs(Console:GetDescendants()) do
-                    if v:IsA("TextLabel") then
+        if SimpleUI.ErrorHandler.Level >= SimpleUI.ErrorHandler.Levels.WARN then
+            CoreGui.DescendantAdded:Connect(function(v)
+                if v:IsA("TextLabel") then
+                    local ok, parent = pcall(function()
+                        return v.Parent
+                    end)
+                    if ok and parent and parent.Name == "DevConsoleMaster" then
                         v.RichText = true
                     end
                 end
-            end
-        end)
+            end)
+        end
         local function RichPrint(Color, Text)
             local RGB = Colors[Color] or "255,255,255"
             print('<font color="rgb(' .. RGB .. ')">' .. tostring(Text) .. '</font>')
@@ -1327,6 +1362,45 @@ do
         end
     end
 
+    SimpleUI.ConnectionRegistry = {}
+    do
+        function SimpleUI.ConnectionRegistry:New()
+            local registry = {
+                _connections = {}
+            }
+
+            function registry:Add(connection)
+                if connection and typeof(connection) == "RBXScriptConnection" then
+                    table.insert(self._connections, connection)
+                end
+                return connection
+            end
+
+            function registry:Remove(connection)
+                for i, c in ipairs(self._connections) do
+                    if c == connection then
+                        if c.Connected then
+                            c:Disconnect()
+                        end
+                        table.remove(self._connections, i)
+                        return
+                    end
+                end
+            end
+
+            function registry:Cleanup()
+                for _, c in ipairs(self._connections) do
+                    if c.Connected then
+                        c:Disconnect()
+                    end
+                end
+                table.clear(self._connections)
+            end
+
+            return registry
+        end
+    end
+
     SimpleUI.MetatableProtection = {}
     do
         local ProtectedObjects = {}
@@ -1449,6 +1523,13 @@ do
                 Element.Parent = LocalPlayer:WaitForChild("CoreGui", math.huge)
             end
         end
+
+        function SimpleUI.Utility:Tween(object, tweenInfo, properties)
+            if not object or not object.Parent then
+                return
+            end
+            TweenService:Create(object, tweenInfo, properties):Play()
+        end
     end
 
     SimpleUI.ThemeManager = {}
@@ -1459,7 +1540,9 @@ do
                 return false
             end
             Window.ThemeData = {
-                Elements = {},
+                Elements = setmetatable({}, {
+                    __mode = "k"
+                }),
                 CurrentTheme = Window.Theme or SimpleUI.Themes.Obsidian
             }
             return true
@@ -1889,6 +1972,7 @@ do
             if not SimpleUI.ErrorHandler:ValidateInstance(Config.Parent, "GuiObject", "ComponentBuilder:CreateContainer") then
                 return nil
             end
+            local IsDualScroll = Config.Parent:GetAttribute("IsDualScroll") or false
             local Container = SimpleUI.Utility:CreateInstance("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y,
@@ -1927,7 +2011,7 @@ do
                 PaddingTop = UDim.new(0, Padding.Top or SimpleUI.Constants.Padding.Medium),
                 PaddingBottom = UDim.new(0, Padding.Bottom or SimpleUI.Constants.Padding.Medium),
                 PaddingLeft = UDim.new(0, Padding.Left or SimpleUI.Constants.Padding.Large),
-                PaddingRight = UDim.new(0, Padding.Right or 0)
+                PaddingRight = UDim.new(0, IsDualScroll and -8 or (Padding.Right or SimpleUI.Constants.Padding.Medium))
             }, Container)
             local TextZone, InteractiveZone, Layout
             if Config.Layout == "TextLeft" then
@@ -3268,6 +3352,8 @@ do
                 ZIndex = ZI.Control + 1
             }, Border)
 
+            Content:SetAttribute("IsDualScroll", false)
+
             local ContentPadding = U:CreateInstance("UIPadding", {
                 PaddingTop = UDim.new(0, PAD.Medium),
                 PaddingBottom = UDim.new(0, PAD.Large),
@@ -3994,6 +4080,7 @@ function SimpleUI:CreateWindow(options)
         self.WindowBuilder:CreateContentAreas(mainContainer, mainFrame, topBar, options)
 
     local window = {
+        _connections = SimpleUI.ConnectionRegistry:New(),
         Theme = theme,
         TabMode = options.TabMode or self.Constants.Window.TabModes.Fixed,
         TabsExpanded = true,
@@ -4001,7 +4088,6 @@ function SimpleUI:CreateWindow(options)
         ActivePage = nil,
         TabCallbacks = {},
         Scale = uiScale,
-
         Elements = {
             ScreenGui = screenGui,
             MainFrame = mainFrame,
@@ -4425,7 +4511,7 @@ function SimpleUI:CreateWindow(options)
         end,
 
         Destroy = function(self)
-            SimpleUI.Security:DisconnectAll()
+            self._connections:Cleanup()
             SimpleUI.Windows[screenGui] = nil
             screenGui:Destroy()
         end,
@@ -4936,7 +5022,6 @@ function SimpleUI:CreatePage(Window, Name, Options)
             PaddingLeft = UDim.new(0, 2),
             PaddingRight = UDim.new(0, 2)
         }, LeftPage)
-
         local RightPage = self.Utility:CreateInstance("Frame", {
             Name = Name .. "PageRight",
             Size = UDim2.new(0.5, -4, 1, 0),
@@ -4958,7 +5043,6 @@ function SimpleUI:CreatePage(Window, Name, Options)
             PaddingLeft = UDim.new(0, 2),
             PaddingRight = UDim.new(0, 2)
         }, RightPage)
-
         local PageWrapper = {
             Container = PageContainer,
             Left = LeftPage,
