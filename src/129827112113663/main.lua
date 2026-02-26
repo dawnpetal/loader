@@ -1143,18 +1143,49 @@ do
             [ErrorLevels.ERROR] = "255,100,100",
             [ErrorLevels.CRITICAL] = "255,0,0"
         }
-        if SimpleUI.ErrorHandler.Level >= SimpleUI.ErrorHandler.Levels.WARN then
-            CoreGui.DescendantAdded:Connect(function(v)
-                if v:IsA("TextLabel") then
-                    local ok, parent = pcall(function()
-                        return v.Parent
-                    end)
-                    if ok and parent and parent.Name == "DevConsoleMaster" then
-                        v.RichText = true
+
+        local function AlwaysRichText()
+            local CoreGui = game:GetService("CoreGui")
+
+            local function SetRich(v)
+                if v:IsA("TextLabel") and v.Parent and v.Parent.Name == "DevConsoleMaster" then
+                    v.RichText = true
+                end
+            end
+
+            local function HookConsole(console)
+                for _, v in pairs(console:GetDescendants()) do
+                    SetRich(v)
+                end
+                console.DescendantAdded:Connect(SetRich)
+            end
+
+            local console = CoreGui:FindFirstChild("DevConsoleMaster")
+            if console then
+                HookConsole(console)
+            end
+
+            CoreGui.ChildAdded:Connect(function(c)
+                if c.Name == "DevConsoleMaster" then
+                    HookConsole(c)
+                end
+            end)
+
+            spawn(function()
+                while true do
+                    local c = CoreGui:FindFirstChild("DevConsoleMaster")
+                    if c then
+                        for _, v in pairs(c:GetDescendants()) do
+                            SetRich(v)
+                        end
                     end
+                    task.wait(0.1)
                 end
             end)
         end
+
+        AlwaysRichText()
+
         local function RichPrint(Color, Text)
             local RGB = Colors[Color] or "255,255,255"
             print('<font color="rgb(' .. RGB .. ')">' .. tostring(Text) .. '</font>')
