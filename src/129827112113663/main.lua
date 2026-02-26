@@ -15,7 +15,7 @@ end
 
 local SimpleUI = {}
 
-SimpleUI.Version = "2.2.6"
+SimpleUI.Version = "2.2.7"
 SimpleUI.Loaded = SimpleUI.Loaded or {}
 SimpleUI.Windows = SimpleUI.Windows or {}
 
@@ -1144,47 +1144,16 @@ do
             [ErrorLevels.CRITICAL] = "255,0,0"
         }
 
-        local function AlwaysRichText()
-            local CoreGui = game:GetService("CoreGui")
-
-            local function SetRich(v)
-                if v:IsA("TextLabel") and v.Parent and v.Parent.Name == "DevConsoleMaster" then
-                    v.RichText = true
-                end
-            end
-
-            local function HookConsole(console)
-                for _, v in pairs(console:GetDescendants()) do
-                    SetRich(v)
-                end
-                console.DescendantAdded:Connect(SetRich)
-            end
-
-            local console = CoreGui:FindFirstChild("DevConsoleMaster")
-            if console then
-                HookConsole(console)
-            end
-
-            CoreGui.ChildAdded:Connect(function(c)
-                if c.Name == "DevConsoleMaster" then
-                    HookConsole(c)
-                end
-            end)
-
-            spawn(function()
-                while true do
-                    local c = CoreGui:FindFirstChild("DevConsoleMaster")
-                    if c then
-                        for _, v in pairs(c:GetDescendants()) do
-                            SetRich(v)
-                        end
+        RunService.Heartbeat:Connect(function()
+            local Console = CoreGui:FindFirstChild("DevConsoleMaster")
+            if Console then
+                for _, v in pairs(Console:GetDescendants()) do
+                    if v:IsA("TextLabel") then
+                        v.RichText = true
                     end
-                    task.wait(0.1)
                 end
-            end)
-        end
-
-        AlwaysRichText()
+            end
+        end)
 
         local function RichPrint(Color, Text)
             local RGB = Colors[Color] or "255,255,255"
@@ -1285,7 +1254,7 @@ do
 
         function SimpleUI.ErrorHandler:Try(Func, Fallback)
             local Success, Result = pcall(Func)
-            if not Success or not Result then
+            if not Success then
                 return Fallback and Fallback() or nil
             end
             return Result
@@ -1571,9 +1540,7 @@ do
                 return false
             end
             Window.ThemeData = {
-                Elements = setmetatable({}, {
-                    __mode = "k"
-                }),
+                Elements = {},
                 CurrentTheme = Window.Theme or SimpleUI.Themes.Obsidian
             }
             return true
@@ -1608,11 +1575,21 @@ do
             end
             for Property, ThemeKey in pairs(Bindings) do
                 if EH:ValidateType(Property, "string", "Property", "ThemeManager:RegisterElement") then
-                    table.insert(Window.ThemeData.Elements, {
-                        Element = Element,
-                        Property = Property,
-                        ThemeKey = ThemeKey
-                    })
+                    local found = false
+                    for _, existing in ipairs(Window.ThemeData.Elements) do
+                        if existing.Element == Element and existing.Property == Property then
+                            existing.ThemeKey = ThemeKey
+                            found = true
+                            break
+                        end
+                    end
+                    if not found then
+                        table.insert(Window.ThemeData.Elements, {
+                            Element = Element,
+                            Property = Property,
+                            ThemeKey = ThemeKey
+                        })
+                    end
                 end
             end
             return true
@@ -1659,11 +1636,10 @@ do
             end
             return EH:Try(function()
                 if Animate and (Property:find("Color") or Property:find("Transparency")) then
-                    local Tween = TweenService:Create(Element, TweenInfo.new(SimpleUI.Constants.Animation.Normal,
-                        Enum.EasingStyle.Quad), {
-                        [Property] = Value
-                    })
-                    Tween:Play()
+                    TweenService:Create(Element,
+                        TweenInfo.new(SimpleUI.Constants.Animation.Normal, Enum.EasingStyle.Quad), {
+                            [Property] = Value
+                        }):Play()
                 else
                     Element[Property] = Value
                 end
@@ -1692,22 +1668,27 @@ do
             end
             Window.ThemeData.CurrentTheme = NewTheme
             Window.Theme = NewTheme
+            local alive = {}
+            for _, Entry in ipairs(Window.ThemeData.Elements) do
+                if Entry.Element and Entry.Element.Parent then
+                    table.insert(alive, Entry)
+                end
+            end
+            Window.ThemeData.Elements = alive
             local ProcessedElements = {}
             for _, Entry in ipairs(Window.ThemeData.Elements) do
                 local Element = Entry.Element
                 local Property = Entry.Property
-                if Element and Element.Parent then
-                    ProcessedElements[Element] = ProcessedElements[Element] or {}
-                    if not ProcessedElements[Element][Property] then
-                        ProcessedElements[Element][Property] = true
-                        EH:Try(function()
-                            if type(Entry.ThemeKey) == "function" then
-                                Entry.ThemeKey(Element, NewTheme)
-                            else
-                                self:ApplyToElement(Element, Property, Entry.ThemeKey, NewTheme, Animate)
-                            end
-                        end)
-                    end
+                ProcessedElements[Element] = ProcessedElements[Element] or {}
+                if not ProcessedElements[Element][Property] then
+                    ProcessedElements[Element][Property] = true
+                    EH:Try(function()
+                        if type(Entry.ThemeKey) == "function" then
+                            Entry.ThemeKey(Element, NewTheme)
+                        else
+                            self:ApplyToElement(Element, Property, Entry.ThemeKey, NewTheme, Animate)
+                        end
+                    end)
                 end
             end
             return true
@@ -9239,9 +9220,61 @@ end
 
 local CraftingModule = {}
 do
+    local Modifiers = require(ReplicatedStorage.GameInfo.Modifiers)
+
+    local function determineQuality(selected, recipe)
+        local totalScore = 0
+        local totalCount = 0
+        for materialName, req in pairs(recipe.Materials) do
+            local sel = selected[materialName]
+            if not sel then return nil end
+            for i = 1, #sel do
+                local tool = sel[i]
+                local d = tool:FindFirstChild("ItemData")
+                if d then
+                    local w = d:GetAttribute("Weight") or 0
+                    local mod = d:GetAttribute("Modifier")
+                    if mod and Modifiers[mod] then
+                        w = w * Modifiers[mod].Multiplier
+                    end
+                    totalScore = totalScore + ((w - (req.MinWeight or 0)) / req.QualityStep + 1)
+                    totalCount = totalCount + 1
+                end
+            end
+            if #sel < req.Amount then return nil end
+        end
+        if totalCount == 0 then return nil end
+        return math.clamp(math.floor(totalScore / totalCount), 1, 5)
+    end
+
+    local function getTools()
+        local tools = {}
+        local backpack = BackpackTwo:GetChildren()
+        for i = 1, #backpack do
+            tools[#tools + 1] = backpack[i]
+        end
+        local char = Character
+        if char then
+            local t = char:FindFirstChildOfClass("Tool")
+            if t then tools[#tools + 1] = t end
+        end
+        return tools
+    end
+
+    local function effectiveWeight(tool)
+        local d = tool:FindFirstChild("ItemData")
+        if not d then return 0 end
+        local w = d:GetAttribute("Weight") or 0
+        local mod = d:GetAttribute("Modifier")
+        if mod and Modifiers[mod] then
+            w = w * Modifiers[mod].Multiplier
+        end
+        return w
+    end
+
     function CraftingModule.getModifierNames()
         local t = {}
-        for k in pairs(require(ReplicatedStorage.GameInfo.Modifiers)) do
+        for k in pairs(Modifiers) do
             t[#t + 1] = k
         end
         return t
@@ -9256,228 +9289,195 @@ do
     end
 
     function CraftingModule.getDiscoveredRecipes()
-        local discovered = {}
-        local discoveredIDs = {}
-
-        local UpdateRemote = ReplicatedStorage.Remotes.Crafting.UpdateDiscoveredEquipment
-
+        local ids = {}
         local waiting = true
         local conn
-
-        conn = UpdateRemote.OnClientEvent:Connect(function(ids)
-            discoveredIDs = ids
+        conn = ReplicatedStorage.Remotes.Crafting.UpdateDiscoveredEquipment.OnClientEvent:Connect(function(data)
+            ids = data
             waiting = false
             conn:Disconnect()
         end)
-
-        UpdateRemote:FireServer()
-
-        local timeout = 5
-        local elapsed = 0
-        while waiting and elapsed < timeout do
+        ReplicatedStorage.Remotes.Crafting.UpdateDiscoveredEquipment:FireServer()
+        local t = 0
+        while waiting and t < 5 do
             task.wait(0.1)
-            elapsed = elapsed + 0.1
+            t = t + 0.1
         end
 
+        local recipes = {}
         for _, item in ipairs(ReplicatedStorage.Items.Equipment:GetChildren()) do
-            if item:GetAttribute("Hidden") then
-                local itemID = item:GetAttribute("ItemID")
-                if itemID and table.find(discoveredIDs, itemID) then
-                    local equipData = item:FindFirstChild("EquipmentData")
-                    if equipData and equipData:IsA("ModuleScript") then
-                        local success, data = pcall(require, equipData)
-                        if success and data.Materials then
-                            table.insert(discovered, {
-                                Name = item.Name,
-                                Item = item,
-                                Data = data
-                            })
+            local equipData = item:FindFirstChild("EquipmentData")
+            if equipData and equipData:IsA("ModuleScript") then
+                local ok, data = pcall(require, equipData)
+                if ok and data.Materials then
+                    local hidden = item:GetAttribute("Hidden")
+                    local admin = item:GetAttribute("AdminLimited")
+                    local xmas = item:GetAttribute("ChristmasLimited")
+                    local add = false
+                    if hidden then
+                        if table.find(ids, item:GetAttribute("ItemID")) then
+                            add = true
+                        end
+                    elseif not admin and not xmas then
+                        add = true
+                    end
+                    if add then
+                        recipes[#recipes + 1] = {Name = item.Name, Item = item, Data = data}
+                    end
+                end
+            end
+        end
+
+        table.sort(recipes, function(a, b) return a.Name < b.Name end)
+        return recipes
+    end
+
+    function CraftingModule.getOwned(materialName, minWeight)
+        local owned = {}
+        local tools = getTools()
+        for i = 1, #tools do
+            local tool = tools[i]
+            if tool.Name == materialName then
+                local d = tool:FindFirstChild("ItemData")
+                if d then
+                    local w = d:GetAttribute("Weight") or 0
+                    if w >= (minWeight or 0) then
+                        owned[#owned + 1] = tool
+                    end
+                end
+            end
+        end
+        return owned
+    end
+
+    function CraftingModule.selectBest(recipe)
+        local selected = {}
+        for materialName, req in pairs(recipe.Materials) do
+            local owned = CraftingModule.getOwned(materialName, req.MinWeight)
+            table.sort(owned, function(a, b)
+                return effectiveWeight(a) > effectiveWeight(b)
+            end)
+            selected[materialName] = {}
+            local limit = math.min(req.Amount, #owned)
+            for i = 1, limit do
+                selected[materialName][i] = owned[i]
+            end
+        end
+        return selected
+    end
+
+    function CraftingModule.buildFields(eq, selected)
+        local recipe = eq.Data
+        local fields = {}
+        local LINE = "- - - - - - - - - - - - - -"
+
+        fields[#fields + 1] = eq.Name
+        fields[#fields + 1] = {Text = "Price:" .. Utility.formatPrice(recipe.Price or 0), IsSubField = true}
+        fields[#fields + 1] = {Text = LINE, IsSubField = true}
+
+        local allReady = true
+        local missingCount = 0
+
+        for materialName, req in pairs(recipe.Materials) do
+            local owned = CraftingModule.getOwned(materialName, req.MinWeight)
+            local sel = selected[materialName] or {}
+            local count = 0
+            for i = 1, #sel do
+                if sel[i] and sel[i].Parent then
+                    count = count + 1
+                end
+            end
+
+            if count < req.Amount then
+                allReady = false
+                missingCount = missingCount + (req.Amount - count)
+            end
+
+            local icon = count >= req.Amount and "[+]" or "[-]"
+            local label
+            if req.MinWeight and req.MinWeight > 0 then
+                label = string.format("%s %s [+%dkg]  %d/%d  (%d owned)",
+                    icon, materialName, req.MinWeight, count, req.Amount, #owned)
+            else
+                label = string.format("%s %s  %d/%d  (%d owned)",
+                    icon, materialName, count, req.Amount, #owned)
+            end
+            fields[#fields + 1] = {Text = label, IsSubField = true}
+        end
+
+        fields[#fields + 1] = {Text = LINE, IsSubField = true}
+
+        if allReady then
+            local quality = determineQuality(selected, recipe)
+
+            if quality then
+                local stars = string.rep("☆", quality) .. string.rep(".", 5 - quality)
+                local qualityNames = {"Poor", "Common", "Good", "Great", "Perfect"}
+                fields[#fields + 1] = "Quality: [" .. stars .. "]  " .. qualityNames[quality]
+
+                if recipe.Stats then
+                    local ok, ItemStatsInfo = pcall(require, ReplicatedStorage.GameInfo.ItemStatsInfo)
+                    local ok2, FormatNumber = pcall(require, ReplicatedStorage.Modules.Utility.FormatNumber)
+                    if ok and ok2 then
+                        for statName, statData in pairs(recipe.Stats) do
+                            local info = ItemStatsInfo[statName]
+                            if info then
+                                local minVal = statData.Min + statData.QualityStep * (quality - 1)
+                                local maxVal = statData.Min + statData.QualityStep * quality
+                                local statText
+                                if info.Percentage then
+                                    statText = string.format("  %s: %.0f%% - %.0f%%",
+                                        info.DisplayName, minVal * 100, maxVal * 100)
+                                else
+                                    statText = string.format("  %s: %s - %s",
+                                        info.DisplayName,
+                                        FormatNumber.Format(minVal),
+                                        FormatNumber.Format(maxVal))
+                                end
+                                fields[#fields + 1] = {Text = statText, IsSubField = true}
+                            end
                         end
                     end
                 end
-            elseif not item:GetAttribute("AdminLimited") and not item:GetAttribute("ChristmasLimited") then
-                local equipData = item:FindFirstChild("EquipmentData")
-                if equipData and equipData:IsA("ModuleScript") then
-                    local success, data = pcall(require, equipData)
-                    if success and data.Materials then
-                        table.insert(discovered, {
-                            Name = item.Name,
-                            Item = item,
-                            Data = data
-                        })
-                    end
+
+                if quality < 5 then
+                    fields[#fields + 1] = {Text = "Use heavier materials for better quality", IsSubField = true}
+                else
+                    fields[#fields + 1] = {Text = "Maximum quality achieved", IsSubField = true}
+                end
+            else
+                fields[#fields + 1] = "Quality: [.....]  Unknown"
+            end
+
+            fields[#fields + 1] = {Text = LINE, IsSubField = true}
+            fields[#fields + 1] = "Ready to craft"
+        else
+            fields[#fields + 1] = "Missing " .. missingCount .. " material" .. (missingCount == 1 and "" or "s")
+        end
+
+        return fields
+    end
+
+    function CraftingModule.canCraft(recipe, selected)
+        for materialName, req in pairs(recipe.Materials) do
+            local sel = selected[materialName] or {}
+            local count = 0
+            for i = 1, #sel do
+                if sel[i] and sel[i].Parent then
+                    count = count + 1
                 end
             end
+            if count < req.Amount then return false end
         end
-
-        table.sort(discovered, function(a, b)
-            return a.Name < b.Name
-        end)
-
-        return discovered
-    end
-
-    function CraftingModule.getAvailableMaterials(materialName, minWeight)
-        local available = {}
-        local backpackItems = BackpackTwo:GetChildren()
-        local charTool = Character and Character:FindFirstChildOfClass("Tool")
-
-        if charTool then
-            table.insert(backpackItems, charTool)
-        end
-
-        for _, tool in ipairs(backpackItems) do
-            if tool.Name == materialName then
-                local itemData = tool:FindFirstChild("ItemData")
-                if itemData then
-                    local weight = itemData:GetAttribute("Weight") or 0
-                    if weight >= (minWeight or 0) then
-                        table.insert(available, tool)
-                    end
-                end
-            end
-        end
-
-        return available
-    end
-
-    function CraftingModule.compareMaterialQuality(a, b)
-        local ModifiersModule = require(ReplicatedStorage.GameInfo.Modifiers)
-
-        local weightA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Weight") or 0
-        local weightB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Weight") or 0
-
-        local modifierA = a:FindFirstChild("ItemData") and a.ItemData:GetAttribute("Modifier")
-        local modifierB = b:FindFirstChild("ItemData") and b.ItemData:GetAttribute("Modifier")
-
-        if modifierA and ModifiersModule[modifierA] then
-            weightA = weightA * ModifiersModule[modifierA].Multiplier
-        end
-
-        if modifierB and ModifiersModule[modifierB] then
-            weightB = weightB * ModifiersModule[modifierB].Multiplier
-        end
-
-        return weightB < weightA
-    end
-
-    function CraftingModule.calculateQuality(materials, recipe)
-        local QualityModule = require(ReplicatedStorage.Modules.Inventory.CraftingQuality)
-        return QualityModule.DetermineQuality(materials, recipe)
-    end
-
-    function CraftingModule.updateStatus(craftingStatus)
-        if not State.Crafting.selectedEquipment then
-            craftingStatus:SetFields({"No equipment selected", "Select an equipment to begin"})
-            return
-        end
-
-        local recipe = State.Crafting.selectedEquipment.Data
-        local fields = {"Equipment: " .. State.Crafting.selectedEquipment.Name,
-                        "Price: " .. Utility.formatPrice(recipe.Price or 0)}
-
-        local allMaterialsAvailable = true
-
-        for materialName, requirements in pairs(recipe.Materials) do
-            local selectedCount = State.Crafting.selectedMaterials[materialName] and
-                                      #State.Crafting.selectedMaterials[materialName] or 0
-            local required = requirements.Amount
-            local available = #CraftingModule.getAvailableMaterials(materialName, requirements.MinWeight)
-
-            local status = string.format("%s: %d/%d selected (%d available)", materialName, selectedCount, required,
-                available)
-
-            if selectedCount < required then
-                allMaterialsAvailable = false
-            end
-
-            table.insert(fields, {
-                text = status,
-                isSubField = true
-            })
-        end
-
-        local quality = CraftingModule.calculateQuality(State.Crafting.selectedMaterials, recipe)
-
-        if quality then
-            local starDisplay = string.rep("★", quality)
-            table.insert(fields, "Quality: " .. starDisplay .. " (" .. quality .. "/5)")
-
-            if quality < 5 then
-                table.insert(fields, {
-                    text = "⚠ Not maximum quality - you can still craft",
-                    isSubField = true
-                })
-            end
-        else
-            table.insert(fields, "Quality: ??? (insufficient materials)")
-        end
-
-        if allMaterialsAvailable then
-            table.insert(fields, "✅ Ready to craft")
-        else
-            table.insert(fields, "❌ Missing materials")
-        end
-
-        craftingStatus:SetFields(fields)
-    end
-
-    function CraftingModule.selectBestMaterials(craftingStatus)
-        if not State.Crafting.selectedEquipment then
-            return
-        end
-
-        State.Crafting.selectedMaterials = {}
-
-        local recipe = State.Crafting.selectedEquipment.Data
-
-        for materialName, requirements in pairs(recipe.Materials) do
-            local available = CraftingModule.getAvailableMaterials(materialName, requirements.MinWeight)
-            table.sort(available, CraftingModule.compareMaterialQuality)
-
-            State.Crafting.selectedMaterials[materialName] = {}
-
-            for i = 1, math.min(requirements.Amount, #available) do
-                table.insert(State.Crafting.selectedMaterials[materialName], available[i])
-            end
-        end
-
-        CraftingModule.updateStatus(craftingStatus)
-    end
-
-    function CraftingModule.canCraft()
-        if not State.Crafting.selectedEquipment then
-            return false
-        end
-
-        local recipe = State.Crafting.selectedEquipment.Data
-
-        for materialName, requirements in pairs(recipe.Materials) do
-            local selectedCount = State.Crafting.selectedMaterials[materialName] and
-                                      #State.Crafting.selectedMaterials[materialName] or 0
-            if selectedCount < requirements.Amount then
-                return false
-            end
-        end
-
         return true
     end
 
-    function CraftingModule.perform(equipmentItem, recipe, materials)
-        local CraftRemote = ReplicatedStorage.Remotes.Crafting.CraftEquipment
-
-        local success, result, model, craftedItem, auxData = pcall(function()
-            return CraftRemote:InvokeServer(equipmentItem, materials)
+    function CraftingModule.craft(equipmentItem, selected)
+        local ok, result, _, craftedItem = pcall(function()
+            return ReplicatedStorage.Remotes.Crafting.CraftEquipment:InvokeServer(equipmentItem, selected)
         end)
-
-        if not success then
-            return false, "Remote call failed"
-        end
-
-        if not result then
-            return false, "Server rejected craft"
-        end
-
+        if not ok then return false, "Remote failed" end
+        if not result then return false, "Server rejected" end
         return true, craftedItem
     end
 end
@@ -9655,8 +9655,8 @@ do
 
             for attrName, attrValue in pairs(attributes or {}) do
                 table.insert(fields, {
-                    text = tostring(attrName) .. ": " .. tostring(attrValue),
-                    isSubField = true
+                    Text = tostring(attrName) .. ": " .. tostring(attrValue),
+                    IsSubField = true
                 })
             end
         end
@@ -10964,11 +10964,6 @@ do
             return false
         end
 
-        pcall(function()
-            ReplicatedStorage.Remotes.Inventory.EquipShovel:InvokeServer("Rusty Shovel")
-        end)
-        task.wait(0.3)
-
         local startTime = tick()
         local timeout = 120
         local lastCollectTime = 0
@@ -11761,7 +11756,7 @@ local function initializeTeleportTab()
         })
 
     SimpleUI:CreateButton(WaypointsSection.Container, "Refresh Destinations", function()
-        waypointsDropdown.setOptions(WaypointModule.getList())
+        waypointsDropdown:SetOptions(WaypointModule.getList())
     end)
 
     SimpleUI:CreateButton(WaypointsSection.Container, "Unlock All Waypoints", function()
@@ -11912,7 +11907,7 @@ local function initializeToolsTab()
 
         selectedGUID = nil
         pcall(function()
-            equipmentReforgeDropdown.setOptions(equipmentOptions)
+            equipmentReforgeDropdown:SetOptions(equipmentOptions)
         end)
         ReforgeModule.updateInfo(nil, equipmentInfo)
     end)
@@ -11922,7 +11917,7 @@ local function initializeToolsTab()
         if guid then
             ReforgeModule.updateInfo(guid, equipmentInfo)
             pcall(function()
-                equipmentReforgeDropdown.setOptions({})
+                equipmentReforgeDropdown:SetOptions({})
             end)
         end
     end)
@@ -12053,20 +12048,35 @@ local function initializeCraftingTab()
 
     SimpleUI:CreateSection(page, "Equipment Crafting")
 
-    local craftingStatus = SimpleUI:CreateParagraph(page, "Crafting Status",
-        {"No equipment selected", "Select an equipment to begin"})
+    local craftingStatus = SimpleUI:CreateParagraph(page, "Crafting Status", {
+        "No equipment selected",
+        "Select an equipment to begin"
+    })
+
+    local function tick()
+        local eq = State.Crafting.selectedEquipment
+        if not eq then
+            craftingStatus:SetFields({
+                "No equipment selected",
+                "Select an equipment to begin"
+            })
+            return
+        end
+
+        if State.Crafting.selectBestOres then
+            State.Crafting.selectedMaterials = CraftingModule.selectBest(eq.Data)
+        end
+
+        local fields = CraftingModule.buildFields(eq, State.Crafting.selectedMaterials)
+        craftingStatus:SetFields(fields)
+    end
 
     local equipmentDropdown = SimpleUI:CreateDropdown(page, "Select Equipment", {}, nil, function(selection)
         for _, recipe in ipairs(State.Crafting.discoveredRecipes) do
             if recipe.Name == selection then
                 State.Crafting.selectedEquipment = recipe
                 State.Crafting.selectedMaterials = {}
-                CraftingModule.updateStatus(craftingStatus)
-
-                if State.Crafting.selectBestOres then
-                    CraftingModule.selectBestMaterials(craftingStatus)
-                end
-
+                tick()
                 return
             end
         end
@@ -12074,179 +12084,129 @@ local function initializeCraftingTab()
 
     SimpleUI:CreateButton(page, "Load Discovered Recipes", function()
         State.Crafting.discoveredRecipes = CraftingModule.getDiscoveredRecipes()
-
         local options = {}
-        for _, recipe in ipairs(State.Crafting.discoveredRecipes) do
-            table.insert(options, recipe.Name)
+        for i = 1, #State.Crafting.discoveredRecipes do
+            options[#options + 1] = State.Crafting.discoveredRecipes[i].Name
         end
-
-        equipmentDropdown.setOptions(options)
-        Utility.createNotification("Loaded " .. #options .. " discovered recipes", 3)
+        equipmentDropdown:SetOptions(options)
+        Utility.createNotification("Loaded " .. #options .. " recipes", 3)
     end)
 
     SimpleUI:CreateToggle(page, "Auto Select Best Materials", false, function(state)
         State.Crafting.selectBestOres = state
-
-        if state and State.Crafting.selectedEquipment then
-            CraftingModule.selectBestMaterials(craftingStatus)
-        end
+        tick()
     end, {
         Description = "Automatically select highest quality materials when equipment is chosen"
     })
 
     SimpleUI:CreateButton(page, "Craft Equipment", function()
-        if not CraftingModule.canCraft() then
-            Utility.createNotification("Cannot craft - missing materials or no equipment selected", 4)
+        local eq = State.Crafting.selectedEquipment
+        if not eq then
+            Utility.createNotification("No equipment selected", 3)
             return
         end
-
-        local success, craftedItem = CraftingModule.perform(State.Crafting.selectedEquipment.Item,
-            State.Crafting.selectedEquipment.Data, State.Crafting.selectedMaterials)
-
+        if State.Crafting.selectBestOres then
+            State.Crafting.selectedMaterials = CraftingModule.selectBest(eq.Data)
+        end
+        if not CraftingModule.canCraft(eq.Data, State.Crafting.selectedMaterials) then
+            Utility.createNotification("Missing materials", 3)
+            return
+        end
+        local success, result = CraftingModule.craft(eq.Item, State.Crafting.selectedMaterials)
+        State.Crafting.selectedMaterials = {}
+        task.wait(0.5)
+        tick()
         if success then
-            Utility.createNotification("Successfully crafted " .. State.Crafting.selectedEquipment.Name, 4)
-            State.Crafting.selectedMaterials = {}
-            CraftingModule.updateStatus(craftingStatus)
-
-            if State.Crafting.selectBestOres then
-                task.wait(0.5)
-                CraftingModule.selectBestMaterials(craftingStatus)
-            end
+            Utility.createNotification("Crafted " .. eq.Name .. "!", 3)
         else
-            Utility.createNotification("Crafting failed: " .. tostring(craftedItem), 4)
+            Utility.createNotification("Failed: " .. tostring(result), 3)
         end
     end)
 
     SimpleUI:CreateToggle(page, "Enable Automatic Crafting", false, function(state)
         State.Crafting.autocraft = state
-
-        if not state then
-            return
-        end
-        if State.Crafting.autocraftRunning then
-            return
-        end
-
+        if not state or State.Crafting.autocraftRunning then return end
         State.Crafting.autocraftRunning = true
 
         task.spawn(function()
             while State.Crafting.autocraft do
-                if State.Crafting.selectedEquipment then
+                local eq = State.Crafting.selectedEquipment
+                if not eq then
+                    task.wait(1)
+                else
                     if State.Crafting.selectBestOres then
-                        CraftingModule.selectBestMaterials(craftingStatus)
+                        State.Crafting.selectedMaterials = CraftingModule.selectBest(eq.Data)
                     end
 
-                    while State.Crafting.autocraft and not CraftingModule.canCraft() do
-                        if State.Crafting.selectBestOres then
-                            CraftingModule.selectBestMaterials(craftingStatus)
-                        end
+                    tick()
 
-                        CraftingModule.updateStatus(craftingStatus)
-                        task.wait(2)
-                    end
-
-                    if State.Crafting.autocraft then
-                        local success = CraftingModule.perform(State.Crafting.selectedEquipment.Item,
-                            State.Crafting.selectedEquipment.Data, State.Crafting.selectedMaterials)
-
+                    if CraftingModule.canCraft(eq.Data, State.Crafting.selectedMaterials) then
+                        local success, result = CraftingModule.craft(eq.Item, State.Crafting.selectedMaterials)
+                        State.Crafting.selectedMaterials = {}
+                        task.wait(0.5)
+                        tick()
                         if success then
-                            State.Crafting.selectedMaterials = {}
-                            CraftingModule.updateStatus(craftingStatus)
-                            task.wait(1)
+                            task.wait(0.5)
                         else
+                            Utility.createNotification("Autocraft failed: " .. tostring(result), 3)
                             task.wait(3)
                         end
+                    else
+                        task.wait(2)
                     end
-                else
-                    CraftingModule.updateStatus(craftingStatus)
-                    task.wait(1)
                 end
             end
-
             State.Crafting.autocraftRunning = false
         end)
     end, {
         Description = "Continuously craft selected equipment when materials are available"
     })
 
-    SimpleUI:CreateParagraph(page, "About Auto Select",
-        {"This toggle acts like a two-step verification to prevent accidental crafting. You must keep it enabled for crafting to function."})
-
     SimpleUI:CreateSection(page, "Firefly Flare Conversion")
 
     local fireflyAmount = 1
+    local FireflyCrafting = false
 
-    SimpleUI:CreateTextInput(page, "Conversion Amount", 1, function(input)
+    SimpleUI:CreateTextInput(page, "Conversion Amount", "1", function(input)
         local value = tonumber(input)
-
-        if not value or value ~= math.floor(value) then
+        if not value or value ~= math.floor(value) or value < 1 or value >= 1000 then
             SimpleUI:CreateNotification({
                 Type = "Error",
                 Title = "Invalid Amount",
-                Description = "Please enter a whole number."
+                Description = "Enter a whole number between 1 and 999."
             })
             return
         end
-
-        if value < 1 or value >= 1000 then
-            SimpleUI:CreateNotification({
-                Type = "Warning",
-                Title = "Out of Range",
-                Description = "Conversion amount must be between 1 and 999."
-            })
-            return
-        end
-
         fireflyAmount = value
-    end, {
-        Description = "The number of Firefly Flares to convert. One Firefly Stone produces one Firefly Flare."
-    })
-
-    local FireflyCrafting = false
-    local FireflyStopRequested = false
+    end, {Description = "One Firefly Stone produces one Firefly Flare."})
 
     SimpleUI:CreateButton(page, "Begin Conversion", function()
         if FireflyCrafting then
             SimpleUI:CreateNotification({
                 Type = "Warning",
                 Title = "Already Converting",
-                Description = "Firefly conversion is already in progress."
+                Description = "Conversion already in progress."
             })
             return
         end
-
         FireflyCrafting = true
-        FireflyStopRequested = false
-
         task.spawn(function()
             FireflyModule.craft(fireflyAmount)
             FireflyCrafting = false
-            FireflyStopRequested = false
         end)
-    end, {
-        Description = "Begin converting Firefly Stones to Firefly Flares at the conversion table."
-    })
+    end, {Description = "Convert Firefly Stones to Firefly Flares at the conversion table."})
 
     SimpleUI:CreateButton(page, "Stop Conversion", function()
         if not FireflyCrafting then
-            SimpleUI:CreateNotification({
-                Type = "Info",
-                Title = "Idle",
-                Description = "No conversion process is running."
-            })
+            SimpleUI:CreateNotification({Type = "Info", Title = "Idle", Description = "No conversion running."})
             return
         end
-
-        FireflyStopRequested = true
-        SimpleUI:CreateNotification({
-            Type = "Warning",
-            Title = "Stopping",
-            Description = "Firefly conversion is being halted."
-        })
+        FireflyModule.stop()
+        SimpleUI:CreateNotification({Type = "Warning", Title = "Stopping", Description = "Halting conversion."})
     end)
 
     SimpleUI:CreateParagraph(page, "Conversion Requirements",
-        {"You must be near the firefly conversion table to begin converting materials."})
+        {"You must be near the firefly conversion table to begin."})
 end
 
 local function initializeFavouriteTab()

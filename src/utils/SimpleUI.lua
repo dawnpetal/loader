@@ -15,7 +15,7 @@ end
 
 local SimpleUI = {}
 
-SimpleUI.Version = "2.2.6"
+SimpleUI.Version = "2.2.7"
 SimpleUI.Loaded = SimpleUI.Loaded or {}
 SimpleUI.Windows = SimpleUI.Windows or {}
 
@@ -1143,18 +1143,18 @@ do
             [ErrorLevels.ERROR] = "255,100,100",
             [ErrorLevels.CRITICAL] = "255,0,0"
         }
-        if SimpleUI.ErrorHandler.Level >= SimpleUI.ErrorHandler.Levels.WARN then
-            CoreGui.DescendantAdded:Connect(function(v)
-                if v:IsA("TextLabel") then
-                    local ok, parent = pcall(function()
-                        return v.Parent
-                    end)
-                    if ok and parent and parent.Name == "DevConsoleMaster" then
+
+        RunService.Heartbeat:Connect(function()
+            local Console = CoreGui:FindFirstChild("DevConsoleMaster")
+            if Console then
+                for _, v in pairs(Console:GetDescendants()) do
+                    if v:IsA("TextLabel") then
                         v.RichText = true
                     end
                 end
-            end)
-        end
+            end
+        end)
+
         local function RichPrint(Color, Text)
             local RGB = Colors[Color] or "255,255,255"
             print('<font color="rgb(' .. RGB .. ')">' .. tostring(Text) .. '</font>')
@@ -1254,7 +1254,7 @@ do
 
         function SimpleUI.ErrorHandler:Try(Func, Fallback)
             local Success, Result = pcall(Func)
-            if not Success or not Result then
+            if not Success then
                 return Fallback and Fallback() or nil
             end
             return Result
@@ -1540,9 +1540,7 @@ do
                 return false
             end
             Window.ThemeData = {
-                Elements = setmetatable({}, {
-                    __mode = "k"
-                }),
+                Elements = {},
                 CurrentTheme = Window.Theme or SimpleUI.Themes.Obsidian
             }
             return true
@@ -1577,11 +1575,21 @@ do
             end
             for Property, ThemeKey in pairs(Bindings) do
                 if EH:ValidateType(Property, "string", "Property", "ThemeManager:RegisterElement") then
-                    table.insert(Window.ThemeData.Elements, {
-                        Element = Element,
-                        Property = Property,
-                        ThemeKey = ThemeKey
-                    })
+                    local found = false
+                    for _, existing in ipairs(Window.ThemeData.Elements) do
+                        if existing.Element == Element and existing.Property == Property then
+                            existing.ThemeKey = ThemeKey
+                            found = true
+                            break
+                        end
+                    end
+                    if not found then
+                        table.insert(Window.ThemeData.Elements, {
+                            Element = Element,
+                            Property = Property,
+                            ThemeKey = ThemeKey
+                        })
+                    end
                 end
             end
             return true
@@ -1628,11 +1636,10 @@ do
             end
             return EH:Try(function()
                 if Animate and (Property:find("Color") or Property:find("Transparency")) then
-                    local Tween = TweenService:Create(Element, TweenInfo.new(SimpleUI.Constants.Animation.Normal,
-                        Enum.EasingStyle.Quad), {
-                        [Property] = Value
-                    })
-                    Tween:Play()
+                    TweenService:Create(Element,
+                        TweenInfo.new(SimpleUI.Constants.Animation.Normal, Enum.EasingStyle.Quad), {
+                            [Property] = Value
+                        }):Play()
                 else
                     Element[Property] = Value
                 end
@@ -1661,22 +1668,27 @@ do
             end
             Window.ThemeData.CurrentTheme = NewTheme
             Window.Theme = NewTheme
+            local alive = {}
+            for _, Entry in ipairs(Window.ThemeData.Elements) do
+                if Entry.Element and Entry.Element.Parent then
+                    table.insert(alive, Entry)
+                end
+            end
+            Window.ThemeData.Elements = alive
             local ProcessedElements = {}
             for _, Entry in ipairs(Window.ThemeData.Elements) do
                 local Element = Entry.Element
                 local Property = Entry.Property
-                if Element and Element.Parent then
-                    ProcessedElements[Element] = ProcessedElements[Element] or {}
-                    if not ProcessedElements[Element][Property] then
-                        ProcessedElements[Element][Property] = true
-                        EH:Try(function()
-                            if type(Entry.ThemeKey) == "function" then
-                                Entry.ThemeKey(Element, NewTheme)
-                            else
-                                self:ApplyToElement(Element, Property, Entry.ThemeKey, NewTheme, Animate)
-                            end
-                        end)
-                    end
+                ProcessedElements[Element] = ProcessedElements[Element] or {}
+                if not ProcessedElements[Element][Property] then
+                    ProcessedElements[Element][Property] = true
+                    EH:Try(function()
+                        if type(Entry.ThemeKey) == "function" then
+                            Entry.ThemeKey(Element, NewTheme)
+                        else
+                            self:ApplyToElement(Element, Property, Entry.ThemeKey, NewTheme, Animate)
+                        end
+                    end)
                 end
             end
             return true
