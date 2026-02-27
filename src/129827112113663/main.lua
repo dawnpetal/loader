@@ -1126,6 +1126,8 @@ SimpleUI.Themes = {
     }
 }
 
+SimpleUI.Themes.DefaultTheme = SimpleUI.Themes.Obsidian
+
 -- Helper frameworks
 do
     SimpleUI.ErrorHandler = {}
@@ -1541,7 +1543,7 @@ do
             end
             Window.ThemeData = {
                 Elements = {},
-                CurrentTheme = Window.Theme or SimpleUI.Themes.Obsidian
+                CurrentTheme = Window.Theme or SimpleUI.Themes.DefaultTheme
             }
             return true
         end
@@ -1549,13 +1551,13 @@ do
         function SimpleUI.ThemeManager:GetCurrentTheme(Window)
             local EH = SimpleUI.ErrorHandler
             if not Window then
-                EH:Guard(false, "ThemeManager:GetCurrentTheme", "Window is nil, using Obsidian", EH.Levels.WARN)
-                return SimpleUI.Themes.Obsidian
+                EH:Guard(false, "ThemeManager:GetCurrentTheme", "Window is nil, using DefaultTheme", EH.Levels.WARN)
+                return SimpleUI.Themes.DefaultTheme
             end
             if not Window.ThemeData then
-                EH:Guard(false, "ThemeManager:GetCurrentTheme", "ThemeData not initialized, using Obsidian",
+                EH:Guard(false, "ThemeManager:GetCurrentTheme", "ThemeData not initialized, using DefaultTheme",
                     EH.Levels.WARN)
-                return SimpleUI.Themes.Obsidian
+                return SimpleUI.Themes.DefaultTheme
             end
             return Window.ThemeData.CurrentTheme
         end
@@ -1970,7 +1972,12 @@ do
                     local Icon = Button:FindFirstChildWhichIsA("ImageLabel")
                     if Icon then
                         SimpleUI.ThemeManager:RegisterElement(Window, Icon, {
-                            ImageColor3 = IconData.ColorKey
+                            ImageColor3 = function(Element, Theme)
+                                local ColorValue = Theme[IconData.ColorKey]
+                                if ColorValue then
+                                    Element.ImageColor3 = ColorValue
+                                end
+                            end
                         })
                     end
                 end
@@ -2475,7 +2482,7 @@ do
             }, TabsContainer)
             local Theme = SimpleUI.ThemeManager:GetCurrentTheme({
                 ThemeData = {
-                    CurrentTheme = SimpleUI.Themes.Obsidian
+                    CurrentTheme = SimpleUI.Themes.DefaultTheme
                 }
             })
             local TabsSeparatorProperties, TabsSeparatorBindings = SimpleUI.Utility:ApplyTheme({
@@ -3209,7 +3216,7 @@ do
                 return nil
             end
             Options = type(Options) == "table" and Options or {}
-            Theme = type(Theme) == "table" and Theme or SimpleUI.Themes.Obsidian
+            Theme = type(Theme) == "table" and Theme or SimpleUI.Themes.DefaultTheme
             Text = type(Text) == "string" and Text or "Section"
 
             local U = SimpleUI.Utility
@@ -3422,7 +3429,17 @@ do
                 })
             end
 
+            local ToggleDebounce = false
+
             local function Toggle()
+                if ToggleDebounce then
+                    return
+                end
+                ToggleDebounce = true
+                task.delay(0.1, function()
+                    ToggleDebounce = false
+                end)
+
                 IsExpanded = not IsExpanded
                 Tween(Arrow, {
                     Rotation = IsExpanded and 0 or -90
@@ -3617,7 +3634,7 @@ do
         end
 
         function SimpleUI.NotificationManager:CreateNotificationUI(Config)
-            local Theme = Config.Theme or SimpleUI.Themes.Obsidian
+            local Theme = Config.Theme or SimpleUI.Themes.DefaultTheme
             local Holder = self:GetHolder()
             local IsMobile = SimpleUI.Utility:IsMobile()
             local HasDuration = Config.Duration and Config.Duration > 0
@@ -4056,8 +4073,8 @@ end
 function SimpleUI:CreateWindow(options)
     options = options or {}
 
-    local theme = type(options.Theme) == "string" and (self.Themes[options.Theme] or self.Themes.Obsidian) or
-                      type(options.Theme) == "table" and options.Theme or self.Themes.Obsidian
+    local theme = type(options.Theme) == "string" and (self.Themes[options.Theme] or self.Themes.DefaultTheme) or
+                      type(options.Theme) == "table" and options.Theme or self.Themes.DefaultTheme
 
     local scale = math.clamp(options.DefaultScale or self.Constants.Window.DefaultScale, self.Constants.Window.MinScale,
         self.Constants.Window.MaxScale)
@@ -4761,7 +4778,9 @@ function SimpleUI:CreateTab(Window, Name, Options)
 
     local Page = self:CreatePage(Window, Name, Options)
 
-    local IsActive, IsHovering = false, false
+    local IsActive = false
+    local IsHovering = false
+    local ActivationDebounce = false
 
     local function UpdateActiveBrandDisplay(TabName, TabOptions)
         local TabNameLabel = Window.Elements.TitleLabel
@@ -4831,14 +4850,26 @@ function SimpleUI:CreateTab(Window, Name, Options)
             end
         end)
     end
+
     Tab.Activated:Connect(function()
-        if IsActive then
+        if IsActive or ActivationDebounce then
             return
         end
+
+        ActivationDebounce = true
+        task.delay(0.1, function()
+            ActivationDebounce = false
+        end)
+
         if Window.ActiveTab and Window.ActiveTab ~= Tab then
-            local PreviousCallback = Window.TabCallbacks[Window.ActiveTab]
-            if PreviousCallback then
-                PreviousCallback(false)
+            local PreviousTabData = Window.Elements.Tabs[Window.ActiveTab.Name]
+            if PreviousTabData then
+                local OldIsActive = IsActive
+                IsActive = false
+                local OldCallback = Window.TabCallbacks[Window.ActiveTab]
+                if OldCallback then
+                    OldCallback(false)
+                end
             end
             if Window.ActivePage then
                 local pageToHide = Window.ActivePage
@@ -4848,8 +4879,11 @@ function SimpleUI:CreateTab(Window, Name, Options)
                 pageToHide.Visible = false
             end
         end
+
         IsActive = true
+        IsHovering = false
         Window.ActiveTab = Tab
+
         local CurrentPage = Window.Elements.ContentsContainer:FindFirstChild(Name .. "Page")
         if CurrentPage then
             Page = CurrentPage
@@ -4869,11 +4903,13 @@ function SimpleUI:CreateTab(Window, Name, Options)
         pageToShow.Visible = true
         UpdateTabState()
     end)
+
     Window.TabCallbacks[Tab] = function(Active)
         IsActive = Active
         IsHovering = false
         UpdateTabState()
     end
+
     local ThemeBindings = {
         [AccentLine] = {
             BackgroundColor3 = "TabAccent"
@@ -4909,6 +4945,7 @@ function SimpleUI:CreateTab(Window, Name, Options)
     if Window then
         self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
     end
+
     Window.Elements.Tabs[Name] = {
         Container = Tab,
         Icon = Icon,
@@ -4917,6 +4954,7 @@ function SimpleUI:CreateTab(Window, Name, Options)
         AccentLine = AccentLine,
         Page = Page
     }
+
     if not Window.ActiveTab then
         IsActive = true
         Window.ActiveTab = Tab
@@ -6461,7 +6499,12 @@ function SimpleUI:CreateParagraph(Page, Title, Fields, Options)
             return nil
         end
         if Window then
-            self.ThemeManager:RegisterElement(Window, Field, FieldBindings)
+            self.ThemeManager:RegisterElement(Window, Field, {
+                TextColor3 = function(Element, CurrentTheme)
+                    Element.TextColor3 = IsSubField and CurrentTheme.TextSecondary or CurrentTheme.TextPrimary
+                end,
+                Font = "FontSecondary"
+            })
         end
         FieldElements[FieldId] = {
             Element = Field,
@@ -7311,8 +7354,8 @@ function SimpleUI:CreateNotification(Options)
         Type = nil
     end
 
-    local Theme = type(Options.Theme) == "string" and (self.Themes[Options.Theme] or self.Themes.Obsidian) or
-                      type(Options.Theme) == "table" and Options.Theme or self.Themes.Obsidian
+    local Theme = type(Options.Theme) == "string" and (self.Themes[Options.Theme] or self.Themes.DefaultTheme) or
+                      type(Options.Theme) == "table" and Options.Theme or self.Themes.DefaultTheme
 
     local Color = Options.Color
     if Color and typeof(Color) ~= "Color3" then
@@ -9227,7 +9270,9 @@ do
         local totalCount = 0
         for materialName, req in pairs(recipe.Materials) do
             local sel = selected[materialName]
-            if not sel then return nil end
+            if not sel then
+                return nil
+            end
             for i = 1, #sel do
                 local tool = sel[i]
                 local d = tool:FindFirstChild("ItemData")
@@ -9241,9 +9286,13 @@ do
                     totalCount = totalCount + 1
                 end
             end
-            if #sel < req.Amount then return nil end
+            if #sel < req.Amount then
+                return nil
+            end
         end
-        if totalCount == 0 then return nil end
+        if totalCount == 0 then
+            return nil
+        end
         return math.clamp(math.floor(totalScore / totalCount), 1, 5)
     end
 
@@ -9256,14 +9305,18 @@ do
         local char = Character
         if char then
             local t = char:FindFirstChildOfClass("Tool")
-            if t then tools[#tools + 1] = t end
+            if t then
+                tools[#tools + 1] = t
+            end
         end
         return tools
     end
 
     local function effectiveWeight(tool)
         local d = tool:FindFirstChild("ItemData")
-        if not d then return 0 end
+        if not d then
+            return 0
+        end
         local w = d:GetAttribute("Weight") or 0
         local mod = d:GetAttribute("Modifier")
         if mod and Modifiers[mod] then
@@ -9322,13 +9375,19 @@ do
                         add = true
                     end
                     if add then
-                        recipes[#recipes + 1] = {Name = item.Name, Item = item, Data = data}
+                        recipes[#recipes + 1] = {
+                            Name = item.Name,
+                            Item = item,
+                            Data = data
+                        }
                     end
                 end
             end
         end
 
-        table.sort(recipes, function(a, b) return a.Name < b.Name end)
+        table.sort(recipes, function(a, b)
+            return a.Name < b.Name
+        end)
         return recipes
     end
 
@@ -9372,8 +9431,14 @@ do
         local LINE = "- - - - - - - - - - - - - -"
 
         fields[#fields + 1] = eq.Name
-        fields[#fields + 1] = {Text = "Price:" .. Utility.formatPrice(recipe.Price or 0), IsSubField = true}
-        fields[#fields + 1] = {Text = LINE, IsSubField = true}
+        fields[#fields + 1] = {
+            Text = "Price:" .. Utility.formatPrice(recipe.Price or 0),
+            IsSubField = true
+        }
+        fields[#fields + 1] = {
+            Text = LINE,
+            IsSubField = true
+        }
 
         local allReady = true
         local missingCount = 0
@@ -9396,16 +9461,21 @@ do
             local icon = count >= req.Amount and "[+]" or "[-]"
             local label
             if req.MinWeight and req.MinWeight > 0 then
-                label = string.format("%s %s [+%dkg]  %d/%d  (%d owned)",
-                    icon, materialName, req.MinWeight, count, req.Amount, #owned)
+                label = string.format("%s %s [+%dkg]  %d/%d  (%d owned)", icon, materialName, req.MinWeight, count,
+                    req.Amount, #owned)
             else
-                label = string.format("%s %s  %d/%d  (%d owned)",
-                    icon, materialName, count, req.Amount, #owned)
+                label = string.format("%s %s  %d/%d  (%d owned)", icon, materialName, count, req.Amount, #owned)
             end
-            fields[#fields + 1] = {Text = label, IsSubField = true}
+            fields[#fields + 1] = {
+                Text = label,
+                IsSubField = true
+            }
         end
 
-        fields[#fields + 1] = {Text = LINE, IsSubField = true}
+        fields[#fields + 1] = {
+            Text = LINE,
+            IsSubField = true
+        }
 
         if allReady then
             local quality = determineQuality(selected, recipe)
@@ -9426,30 +9496,40 @@ do
                                 local maxVal = statData.Min + statData.QualityStep * quality
                                 local statText
                                 if info.Percentage then
-                                    statText = string.format("  %s: %.0f%% - %.0f%%",
-                                        info.DisplayName, minVal * 100, maxVal * 100)
+                                    statText = string.format("  %s: %.0f%% - %.0f%%", info.DisplayName, minVal * 100,
+                                        maxVal * 100)
                                 else
-                                    statText = string.format("  %s: %s - %s",
-                                        info.DisplayName,
-                                        FormatNumber.Format(minVal),
-                                        FormatNumber.Format(maxVal))
+                                    statText = string.format("  %s: %s - %s", info.DisplayName,
+                                        FormatNumber.Format(minVal), FormatNumber.Format(maxVal))
                                 end
-                                fields[#fields + 1] = {Text = statText, IsSubField = true}
+                                fields[#fields + 1] = {
+                                    Text = statText,
+                                    IsSubField = true
+                                }
                             end
                         end
                     end
                 end
 
                 if quality < 5 then
-                    fields[#fields + 1] = {Text = "Use heavier materials for better quality", IsSubField = true}
+                    fields[#fields + 1] = {
+                        Text = "Use heavier materials for better quality",
+                        IsSubField = true
+                    }
                 else
-                    fields[#fields + 1] = {Text = "Maximum quality achieved", IsSubField = true}
+                    fields[#fields + 1] = {
+                        Text = "Maximum quality achieved",
+                        IsSubField = true
+                    }
                 end
             else
                 fields[#fields + 1] = "Quality: [.....]  Unknown"
             end
 
-            fields[#fields + 1] = {Text = LINE, IsSubField = true}
+            fields[#fields + 1] = {
+                Text = LINE,
+                IsSubField = true
+            }
             fields[#fields + 1] = "Ready to craft"
         else
             fields[#fields + 1] = "Missing " .. missingCount .. " material" .. (missingCount == 1 and "" or "s")
@@ -9467,7 +9547,9 @@ do
                     count = count + 1
                 end
             end
-            if count < req.Amount then return false end
+            if count < req.Amount then
+                return false
+            end
         end
         return true
     end
@@ -9476,8 +9558,12 @@ do
         local ok, result, _, craftedItem = pcall(function()
             return ReplicatedStorage.Remotes.Crafting.CraftEquipment:InvokeServer(equipmentItem, selected)
         end)
-        if not ok then return false, "Remote failed" end
-        if not result then return false, "Server rejected" end
+        if not ok then
+            return false, "Remote failed"
+        end
+        if not result then
+            return false, "Server rejected"
+        end
         return true, craftedItem
     end
 end
@@ -11259,8 +11345,7 @@ local window = SimpleUI:CreateWindow({
     Brand = {
         Name = "SimpleScripts"
     },
-    DefaultScale = SimpleUI.Utility:IsMobile() and 0.750 or 1,
-    Theme = "Obsidian",
+    DefaultScale = SimpleUI.Utility:IsMobile() and 0.550 or 0.750,
     TabMode = "Dynamic",
     CanResize = true,
     Footer = true,
@@ -11371,19 +11456,6 @@ local function initializeMainTab()
         TextSize = 15
     })
 
-    SimpleUI:CreateParagraph(AutoFarmSection.Container, "How Automated Farm Works",
-        {"Configure your movement method, set digging and washing locations, then activate the system to begin the continuous cycle.",
-         {
-            Text = "Teleport mode is significantly faster and recommended for efficiency.",
-            IsSubField = true
-        }, {
-            Text = "You must stand within the correct region before saving each location to ensure proper positioning.",
-            IsSubField = true
-        }, {
-            Text = "Use Unstuck Character if movement freezes or the tweening animation becomes unresponsive.",
-            IsSubField = true
-        }})
-
     SimpleUI:CreateDropdown(AutoFarmSection.Container, "Movement Method", {"Tween", "Teleport"}, "Teleport",
         function(selection)
             State.AutoFarm.travelMode = selection
@@ -11443,24 +11515,25 @@ local function initializeMainTab()
         BarrierRemovalModule.removeCrocodiles()
     end)
 
+    SimpleUI:CreateParagraph(AutoFarmSection.Container, "How Automated Farm Works",
+        {"Configure your movement method, set digging and washing locations, then activate the system to begin the continuous cycle.",
+         {
+            Text = "Teleport mode is significantly faster and recommended for efficiency.",
+            IsSubField = true
+        }, {
+            Text = "You must stand within the correct region before saving each location to ensure proper positioning.",
+            IsSubField = true
+        }, {
+            Text = "Use Unstuck Character if movement freezes or the tweening animation becomes unresponsive.",
+            IsSubField = true
+        }})
+
     local SellSection = SimpleUI:CreateSection(RightPage, "Auto Sell", {
         Style = "box",
         Icon = "rbxassetid://2246496691",
         DefaultExpanded = true,
         TextSize = 15
     })
-
-    SimpleUI:CreateParagraph(SellSection.Container, "Selling Configuration",
-        {"Select your selling trigger method and configure the corresponding threshold or duration below.", {
-            Text = "Threshold Mode: Automatically sells when your inventory reaches a specified item count.",
-            IsSubField = true
-        }, {
-            Text = "Duration Mode: Automatically sells at regular intervals you define.",
-            IsSubField = true
-        }, {
-            Text = "Manual Selling: Waits for the current farming task to complete before initiating the sale.",
-            IsSubField = true
-        }})
 
     SimpleUI:CreateDropdown(SellSection.Container, "Selling Trigger Mode", {"Threshold", "Duration"}, "Threshold",
         function(selection)
@@ -11522,6 +11595,18 @@ local function initializeMainTab()
 
         Utility.createNotification(state and "Automatic Selling Enabled" or "Automatic Selling Disabled")
     end)
+
+    SimpleUI:CreateParagraph(SellSection.Container, "Selling Configuration",
+        {"Select your selling trigger method and configure the corresponding threshold or duration below.", {
+            Text = "Threshold Mode: Automatically sells when your inventory reaches a specified item count.",
+            IsSubField = true
+        }, {
+            Text = "Duration Mode: Automatically sells at regular intervals you define.",
+            IsSubField = true
+        }, {
+            Text = "Manual Selling: Waits for the current farming task to complete before initiating the sale.",
+            IsSubField = true
+        }})
 end
 
 local function initializeHuntingTab()
@@ -12048,18 +12133,13 @@ local function initializeCraftingTab()
 
     SimpleUI:CreateSection(page, "Equipment Crafting")
 
-    local craftingStatus = SimpleUI:CreateParagraph(page, "Crafting Status", {
-        "No equipment selected",
-        "Select an equipment to begin"
-    })
+    local craftingStatus = SimpleUI:CreateParagraph(page, "Crafting Status",
+        {"No equipment selected", "Select an equipment to begin"})
 
     local function tick()
         local eq = State.Crafting.selectedEquipment
         if not eq then
-            craftingStatus:SetFields({
-                "No equipment selected",
-                "Select an equipment to begin"
-            })
+            craftingStatus:SetFields({"No equipment selected", "Select an equipment to begin"})
             return
         end
 
@@ -12125,7 +12205,9 @@ local function initializeCraftingTab()
 
     SimpleUI:CreateToggle(page, "Enable Automatic Crafting", false, function(state)
         State.Crafting.autocraft = state
-        if not state or State.Crafting.autocraftRunning then return end
+        if not state or State.Crafting.autocraftRunning then
+            return
+        end
         State.Crafting.autocraftRunning = true
 
         task.spawn(function()
@@ -12178,7 +12260,9 @@ local function initializeCraftingTab()
             return
         end
         fireflyAmount = value
-    end, {Description = "One Firefly Stone produces one Firefly Flare."})
+    end, {
+        Description = "One Firefly Stone produces one Firefly Flare."
+    })
 
     SimpleUI:CreateButton(page, "Begin Conversion", function()
         if FireflyCrafting then
@@ -12194,15 +12278,25 @@ local function initializeCraftingTab()
             FireflyModule.craft(fireflyAmount)
             FireflyCrafting = false
         end)
-    end, {Description = "Convert Firefly Stones to Firefly Flares at the conversion table."})
+    end, {
+        Description = "Convert Firefly Stones to Firefly Flares at the conversion table."
+    })
 
     SimpleUI:CreateButton(page, "Stop Conversion", function()
         if not FireflyCrafting then
-            SimpleUI:CreateNotification({Type = "Info", Title = "Idle", Description = "No conversion running."})
+            SimpleUI:CreateNotification({
+                Type = "Info",
+                Title = "Idle",
+                Description = "No conversion running."
+            })
             return
         end
         FireflyModule.stop()
-        SimpleUI:CreateNotification({Type = "Warning", Title = "Stopping", Description = "Halting conversion."})
+        SimpleUI:CreateNotification({
+            Type = "Warning",
+            Title = "Stopping",
+            Description = "Halting conversion."
+        })
     end)
 
     SimpleUI:CreateParagraph(page, "Conversion Requirements",
@@ -12424,6 +12518,12 @@ local function initializeMiscellaneousTab()
 
     local PlayerSettingsSection = SimpleUI:CreateSection(LeftPage, "Character Settings", {
         Style = "box",
+        Icon = {
+            Image = "rbxassetid://16898613869",
+            Size = UDim2.new(0, 16, 0, 16),
+            ImageRectSize = Vector2.new(48, 48),
+            ImageRectOffset = Vector2.new(404, 869)
+        },
         DefaultExpanded = false,
         TextSize = 15
     })
@@ -12492,36 +12592,13 @@ local function initializeMiscellaneousTab()
         Increment = 0.01
     })
 
-    SimpleUI:CreateSection(PlayerSettingsSection.Container, "Entity Highlighting")
-
-    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Highlight Players", false, function(enabled)
-        if enabled then
-            ESPModule.enablePlayers()
-        else
-            ESPModule.disablePlayers()
-        end
-    end)
-
-    SimpleUI:CreateToggle(PlayerSettingsSection.Container, "Highlight Totems", false, function(enabled)
-        if enabled then
-            ESPModule.enableTotems()
-        else
-            ESPModule.disableTotems()
-        end
-    end)
-
-    SimpleUI:CreateButton(PlayerSettingsSection.Container, "Clear All Highlights", function()
-        ESPModule.clearAll()
-    end)
-
     local RemoveBarriersSection = SimpleUI:CreateSection(RightPage, "Environmental Barriers", {
         Style = "box",
         Icon = {
             Image = "rbxassetid://16898613869",
             Size = UDim2.new(0, 16, 0, 16),
             ImageRectSize = Vector2.new(48, 48),
-            ImageRectOffset = Vector2.new(820, 355),
-            ImageColor3 = Color3.fromRGB(255, 255, 255)
+            ImageRectOffset = Vector2.new(820, 355)
         },
         DefaultExpanded = false,
         TextSize = 15
@@ -12562,6 +12639,32 @@ local function initializeMiscellaneousTab()
 
     SimpleUI:CreateButton(ServerSection.Container, "Server Hop", function()
         ServerUtilityModule.serverHop()
+    end)
+
+    local EspBox = SimpleUI:CreateSection(RightPage, "ESP", {
+        Style = "box",
+        DefaultExpanded = false,
+        TextSize = 15
+    })
+
+    SimpleUI:CreateToggle(EspBox.Container, "Highlight Players", false, function(enabled)
+        if enabled then
+            ESPModule.enablePlayers()
+        else
+            ESPModule.disablePlayers()
+        end
+    end)
+
+    SimpleUI:CreateToggle(EspBox.Container, "Highlight Totems", false, function(enabled)
+        if enabled then
+            ESPModule.enableTotems()
+        else
+            ESPModule.disableTotems()
+        end
+    end)
+
+    SimpleUI:CreateButton(EspBox.Container, "Clear All Highlights", function()
+        ESPModule.clearAll()
     end)
 end
 
