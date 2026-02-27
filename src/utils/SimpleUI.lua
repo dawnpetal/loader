@@ -42,7 +42,7 @@ SimpleUI.Constants = {
         ContentWidthScaleClosed = 1,
         HorizontalPadding = 10,
         VerticalPadding = 10,
-        DefaultScale = 1,
+        DefaultScale = 0.75,
         MinScale = 0.5,
         MaxScale = 2,
         TabModes = {
@@ -1126,6 +1126,8 @@ SimpleUI.Themes = {
     }
 }
 
+SimpleUI.Themes.DefaultTheme = SimpleUI.Themes.Parchment
+
 -- Helper frameworks
 do
     SimpleUI.ErrorHandler = {}
@@ -1541,7 +1543,7 @@ do
             end
             Window.ThemeData = {
                 Elements = {},
-                CurrentTheme = Window.Theme or SimpleUI.Themes.Obsidian
+                CurrentTheme = Window.Theme or SimpleUI.Themes.DefaultTheme
             }
             return true
         end
@@ -1549,13 +1551,13 @@ do
         function SimpleUI.ThemeManager:GetCurrentTheme(Window)
             local EH = SimpleUI.ErrorHandler
             if not Window then
-                EH:Guard(false, "ThemeManager:GetCurrentTheme", "Window is nil, using Obsidian", EH.Levels.WARN)
-                return SimpleUI.Themes.Obsidian
+                EH:Guard(false, "ThemeManager:GetCurrentTheme", "Window is nil, using DefaultTheme", EH.Levels.WARN)
+                return SimpleUI.Themes.DefaultTheme
             end
             if not Window.ThemeData then
-                EH:Guard(false, "ThemeManager:GetCurrentTheme", "ThemeData not initialized, using Obsidian",
+                EH:Guard(false, "ThemeManager:GetCurrentTheme", "ThemeData not initialized, using DefaultTheme",
                     EH.Levels.WARN)
-                return SimpleUI.Themes.Obsidian
+                return SimpleUI.Themes.DefaultTheme
             end
             return Window.ThemeData.CurrentTheme
         end
@@ -1945,14 +1947,28 @@ do
                     end
                     if not MainFrame:GetAttribute("OriginalSize") then
                         MainFrame:SetAttribute("OriginalSize", MainFrame.Size)
+                        MainFrame:SetAttribute("OriginalPosition", MainFrame.Position)
+                        MainFrame:SetAttribute("OriginalAnchorPoint", MainFrame.AnchorPoint)
                     end
                     local IsMaximized = MainFrame:GetAttribute("Maximized") or false
                     MainFrame:SetAttribute("Maximized", not IsMaximized)
-                    local TargetSize = IsMaximized and MainFrame:GetAttribute("OriginalSize") or
-                                           UDim2.new(0.95, 0, 0.95, 0)
+
+                    local TargetSize, TargetPosition, TargetAnchor
+                    if not IsMaximized then
+                        TargetSize = UDim2.new(0.95, 0, 0.95, 0)
+                        TargetPosition = UDim2.new(0.5, 0, 0.5, 0)
+                        TargetAnchor = Vector2.new(0.5, 0.5)
+                    else
+                        TargetSize = MainFrame:GetAttribute("OriginalSize")
+                        TargetPosition = MainFrame:GetAttribute("OriginalPosition")
+                        TargetAnchor = MainFrame:GetAttribute("OriginalAnchorPoint")
+                    end
+
+                    MainFrame.AnchorPoint = TargetAnchor
                     TweenService:Create(MainFrame, TweenInfo.new(SimpleUI.Constants.Animation.Normal,
                         Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Size = TargetSize
+                        Size = TargetSize,
+                        Position = TargetPosition
                     }):Play()
                 end)
             end
@@ -1964,13 +1980,23 @@ do
             if not Config or not Config.Icons then
                 return
             end
+            local CurrentTheme = SimpleUI.ThemeManager:GetCurrentTheme(Window)
             for ControlType, Button in pairs(ControlButtons) do
                 local IconData = Config.Icons[ControlType]
                 if IconData and IconData.ColorKey then
                     local Icon = Button:FindFirstChildWhichIsA("ImageLabel")
                     if Icon then
+                        local ColorValue = CurrentTheme[IconData.ColorKey]
+                        if ColorValue then
+                            Icon.ImageColor3 = ColorValue
+                        end
                         SimpleUI.ThemeManager:RegisterElement(Window, Icon, {
-                            ImageColor3 = IconData.ColorKey
+                            ImageColor3 = function(Element, Theme)
+                                local NewColorValue = Theme[IconData.ColorKey]
+                                if NewColorValue then
+                                    Element.ImageColor3 = NewColorValue
+                                end
+                            end
                         })
                     end
                 end
@@ -2475,7 +2501,7 @@ do
             }, TabsContainer)
             local Theme = SimpleUI.ThemeManager:GetCurrentTheme({
                 ThemeData = {
-                    CurrentTheme = SimpleUI.Themes.Obsidian
+                    CurrentTheme = SimpleUI.Themes.DefaultTheme
                 }
             })
             local TabsSeparatorProperties, TabsSeparatorBindings = SimpleUI.Utility:ApplyTheme({
@@ -2746,7 +2772,7 @@ do
             end
         end
 
-        function SimpleUI.WindowBuilder:SetupResizing(MainFrame, UIScale, Options, ResizeParent, ResizeMode)
+        function SimpleUI.WindowBuilder:SetupResizing(MainFrame, UIScale, Options, ResizeParent, ResizeMode, Theme)
             if not Options.CanResize or not ResizeParent then
                 return nil, nil
             end
@@ -2778,7 +2804,7 @@ do
                 Image = "rbxassetid://16898613613",
                 ImageRectSize = Vector2.new(48, 48),
                 ImageRectOffset = Vector2.new(967, 49),
-                ImageColor3 = Color3.fromRGB(200, 200, 200),
+                ImageColor3 = Theme.TextPrimary or Color3.fromRGB(200, 200, 210),
                 ZIndex = SimpleUI.Constants.ZIndex.Modal + 1
             }, ResizeHandle)
 
@@ -3209,7 +3235,7 @@ do
                 return nil
             end
             Options = type(Options) == "table" and Options or {}
-            Theme = type(Theme) == "table" and Theme or SimpleUI.Themes.Obsidian
+            Theme = type(Theme) == "table" and Theme or SimpleUI.Themes.DefaultTheme
             Text = type(Text) == "string" and Text or "Section"
 
             local U = SimpleUI.Utility
@@ -3422,7 +3448,17 @@ do
                 })
             end
 
+            local ToggleDebounce = false
+
             local function Toggle()
+                if ToggleDebounce then
+                    return
+                end
+                ToggleDebounce = true
+                task.delay(0.1, function()
+                    ToggleDebounce = false
+                end)
+
                 IsExpanded = not IsExpanded
                 Tween(Arrow, {
                     Rotation = IsExpanded and 0 or -90
@@ -3573,8 +3609,24 @@ do
             end
             self.Initialized = true
             self.Container = nil
-            self.NotificationQueue = {}
-            self.QueueProcessing = false
+            self.ScreenGui = nil
+        end
+
+        function SimpleUI.NotificationManager:GetScreenGui()
+            if self.ScreenGui and self.ScreenGui.Parent then
+                return self.ScreenGui
+            end
+
+            local ScreenGui = SimpleUI.Utility:CreateInstance("ScreenGui", {
+                Name = SimpleUI.Utility:GenerateId(),
+                ResetOnSpawn = false,
+                ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+                DisplayOrder = SimpleUI.Constants.ZIndex.Notification
+            })
+
+            SimpleUI.Utility:ParentUI(ScreenGui)
+            self.ScreenGui = ScreenGui
+            return ScreenGui
         end
 
         function SimpleUI.NotificationManager:GetContainer()
@@ -3582,18 +3634,26 @@ do
                 return self.Container
             end
 
-            local Parent = SimpleUI.Utility:CreateInstance("ScreenGui", {
-                Name = "SimpleUINotifications",
-                ResetOnSpawn = false,
-                ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-                DisplayOrder = SimpleUI.Constants.ZIndex.Notification
-            })
+            local ScreenGui = self:GetScreenGui()
+            local Scale = SimpleUI.Utility:IsMobile() and 0.5 or 1
 
-            SimpleUI.Utility:ParentUI(Parent)
+            local Parent = SimpleUI.Utility:CreateInstance("Frame", {
+                Name = SimpleUI.Utility:GenerateId(),
+                Size = UDim2.fromScale(1, 1),
+                Position = UDim2.fromScale(0, 0),
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                ZIndex = SimpleUI.Constants.ZIndex.Notification
+            }, ScreenGui)
+
+            SimpleUI.Utility:CreateInstance("UIScale", {
+                Scale = Scale
+            }, Parent)
+
             self.Container = Parent
 
             local Holder = SimpleUI.Utility:CreateInstance("Frame", {
-                Name = "Holder",
+                Name = SimpleUI.Utility:GenerateId(),
                 Position = UDim2.new(1, -20, 0, 20),
                 AnchorPoint = Vector2.new(1, 0),
                 Size = UDim2.new(0, 360, 1, -40),
@@ -3609,15 +3669,26 @@ do
                 Padding = UDim.new(0, 10)
             }, Holder)
 
+            pcall(protectgui, Parent)
+
             return Parent
         end
 
         function SimpleUI.NotificationManager:GetHolder()
-            return self:GetContainer():FindFirstChild("Holder") or self:GetContainer()
+            local Container = self:GetContainer()
+            for _, Child in ipairs(Container:GetChildren()) do
+                if Child:IsA("Frame") then
+                    local Layout = Child:FindFirstChildOfClass("UIListLayout")
+                    if Layout then
+                        return Child
+                    end
+                end
+            end
+            return Container
         end
 
         function SimpleUI.NotificationManager:CreateNotificationUI(Config)
-            local Theme = Config.Theme or SimpleUI.Themes.Obsidian
+            local Theme = SimpleUI.Themes.Obsidian
             local Holder = self:GetHolder()
             local IsMobile = SimpleUI.Utility:IsMobile()
             local HasDuration = Config.Duration and Config.Duration > 0
@@ -3644,7 +3715,7 @@ do
             local SidePad = IsMobile and 10 or 12
 
             local Notification = SimpleUI.Utility:CreateInstance("Frame", {
-                Name = "Notification",
+                Name = SimpleUI.Utility:GenerateId(),
                 Size = UDim2.new(1, 0, 0, 0),
                 BackgroundColor3 = Theme.Secondary,
                 BackgroundTransparency = 1,
@@ -3655,7 +3726,7 @@ do
             }, Holder)
 
             local AccentBar = SimpleUI.Utility:CreateInstance("Frame", {
-                Name = "AccentBar",
+                Name = SimpleUI.Utility:GenerateId(),
                 Size = UDim2.new(0, 3, 1, 0),
                 BackgroundColor3 = Accent,
                 BackgroundTransparency = 1,
@@ -3664,7 +3735,7 @@ do
             }, Notification)
 
             local Shadow = SimpleUI.Utility:CreateInstance("ImageLabel", {
-                Name = "Shadow",
+                Name = SimpleUI.Utility:GenerateId(),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.5, 0),
                 Size = UDim2.new(1, 20, 1, 20),
@@ -3678,7 +3749,7 @@ do
             }, Notification)
 
             local Content = SimpleUI.Utility:CreateInstance("Frame", {
-                Name = "Content",
+                Name = SimpleUI.Utility:GenerateId(),
                 Position = UDim2.new(0, 3, 0, 0),
                 Size = UDim2.new(1, -3, 1, 0),
                 BackgroundTransparency = 1,
@@ -3693,7 +3764,7 @@ do
             }, Content)
 
             local TextContainer = SimpleUI.Utility:CreateInstance("Frame", {
-                Name = "TextContainer",
+                Name = SimpleUI.Utility:GenerateId(),
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 ZIndex = SimpleUI.Constants.ZIndex.Notification + 2
@@ -3706,7 +3777,7 @@ do
             }, TextContainer)
 
             local TitleRow = SimpleUI.Utility:CreateInstance("Frame", {
-                Name = "TitleRow",
+                Name = SimpleUI.Utility:GenerateId(),
                 Size = UDim2.new(1, Config.Closable ~= false and -(IsMobile and 22 or 26) or 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y,
                 BackgroundTransparency = 1,
@@ -3722,7 +3793,7 @@ do
             }, TitleRow)
 
             local TitleLabel = SimpleUI.Utility:CreateInstance("TextLabel", {
-                Name = "Title",
+                Name = SimpleUI.Utility:GenerateId(),
                 Size = UDim2.new(0, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.XY,
                 BackgroundTransparency = 1,
@@ -3740,7 +3811,7 @@ do
             }, TitleRow)
 
             local Tag = SimpleUI.Utility:CreateInstance("TextLabel", {
-                Name = "Tag",
+                Name = SimpleUI.Utility:GenerateId(),
                 Size = UDim2.new(0, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.XY,
                 BackgroundColor3 = Accent,
@@ -3768,7 +3839,7 @@ do
             local DescriptionLabel = nil
             if Config.Description then
                 DescriptionLabel = SimpleUI.Utility:CreateInstance("TextLabel", {
-                    Name = "Description",
+                    Name = SimpleUI.Utility:GenerateId(),
                     Size = UDim2.new(1, Config.Closable ~= false and -(IsMobile and 22 or 26) or 0, 0, 0),
                     AutomaticSize = Enum.AutomaticSize.Y,
                     BackgroundTransparency = 1,
@@ -3788,7 +3859,7 @@ do
 
             if Config.Closable ~= false then
                 local CloseBtn = SimpleUI.Utility:CreateInstance("TextButton", {
-                    Name = "CloseButton",
+                    Name = SimpleUI.Utility:GenerateId(),
                     Position = UDim2.new(1, 0, 0, 0),
                     AnchorPoint = Vector2.new(1, 0),
                     Size = UDim2.new(0, IsMobile and 16 or 18, 0, IsMobile and 16 or 18),
@@ -3821,7 +3892,7 @@ do
 
             if Config.Callback then
                 local ClickArea = SimpleUI.Utility:CreateInstance("TextButton", {
-                    Name = "ClickArea",
+                    Name = SimpleUI.Utility:GenerateId(),
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundTransparency = 1,
                     Text = "",
@@ -3878,7 +3949,7 @@ do
                 for _, Child in ipairs(Notification:GetDescendants()) do
                     if Child:IsA("TextLabel") or Child:IsA("TextButton") then
                         Child.TextTransparency = 1
-                    elseif Child:IsA("ImageLabel") and Child.Name ~= "Shadow" then
+                    elseif Child:IsA("ImageLabel") and Child.Name ~= Shadow.Name then
                         Child.ImageTransparency = 1
                     elseif Child:IsA("Frame") and Child ~= Notification then
                         Child.BackgroundTransparency = 1
@@ -3904,11 +3975,11 @@ do
                 }))
 
                 for _, Child in ipairs(Notification:GetDescendants()) do
-                    if Child:IsA("TextLabel") and Child.Name ~= "Tag" then
+                    if Child:IsA("TextLabel") and Child.Name ~= Tag.Name then
                         table.insert(Tweens, TweenService:Create(Child, SlideInfo, {
                             TextTransparency = 0
                         }))
-                    elseif Child:IsA("TextButton") and Child.Name == "CloseButton" then
+                    elseif Child:IsA("TextButton") then
                         table.insert(Tweens, TweenService:Create(Child, SlideInfo, {
                             TextTransparency = 0
                         }))
@@ -3921,7 +3992,7 @@ do
 
                 if HasDuration then
                     local ProgressBar = SimpleUI.Utility:CreateInstance("Frame", {
-                        Name = "ProgressBar",
+                        Name = SimpleUI.Utility:GenerateId(),
                         Position = UDim2.new(0, 0, 1, -BarH),
                         Size = UDim2.new(1, 0, 0, BarH),
                         BackgroundColor3 = Accent,
@@ -3935,7 +4006,7 @@ do
 
                     task.delay(Config.Duration, function()
                         if Notification and Notification.Parent then
-                            self:Dismiss(Notification)
+                            SimpleUI.NotificationManager:Dismiss(Notification)
                         end
                     end)
                 end
@@ -4009,10 +4080,14 @@ do
 
         function SimpleUI.NotificationManager:DismissAll()
             local Holder = self:GetHolder()
+            local ToRemove = {}
             for _, Child in ipairs(Holder:GetChildren()) do
-                if Child:IsA("Frame") and Child.Name == "Notification" then
-                    self:Dismiss(Child)
+                if Child:IsA("Frame") then
+                    table.insert(ToRemove, Child)
                 end
+            end
+            for _, Child in ipairs(ToRemove) do
+                self:Dismiss(Child)
             end
         end
     end
@@ -4056,8 +4131,8 @@ end
 function SimpleUI:CreateWindow(options)
     options = options or {}
 
-    local theme = type(options.Theme) == "string" and (self.Themes[options.Theme] or self.Themes.Obsidian) or
-                      type(options.Theme) == "table" and options.Theme or self.Themes.Obsidian
+    local theme = type(options.Theme) == "string" and (self.Themes[options.Theme] or self.Themes.DefaultTheme) or
+                      type(options.Theme) == "table" and options.Theme or self.Themes.DefaultTheme
 
     local scale = math.clamp(options.DefaultScale or self.Constants.Window.DefaultScale, self.Constants.Window.MinScale,
         self.Constants.Window.MaxScale)
@@ -4277,11 +4352,22 @@ function SimpleUI:CreateWindow(options)
                         Size = contentsSize
                     }):Play()
 
-                local currentTheme = SimpleUI.ThemeManager:GetCurrentTheme(self)
-
                 for _, tabData in pairs(self.Elements.Tabs) do
                     if type(tabData) == "table" and tabData.Container then
+
                         local isActive = tabData.Container == self.ActiveTab
+
+                        if not isActive then
+                            local currentTheme = SimpleUI.ThemeManager:GetCurrentTheme(self)
+                            local targetColor = expanded and currentTheme.Secondary or currentTheme.Secondary
+                            local targetTransparency = expanded and (currentTheme.TransparencySecondary or 0.8) or 1
+
+                            TweenService:Create(tabData.Container, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad),
+                                {
+                                    BackgroundColor3 = targetColor,
+                                    BackgroundTransparency = targetTransparency
+                                }):Play()
+                        end
 
                         TweenService:Create(tabData.Container, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
                             Size = UDim2.new(1, -8, 0, expanded and 32 or 44)
@@ -4325,29 +4411,25 @@ function SimpleUI:CreateWindow(options)
                                 }):Play()
                         end
 
-                        if not isActive then
-                            TweenService:Create(tabData.Container, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad),
-                                {
-                                    BackgroundColor3 = currentTheme.Secondary,
-                                    BackgroundTransparency = expanded and (currentTheme.TransparencySecondary or 0.8) or
-                                        1
-                                }):Play()
-                        elseif not expanded then
-                            TweenService:Create(tabData.Container, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad),
-                                {
-                                    BackgroundColor3 = currentTheme.SecondaryActive:Lerp(currentTheme.Secondary, 0.3),
-                                    BackgroundTransparency = 0
-                                }):Play()
-                        end
-
-                        if tabData.AccentLine and isActive then
-                            TweenService:Create(tabData.AccentLine, TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad),
-                                {
-                                    BackgroundTransparency = expanded and 1 or 0
-                                }):Play()
+                        if tabData.AccentLine then
+                            local isActive = tabData.Container == self.ActiveTab
+                            if isActive then
+                                TweenService:Create(tabData.AccentLine,
+                                    TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad), {
+                                        BackgroundTransparency = expanded and 1 or 0
+                                    }):Play()
+                            end
                         end
                     end
                 end
+
+                task.delay(tweenDuration, function()
+                    for _, tabData in pairs(self.Elements.Tabs) do
+                        if type(tabData) == "table" and tabData.RefreshVisuals then
+                            tabData.RefreshVisuals()
+                        end
+                    end
+                end)
             end
 
             if mode == modes.Fixed then
@@ -4633,7 +4715,7 @@ function SimpleUI:CreateWindow(options)
     self.WindowBuilder:SetupDragging(topBar, mainFrame)
 
     local resizeHandle, resizeIcon, resizeBindings = self.WindowBuilder:SetupResizing(mainFrame, uiScale, options,
-        window.Elements.FooterResizeArea, ResizeMode)
+        window.Elements.FooterResizeArea, ResizeMode, theme)
 
     self.WindowBuilder:SetupScrollUpdates(window)
 
@@ -4675,6 +4757,11 @@ function SimpleUI:CreateTab(Window, Name, Options)
     Options = Options or {}
     local Theme = self.ThemeManager:GetCurrentTheme(Window)
     local IsMobile = self.Utility:IsMobile()
+
+    if not Window.TabActivationLock then
+        Window.TabActivationLock = false
+    end
+
     local Tab = self.Utility:CreateInstance("TextButton", {
         Name = Name,
         Size = UDim2.new(1, -8, 0, Window.TabsExpanded and 32 or 44),
@@ -4688,6 +4775,7 @@ function SimpleUI:CreateTab(Window, Name, Options)
     self.Utility:CreateInstance("UICorner", {
         CornerRadius = UDim.new(0, self.Constants.Corner.Medium)
     }, Tab)
+
     local AccentLine = self.Utility:CreateInstance("Frame", {
         Name = "AccentLine",
         Size = UDim2.new(0, 2, 0, 24),
@@ -4701,6 +4789,7 @@ function SimpleUI:CreateTab(Window, Name, Options)
     self.Utility:CreateInstance("UICorner", {
         CornerRadius = UDim.new(1, 0)
     }, AccentLine)
+
     local ContentContainer = self.Utility:CreateInstance("Frame", {
         Name = "ContentContainer",
         Size = UDim2.new(1, 0, 1, 0),
@@ -4726,7 +4815,6 @@ function SimpleUI:CreateTab(Window, Name, Options)
 
     if Options.Icon and type(Options.Icon) == "table" and Options.Icon.Image then
         IconSize = Window.TabsExpanded and self.Constants.Window.TabIconSizeExpanded or 24
-
         local IconData = self.IconManager:WrapIcon(Options.Icon)
 
         Icon = self.Utility:CreateInstance("ImageLabel", {
@@ -4761,7 +4849,9 @@ function SimpleUI:CreateTab(Window, Name, Options)
 
     local Page = self:CreatePage(Window, Name, Options)
 
-    local IsActive, IsHovering = false, false
+    local TabState = {
+        IsHovering = false
+    }
 
     local function UpdateActiveBrandDisplay(TabName, TabOptions)
         local TabNameLabel = Window.Elements.TitleLabel
@@ -4775,9 +4865,11 @@ function SimpleUI:CreateTab(Window, Name, Options)
         end
     end
 
-    local function UpdateTabState()
+    local function RefreshTabVisuals()
         local CurrentTheme = self.ThemeManager:GetCurrentTheme(Window)
         local IsCollapsed = not Window.TabsExpanded
+        local IsActive = Window.ActiveTab == Tab
+
         if IsActive then
             Tab.BackgroundColor3 = CurrentTheme.SecondaryActive
             Tab.BackgroundTransparency = 0
@@ -4786,14 +4878,12 @@ function SimpleUI:CreateTab(Window, Name, Options)
                 Icon.ImageColor3 = CurrentTheme.TabIconActive or CurrentTheme.TextActive
             end
             if IsCollapsed then
-                TweenService:Create(AccentLine, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                    BackgroundTransparency = 0
-                }):Play()
+                AccentLine.BackgroundTransparency = 0
             else
                 AccentLine.BackgroundTransparency = 1
             end
             UpdateActiveBrandDisplay(Name, Options)
-        elseif IsHovering then
+        elseif TabState.IsHovering then
             Tab.BackgroundColor3 = CurrentTheme.Secondary
             Tab.BackgroundTransparency = 0
             TextLabel.TextColor3 = CurrentTheme.TextPrimary
@@ -4819,37 +4909,37 @@ function SimpleUI:CreateTab(Window, Name, Options)
 
     if not IsMobile then
         Tab.MouseEnter:Connect(function()
-            if not IsActive then
-                IsHovering = true
-                UpdateTabState()
+            if Window.ActiveTab ~= Tab then
+                TabState.IsHovering = true
+                RefreshTabVisuals()
             end
         end)
         Tab.MouseLeave:Connect(function()
-            if not IsActive then
-                IsHovering = false
-                UpdateTabState()
-            end
+            TabState.IsHovering = false
+            RefreshTabVisuals()
         end)
     end
+
     Tab.Activated:Connect(function()
-        if IsActive then
+        if Window.TabActivationLock then
             return
         end
-        if Window.ActiveTab and Window.ActiveTab ~= Tab then
-            local PreviousCallback = Window.TabCallbacks[Window.ActiveTab]
-            if PreviousCallback then
-                PreviousCallback(false)
-            end
-            if Window.ActivePage then
-                local pageToHide = Window.ActivePage
-                if type(pageToHide) == "table" and pageToHide.Container then
-                    pageToHide = pageToHide.Container
-                end
-                pageToHide.Visible = false
-            end
+        if Window.ActiveTab == Tab then
+            return
         end
-        IsActive = true
+
+        Window.TabActivationLock = true
+
+        if Window.ActivePage then
+            local pageToHide = Window.ActivePage
+            if type(pageToHide) == "table" and pageToHide.Container then
+                pageToHide = pageToHide.Container
+            end
+            pageToHide.Visible = false
+        end
+
         Window.ActiveTab = Tab
+
         local CurrentPage = Window.Elements.ContentsContainer:FindFirstChild(Name .. "Page")
         if CurrentPage then
             Page = CurrentPage
@@ -4867,58 +4957,60 @@ function SimpleUI:CreateTab(Window, Name, Options)
             pageToShow = pageToShow.Container
         end
         pageToShow.Visible = true
-        UpdateTabState()
+
+        for TabName, TabData in pairs(Window.Elements.Tabs) do
+            TabData.State.IsHovering = false
+            TabData.RefreshVisuals()
+        end
+
+        task.delay(0.15, function()
+            Window.TabActivationLock = false
+        end)
     end)
-    Window.TabCallbacks[Tab] = function(Active)
-        IsActive = Active
-        IsHovering = false
-        UpdateTabState()
-    end
-    local ThemeBindings = {
-        [AccentLine] = {
-            BackgroundColor3 = "TabAccent"
-        },
-        [Tab] = {
-            BackgroundColor3 = function(Element, Theme)
-                UpdateTabState()
-            end,
-            BackgroundTransparency = function(Element, Theme)
-                UpdateTabState()
-            end
-        },
-        [TextLabel] = {
-            TextColor3 = function(Element, Theme)
-                UpdateTabState()
-            end,
-            Font = "FontSecondary"
-        }
-    }
-    if Icon then
-        ThemeBindings[Icon] = {
-            ImageColor3 = function(Element, Theme)
-                if IsActive then
-                    Element.ImageColor3 = Theme.TabIconActive or Theme.TextActive
-                elseif IsHovering then
-                    Element.ImageColor3 = Theme.TabIconHover or Theme.TextPrimary
-                else
-                    Element.ImageColor3 = Theme.TabIconInactive or Theme.TextInactive
-                end
-            end
-        }
-    end
-    if Window then
-        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
-    end
+
     Window.Elements.Tabs[Name] = {
         Container = Tab,
         Icon = Icon,
         ContentContainer = ContentContainer,
         TextLabel = TextLabel,
         AccentLine = AccentLine,
-        Page = Page
+        Page = Page,
+        RefreshVisuals = RefreshTabVisuals,
+        State = TabState
     }
+
+    local ThemeBindings = {
+        [AccentLine] = {
+            BackgroundColor3 = function(Element, CurrentTheme)
+                Element.BackgroundColor3 = CurrentTheme.TabAccent or CurrentTheme.Accent
+            end
+        },
+        [TextLabel] = {
+            Font = "FontSecondary"
+        },
+        [Tab] = {
+            BackgroundColor3 = function(Element, CurrentTheme)
+                RefreshTabVisuals()
+            end,
+            BackgroundTransparency = function(Element, CurrentTheme)
+                RefreshTabVisuals()
+            end
+        }
+    }
+
+    if Icon then
+        ThemeBindings[Icon] = {
+            ImageColor3 = function(Element, CurrentTheme)
+                RefreshTabVisuals()
+            end
+        }
+    end
+
+    if Window then
+        self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
+    end
+
     if not Window.ActiveTab then
-        IsActive = true
         Window.ActiveTab = Tab
         Window.ActivePage = Page
         local pageToShow = Window.ActivePage
@@ -4926,22 +5018,11 @@ function SimpleUI:CreateTab(Window, Name, Options)
             pageToShow = pageToShow.Container
         end
         pageToShow.Visible = true
-        Tab.BackgroundColor3 = Theme.SecondaryActive
-        Tab.BackgroundTransparency = 0
-        TextLabel.TextColor3 = Theme.TextActive
-        if Icon then
-            Icon.ImageColor3 = Theme.TabIconActive or Theme.TextActive
-        end
     else
-        Tab.BackgroundColor3 = Theme.Secondary
-        Tab.BackgroundTransparency = Theme.TransparencySecondary or 0.8
-        TextLabel.TextColor3 = Theme.TextInactive
-        if Icon then
-            Icon.ImageColor3 = Theme.TabIconInactive or Theme.TextInactive
-        end
+        Page.Visible = false
     end
 
-    UpdateTabState()
+    RefreshTabVisuals()
 
     return {
         Tab = Tab,
@@ -6401,7 +6482,7 @@ function SimpleUI:CreateParagraph(Page, Title, Fields, Options)
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, self.Constants.Spacing.Normal)
     }, ContentFrame)
-    local TitleLabelProperties, TitleBindings = self.Utility:ApplyTheme({
+    local TitleLabel = self.Utility:CreateInstance("TextLabel", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundTransparency = 1,
         Text = Title or "Paragraph",
@@ -6410,18 +6491,25 @@ function SimpleUI:CreateParagraph(Page, Title, Fields, Options)
         AutomaticSize = Enum.AutomaticSize.Y,
         TextWrapped = true,
         LayoutOrder = 0,
-        ZIndex = self.Constants.ZIndex.Overlay
-    }, {
-        TextColor3 = "TextActive",
-        Font = "FontPrimary"
-    }, Theme)
-    local TitleLabel = self.Utility:CreateInstance("TextLabel", TitleLabelProperties, ContentFrame)
+        ZIndex = self.Constants.ZIndex.Overlay,
+        TextColor3 = Theme.TextActive,
+        Font = Theme.FontPrimary
+    }, ContentFrame)
     local ThemeBindings = {
         [Container] = {
-            BackgroundColor3 = "Secondary",
-            BackgroundTransparency = "TransparencySecondary"
+            BackgroundColor3 = function(Element, CurrentTheme)
+                Element.BackgroundColor3 = CurrentTheme.Secondary
+            end,
+            BackgroundTransparency = function(Element, CurrentTheme)
+                Element.BackgroundTransparency = CurrentTheme.TransparencySecondary
+            end
         },
-        [TitleLabel] = TitleBindings
+        [TitleLabel] = {
+            TextColor3 = function(Element, CurrentTheme)
+                Element.TextColor3 = CurrentTheme.TextActive
+            end,
+            Font = "FontPrimary"
+        }
     }
     if Window then
         self.ThemeManager:RegisterMultiple(Window, ThemeBindings)
@@ -6440,7 +6528,8 @@ function SimpleUI:CreateParagraph(Page, Title, Fields, Options)
         if not EH:ValidateType(FieldText, "string", "FieldText", "Paragraph:CreateField") then
             FieldText = ""
         end
-        local FieldProperties, FieldBindings = self.Utility:ApplyTheme({
+        local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
+        local Field = self.Utility:CreateInstance("TextLabel", {
             Size = UDim2.new(1, IsSubField and -20 or 0, 0, 0),
             Position = IsSubField and UDim2.new(0, 20, 0, 0) or UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
@@ -6450,18 +6539,21 @@ function SimpleUI:CreateParagraph(Page, Title, Fields, Options)
             AutomaticSize = Enum.AutomaticSize.Y,
             TextWrapped = true,
             LayoutOrder = LayoutOrder or (FieldCounter + 1),
-            ZIndex = self.Constants.ZIndex.Overlay
-        }, {
-            TextColor3 = IsSubField and "TextSecondary" or "TextPrimary",
-            Font = "FontSecondary"
-        }, Theme)
-        local Field = self.Utility:CreateInstance("TextLabel", FieldProperties, ContentFrame)
+            ZIndex = self.Constants.ZIndex.Overlay,
+            TextColor3 = IsSubField and CurrentTheme.TextSecondary or CurrentTheme.TextActive,
+            Font = CurrentTheme.FontSecondary
+        }, ContentFrame)
         if not Field then
             EH:Guard(false, "Paragraph:CreateField", "Failed to create field", EH.Levels.WARN)
             return nil
         end
         if Window then
-            self.ThemeManager:RegisterElement(Window, Field, FieldBindings)
+            self.ThemeManager:RegisterElement(Window, Field, {
+                TextColor3 = function(Element, CurrentTheme)
+                    Element.TextColor3 = IsSubField and CurrentTheme.TextSecondary or CurrentTheme.TextActive
+                end,
+                Font = "FontSecondary"
+            })
         end
         FieldElements[FieldId] = {
             Element = Field,
@@ -6832,10 +6924,10 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
     }, ScrollList)
 
     self.Utility:CreateInstance("UIPadding", {
-        PaddingTop = UDim.new(0, self.Constants.Spacing.Normal),
-        PaddingBottom = UDim.new(0, self.Constants.Spacing.Normal),
-        PaddingLeft = UDim.new(0, self.Constants.Spacing.Normal),
-        PaddingRight = UDim.new(0, self.Constants.Spacing.Normal)
+        PaddingTop = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
+        PaddingBottom = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
+        PaddingLeft = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
+        PaddingRight = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal)
     }, ScrollList)
 
     local NormalizedOptions, OptionDataMap = self.DropdownManager:NormalizeOptions(Options)
@@ -6974,7 +7066,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
     local function CreateOption(OptionText, Index)
         local CurrentTheme = Window and self.ThemeManager:GetCurrentTheme(Window) or Theme
         local OptionContainer = self.Utility:CreateInstance("Frame", {
-            Size = UDim2.new(1, -8, 0, 30),
+            Size = UDim2.new(1, -8, 0, IsMobile and 24 or 30),
             BackgroundTransparency = 1,
             ZIndex = self.Constants.ZIndex.Modal + 2,
             LayoutOrder = Index
@@ -6987,7 +7079,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
             BorderSizePixel = 0,
             Text = OptionText,
             TextColor3 = CurrentTheme.TextPrimary,
-            TextSize = 13,
+            TextSize = IsMobile and 8 or 13,
             Font = CurrentTheme.FontSecondary,
             TextTruncate = Enum.TextTruncate.SplitWord,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -7000,13 +7092,13 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
         }, OptionButton)
 
         self.Utility:CreateInstance("UIPadding", {
-            PaddingLeft = UDim.new(0, 14),
-            PaddingRight = UDim.new(0, self.Constants.Padding.Medium)
+            PaddingLeft = UDim.new(0, IsMobile and 4 or 14),
+            PaddingRight = UDim.new(0, IsMobile and 4 or self.Constants.Padding.Medium)
         }, OptionButton)
 
         local Indicator = self.Utility:CreateInstance("Frame", {
-            Size = UDim2.new(0, 4, 0.5, 0),
-            Position = UDim2.new(0, 2, 0.5, 0),
+            Size = UDim2.new(0, IsMobile and 1 or 4, 0.5, 0),
+            Position = UDim2.new(0, IsMobile and 0.1 or 2, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
             BackgroundColor3 = CurrentTheme.Accent,
             BorderSizePixel = 0,
@@ -7311,8 +7403,8 @@ function SimpleUI:CreateNotification(Options)
         Type = nil
     end
 
-    local Theme = type(Options.Theme) == "string" and (self.Themes[Options.Theme] or self.Themes.Obsidian) or
-                      type(Options.Theme) == "table" and Options.Theme or self.Themes.Obsidian
+    local Theme = type(Options.Theme) == "string" and (self.Themes[Options.Theme] or self.Themes.DefaultTheme) or
+                      type(Options.Theme) == "table" and Options.Theme or self.Themes.DefaultTheme
 
     local Color = Options.Color
     if Color and typeof(Color) ~= "Color3" then
