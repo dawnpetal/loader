@@ -1126,7 +1126,7 @@ SimpleUI.Themes = {
     }
 }
 
-SimpleUI.Themes.DefaultTheme = SimpleUI.Themes.Parchment
+SimpleUI.Themes.DefaultTheme = SimpleUI.Themes.Obsidian
 
 -- Helper frameworks
 do
@@ -1531,6 +1531,211 @@ do
                 return
             end
             TweenService:Create(object, tweenInfo, properties):Play()
+        end
+    end
+
+    SimpleUI.SaveManager = {}
+    do
+        SimpleUI.SaveManager.Enabled = true
+        SimpleUI.SaveManager.AutoSave = true
+        SimpleUI.SaveManager.Folder = "SimpleUI"
+        SimpleUI.SaveManager.FileName = tostring(game.PlaceId) .. ".json"
+        SimpleUI.SaveManager.Values = {}
+        SimpleUI.SaveManager.Loaded = false
+
+        local function hasFilesystem()
+            return type(readfile) == "function" and type(writefile) == "function" and type(isfile) == "function" and
+                       type(makefolder) == "function" and type(isfolder) == "function"
+        end
+
+        local function splitPath(path)
+            local parts = {}
+            for part in tostring(path or ""):gmatch("[^/\\]+") do
+                table.insert(parts, part)
+            end
+            return parts
+        end
+
+        local function ensureFolder(path)
+            if not hasFilesystem() then
+                return false
+            end
+
+            local current = ""
+            for _, part in ipairs(splitPath(path)) do
+                current = current == "" and part or (current .. "/" .. part)
+                if not isfolder(current) then
+                    local ok = pcall(makefolder, current)
+                    if not ok then
+                        return false
+                    end
+                end
+            end
+            return true
+        end
+
+        local function sanitizeKey(value)
+            local text = tostring(value or "value")
+            text = text:gsub("%s+", "_"):gsub("[^%w_%-%.:]", "")
+            return text ~= "" and text or "value"
+        end
+
+        function SimpleUI.SaveManager:IsAvailable()
+            return hasFilesystem()
+        end
+
+        function SimpleUI.SaveManager:Configure(options)
+            options = options or {}
+            if options.Enabled ~= nil then
+                self.Enabled = options.Enabled == true
+            end
+            if options.AutoSave ~= nil then
+                self.AutoSave = options.AutoSave == true
+            end
+            if type(options.Folder) == "string" and options.Folder ~= "" then
+                self.Folder = options.Folder
+            end
+            if type(options.FileName) == "string" and options.FileName ~= "" then
+                self.FileName = options.FileName
+            end
+            if type(options.File) == "string" and options.File ~= "" then
+                self.FileName = options.File
+            end
+            self:Load()
+            return self
+        end
+
+        function SimpleUI.SaveManager:GetPath()
+            return self.Folder .. "/" .. self.FileName
+        end
+
+        function SimpleUI.SaveManager:Load()
+            if self.Loaded then
+                return self.Values
+            end
+            self.Loaded = true
+            self.Values = {}
+
+            if not self.Enabled or not self:IsAvailable() then
+                return self.Values
+            end
+
+            local path = self:GetPath()
+            if not isfile(path) then
+                return self.Values
+            end
+
+            local ok, data = pcall(function()
+                local body = readfile(path)
+                if type(body) ~= "string" or body == "" then
+                    return {}
+                end
+                return SimpleUI.Utility:GetService("HttpService"):JSONDecode(body)
+            end)
+
+            if ok and type(data) == "table" then
+                self.Values = data
+            end
+
+            return self.Values
+        end
+
+        function SimpleUI.SaveManager:Save()
+            if not self.Enabled or not self:IsAvailable() then
+                return false
+            end
+            if not ensureFolder(self.Folder) then
+                return false
+            end
+
+            local ok = pcall(function()
+                local body = SimpleUI.Utility:GetService("HttpService"):JSONEncode(self.Values or {})
+                writefile(self:GetPath(), body)
+            end)
+            return ok
+        end
+
+        function SimpleUI.SaveManager:Get(key, defaultValue)
+            self:Load()
+            if self.Values[key] == nil then
+                return defaultValue
+            end
+            return self.Values[key]
+        end
+
+        function SimpleUI.SaveManager:Set(key, value)
+            if not key then
+                return false
+            end
+            self:Load()
+            self.Values[key] = value
+            if self.AutoSave then
+                return self:Save()
+            end
+            return true
+        end
+
+        function SimpleUI.SaveManager:Remove(key)
+            if not key then
+                return false
+            end
+            self:Load()
+            self.Values[key] = nil
+            if self.AutoSave then
+                return self:Save()
+            end
+            return true
+        end
+
+        function SimpleUI.SaveManager:GetBinding(options, componentType, label)
+            options = options or {}
+            local saveConfig = options.Save
+            if saveConfig == nil then
+                saveConfig = options.Persist
+            end
+
+            local enabled = false
+            local key = options.SaveKey or options.Flag
+            local applyCallback = true
+
+            if type(saveConfig) == "table" then
+                enabled = saveConfig.Enabled ~= false
+                key = saveConfig.Key or saveConfig.Flag or saveConfig.Name or key
+                if saveConfig.ApplyCallback ~= nil then
+                    applyCallback = saveConfig.ApplyCallback == true
+                end
+            elseif saveConfig == true then
+                enabled = true
+            end
+
+            if not enabled then
+                return {
+                    Enabled = false,
+                    HasValue = false,
+                    ApplyCallback = false
+                }
+            end
+
+            key = key or (tostring(componentType or "Component") .. ":" .. sanitizeKey(label))
+            self:Load()
+
+            return {
+                Enabled = self.Enabled and self:IsAvailable(),
+                Key = key,
+                HasValue = self.Values[key] ~= nil,
+                Value = self.Values[key],
+                ApplyCallback = applyCallback
+            }
+        end
+
+        function SimpleUI.SaveManager:WriteBinding(binding, value)
+            if not binding or not binding.Enabled or not binding.Key then
+                return false
+            end
+            if value == nil then
+                return self:Remove(binding.Key)
+            end
+            return self:Set(binding.Key, value)
         end
     end
 
@@ -5404,6 +5609,10 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
         Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateToggle") == false) and nil or Callback
     end
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "Toggle", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "boolean" then
+        DefaultValue = SaveBinding.Value
+    end
     local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
     local Window = self.Utility:GetWindowFromElement(Page)
     local HasDescription = Options.Description and Options.Description ~= ""
@@ -5532,7 +5741,7 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
 
     UpdateToggle(false)
 
-    if State and Callback then
+    if Callback and ((SaveBinding.HasValue and SaveBinding.ApplyCallback) or (not SaveBinding.HasValue and State)) then
         EH:Try(function()
             Callback(State)
         end)
@@ -5541,6 +5750,7 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
     Switch.Activated:Connect(function()
         State = not State
         UpdateToggle(true)
+        SimpleUI.SaveManager:WriteBinding(SaveBinding, State)
         if Callback then
             EH:Try(function()
                 Callback(State)
@@ -5556,6 +5766,7 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
             if EH:ValidateType(Value, "boolean", "Value", "Toggle:SetState") then
                 State = Value
                 UpdateToggle(true)
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, State)
             end
         end,
         SetDescription = function(self, NewDescription)
@@ -5607,6 +5818,10 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
     end
 
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "TextInput", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "string" then
+        DefaultValue = SaveBinding.Value
+    end
     local InputType = Options.Type or "Text"
     local ValidTypes = {
         Text = true,
@@ -5825,10 +6040,13 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
             Size = UDim2.new(1, 0, 0, 2)
         }):Play()
         updateHover(false)
-        if validateInput(InputBox.Text) and Callback then
-            EH:Try(function()
-                Callback(InputBox.Text)
-            end)
+        if validateInput(InputBox.Text) then
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, InputBox.Text)
+            if Callback then
+                EH:Try(function()
+                    Callback(InputBox.Text)
+                end)
+            end
         else
             InputBox.Text = LastValidValue
         end
@@ -5843,6 +6061,12 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
         end)
     end
 
+    if SaveBinding.HasValue and SaveBinding.ApplyCallback and Callback then
+        EH:Try(function()
+            Callback(InputBox.Text)
+        end)
+    end
+
     return {
         GetValue = function(self)
             return InputBox.Text
@@ -5852,6 +6076,7 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
                 InputBox.Text = Value
                 LastValidValue = Value
                 clearError()
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, Value)
             end
         end,
         SetPlaceholder = function(self, Placeholder)
@@ -5863,6 +6088,7 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
             InputBox.Text = ""
             LastValidValue = ""
             clearError()
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, "")
         end,
         GetInputType = function(self)
             return InputType
@@ -5927,6 +6153,13 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
         Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateKeybind") == false) and nil or Callback
     end
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "Keybind", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "string" then
+        local SavedKey = Enum.KeyCode[SaveBinding.Value]
+        if SavedKey then
+            DefaultKey = SavedKey
+        end
+    end
     local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
     local IsMobile = self.Utility:IsMobile()
     local Window = self.Utility:GetWindowFromElement(Page)
@@ -6085,6 +6318,7 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
                     end
                     UpdateDisplay()
                     SetupBind()
+                    SimpleUI.SaveManager:WriteBinding(SaveBinding, CurrentKey and CurrentKey.Name or nil)
                 end
             end)
     end)
@@ -6133,6 +6367,7 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
             CurrentKey = Key
             UpdateDisplay()
             SetupBind()
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, CurrentKey and CurrentKey.Name or nil)
         end,
         Clear = function(self)
             CurrentKey = nil
@@ -6141,6 +6376,7 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
                 BindConnection:Disconnect()
                 BindConnection = nil
             end
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, nil)
         end,
         SetDescription = function(self, NewDescription)
             local HadDescription = Description ~= nil and Description.Visible
@@ -6206,6 +6442,10 @@ function SimpleUI:CreateSlider(Page, Text, Min, Max, DefaultValue, Callback, Opt
         Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateSlider") == false) and nil or Callback
     end
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "Slider", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "number" then
+        DefaultValue = math.clamp(SaveBinding.Value, Min, Max)
+    end
     local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
     local Window = self.Utility:GetWindowFromElement(Page)
     local Increment = Options.Increment or 1
@@ -6342,6 +6582,7 @@ function SimpleUI:CreateSlider(Page, Text, Min, Max, DefaultValue, Callback, Opt
         Fill.Size = UDim2.new(Percent, 0, 1, 0)
         Thumb.Position = UDim2.new(Percent, 0, 0.5, 0)
         ValueLabel.Text = tostring(Value)
+        SimpleUI.SaveManager:WriteBinding(SaveBinding, Value)
         if Callback then
             EH:Try(function()
                 Callback(Value)
@@ -6728,6 +6969,14 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
     local IsMultiSelect = DropdownOptions.MultiSelect or false
     local ChangedEvent = Instance.new("BindableEvent")
     local HasDescription = DropdownOptions.Description and DropdownOptions.Description ~= ""
+    local SaveBinding = self.SaveManager:GetBinding(DropdownOptions, "Dropdown", Text)
+    if SaveBinding.Enabled then
+        if IsMultiSelect and type(SaveBinding.Value) == "table" then
+            DefaultValue = SaveBinding.Value
+        elseif not IsMultiSelect and type(SaveBinding.Value) == "string" then
+            DefaultValue = SaveBinding.Value
+        end
+    end
 
     local Zones = self.ComponentBuilder:CreateContainer({
         Parent = Page,
@@ -6924,10 +7173,10 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
     }, ScrollList)
 
     self.Utility:CreateInstance("UIPadding", {
-        PaddingTop = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
-        PaddingBottom = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
-        PaddingLeft = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
-        PaddingRight = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal)
+        PaddingTop = UDim.new(0, IsMobile and 0 or 1),
+        PaddingBottom = UDim.new(0, IsMobile and 0 or 1),
+        PaddingLeft = UDim.new(0, IsMobile and 0 or 1),
+        PaddingRight = UDim.new(0, IsMobile and 0 or 1)
     }, ScrollList)
 
     local NormalizedOptions, OptionDataMap = self.DropdownManager:NormalizeOptions(Options)
@@ -7018,6 +7267,20 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
         self.DropdownManager:UpdateDisplayText(DisplayLabel, SelectedValues, IsMultiSelect)
     end
 
+    local function SerializeSelection()
+        if IsMultiSelect then
+            local values = {}
+            for OptionText, Selected in pairs(SelectedValues) do
+                if Selected then
+                    table.insert(values, OptionText)
+                end
+            end
+            table.sort(values)
+            return values
+        end
+        return SelectedValues
+    end
+
     local function FilterOptions(Query)
         Query = Query:lower()
         for _, Child in ipairs(ScrollList:GetChildren()) do
@@ -7092,12 +7355,12 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
         }, OptionButton)
 
         self.Utility:CreateInstance("UIPadding", {
-            PaddingLeft = UDim.new(0, IsMobile and 4 or 14),
-            PaddingRight = UDim.new(0, IsMobile and 4 or self.Constants.Padding.Medium)
+            PaddingLeft = UDim.new(0, IsMobile and 4 or 6),
+            PaddingRight = UDim.new(0, IsMobile and 2 or self.Constants.Padding.Small)
         }, OptionButton)
 
         local Indicator = self.Utility:CreateInstance("Frame", {
-            Size = UDim2.new(0, IsMobile and 1 or 4, 0.5, 0),
+            Size = UDim2.new(0, IsMobile and 1 or 2, 0.35, 0),
             Position = UDim2.new(0, IsMobile and 0.1 or 2, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
             BackgroundColor3 = CurrentTheme.Accent,
@@ -7130,6 +7393,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
                 UpdateIndicator()
                 UpdateDisplay()
                 local Selected = SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap)
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, SerializeSelection())
                 if Callback then
                     EH:Try(function()
                         Callback(Selected)
@@ -7154,6 +7418,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
                 UpdateDisplay()
                 CloseDropdown()
                 local Selected = SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap)
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, SerializeSelection())
                 if Callback then
                     EH:Try(function()
                         Callback(Selected)
@@ -7197,6 +7462,12 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
 
     UpdateDisplay()
     UpdateDisplayColor()
+
+    if SaveBinding.HasValue and SaveBinding.ApplyCallback and Callback then
+        EH:Try(function()
+            Callback(SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap))
+        end)
+    end
 
     Display.Activated:Connect(function()
         if IsToggling then
@@ -7292,6 +7563,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
                 end
             end
             UpdateDisplay()
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, SerializeSelection())
             ChangedEvent:Fire(Value)
             if Callback then
                 EH:Try(function()

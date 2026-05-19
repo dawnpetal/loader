@@ -1,9 +1,9 @@
 {
   "name": "Prospecting!",
-  "version": "2.3",
+  "version": "2.4",
   "description": "Automates various tasks in the game Prospecting!",
   "author": "DawnPetal",
-  "last_updated": "2026-02-21",
+  "last_updated": "2026-05-19",
   "features": [
     "Auto Farm",
     "Auto Sell",

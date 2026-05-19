@@ -1126,7 +1126,7 @@ SimpleUI.Themes = {
     }
 }
 
-SimpleUI.Themes.DefaultTheme = SimpleUI.Themes.Parchment
+SimpleUI.Themes.DefaultTheme = SimpleUI.Themes.Obsidian
 
 -- Helper frameworks
 do
@@ -1531,6 +1531,211 @@ do
                 return
             end
             TweenService:Create(object, tweenInfo, properties):Play()
+        end
+    end
+
+    SimpleUI.SaveManager = {}
+    do
+        SimpleUI.SaveManager.Enabled = true
+        SimpleUI.SaveManager.AutoSave = true
+        SimpleUI.SaveManager.Folder = "SimpleUI"
+        SimpleUI.SaveManager.FileName = tostring(game.PlaceId) .. ".json"
+        SimpleUI.SaveManager.Values = {}
+        SimpleUI.SaveManager.Loaded = false
+
+        local function hasFilesystem()
+            return type(readfile) == "function" and type(writefile) == "function" and type(isfile) == "function" and
+                       type(makefolder) == "function" and type(isfolder) == "function"
+        end
+
+        local function splitPath(path)
+            local parts = {}
+            for part in tostring(path or ""):gmatch("[^/\\]+") do
+                table.insert(parts, part)
+            end
+            return parts
+        end
+
+        local function ensureFolder(path)
+            if not hasFilesystem() then
+                return false
+            end
+
+            local current = ""
+            for _, part in ipairs(splitPath(path)) do
+                current = current == "" and part or (current .. "/" .. part)
+                if not isfolder(current) then
+                    local ok = pcall(makefolder, current)
+                    if not ok then
+                        return false
+                    end
+                end
+            end
+            return true
+        end
+
+        local function sanitizeKey(value)
+            local text = tostring(value or "value")
+            text = text:gsub("%s+", "_"):gsub("[^%w_%-%.:]", "")
+            return text ~= "" and text or "value"
+        end
+
+        function SimpleUI.SaveManager:IsAvailable()
+            return hasFilesystem()
+        end
+
+        function SimpleUI.SaveManager:Configure(options)
+            options = options or {}
+            if options.Enabled ~= nil then
+                self.Enabled = options.Enabled == true
+            end
+            if options.AutoSave ~= nil then
+                self.AutoSave = options.AutoSave == true
+            end
+            if type(options.Folder) == "string" and options.Folder ~= "" then
+                self.Folder = options.Folder
+            end
+            if type(options.FileName) == "string" and options.FileName ~= "" then
+                self.FileName = options.FileName
+            end
+            if type(options.File) == "string" and options.File ~= "" then
+                self.FileName = options.File
+            end
+            self:Load()
+            return self
+        end
+
+        function SimpleUI.SaveManager:GetPath()
+            return self.Folder .. "/" .. self.FileName
+        end
+
+        function SimpleUI.SaveManager:Load()
+            if self.Loaded then
+                return self.Values
+            end
+            self.Loaded = true
+            self.Values = {}
+
+            if not self.Enabled or not self:IsAvailable() then
+                return self.Values
+            end
+
+            local path = self:GetPath()
+            if not isfile(path) then
+                return self.Values
+            end
+
+            local ok, data = pcall(function()
+                local body = readfile(path)
+                if type(body) ~= "string" or body == "" then
+                    return {}
+                end
+                return SimpleUI.Utility:GetService("HttpService"):JSONDecode(body)
+            end)
+
+            if ok and type(data) == "table" then
+                self.Values = data
+            end
+
+            return self.Values
+        end
+
+        function SimpleUI.SaveManager:Save()
+            if not self.Enabled or not self:IsAvailable() then
+                return false
+            end
+            if not ensureFolder(self.Folder) then
+                return false
+            end
+
+            local ok = pcall(function()
+                local body = SimpleUI.Utility:GetService("HttpService"):JSONEncode(self.Values or {})
+                writefile(self:GetPath(), body)
+            end)
+            return ok
+        end
+
+        function SimpleUI.SaveManager:Get(key, defaultValue)
+            self:Load()
+            if self.Values[key] == nil then
+                return defaultValue
+            end
+            return self.Values[key]
+        end
+
+        function SimpleUI.SaveManager:Set(key, value)
+            if not key then
+                return false
+            end
+            self:Load()
+            self.Values[key] = value
+            if self.AutoSave then
+                return self:Save()
+            end
+            return true
+        end
+
+        function SimpleUI.SaveManager:Remove(key)
+            if not key then
+                return false
+            end
+            self:Load()
+            self.Values[key] = nil
+            if self.AutoSave then
+                return self:Save()
+            end
+            return true
+        end
+
+        function SimpleUI.SaveManager:GetBinding(options, componentType, label)
+            options = options or {}
+            local saveConfig = options.Save
+            if saveConfig == nil then
+                saveConfig = options.Persist
+            end
+
+            local enabled = false
+            local key = options.SaveKey or options.Flag
+            local applyCallback = true
+
+            if type(saveConfig) == "table" then
+                enabled = saveConfig.Enabled ~= false
+                key = saveConfig.Key or saveConfig.Flag or saveConfig.Name or key
+                if saveConfig.ApplyCallback ~= nil then
+                    applyCallback = saveConfig.ApplyCallback == true
+                end
+            elseif saveConfig == true then
+                enabled = true
+            end
+
+            if not enabled then
+                return {
+                    Enabled = false,
+                    HasValue = false,
+                    ApplyCallback = false
+                }
+            end
+
+            key = key or (tostring(componentType or "Component") .. ":" .. sanitizeKey(label))
+            self:Load()
+
+            return {
+                Enabled = self.Enabled and self:IsAvailable(),
+                Key = key,
+                HasValue = self.Values[key] ~= nil,
+                Value = self.Values[key],
+                ApplyCallback = applyCallback
+            }
+        end
+
+        function SimpleUI.SaveManager:WriteBinding(binding, value)
+            if not binding or not binding.Enabled or not binding.Key then
+                return false
+            end
+            if value == nil then
+                return self:Remove(binding.Key)
+            end
+            return self:Set(binding.Key, value)
         end
     end
 
@@ -5404,6 +5609,10 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
         Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateToggle") == false) and nil or Callback
     end
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "Toggle", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "boolean" then
+        DefaultValue = SaveBinding.Value
+    end
     local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
     local Window = self.Utility:GetWindowFromElement(Page)
     local HasDescription = Options.Description and Options.Description ~= ""
@@ -5532,7 +5741,7 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
 
     UpdateToggle(false)
 
-    if State and Callback then
+    if Callback and ((SaveBinding.HasValue and SaveBinding.ApplyCallback) or (not SaveBinding.HasValue and State)) then
         EH:Try(function()
             Callback(State)
         end)
@@ -5541,6 +5750,7 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
     Switch.Activated:Connect(function()
         State = not State
         UpdateToggle(true)
+        SimpleUI.SaveManager:WriteBinding(SaveBinding, State)
         if Callback then
             EH:Try(function()
                 Callback(State)
@@ -5556,6 +5766,7 @@ function SimpleUI:CreateToggle(Page, Text, DefaultValue, Callback, Options)
             if EH:ValidateType(Value, "boolean", "Value", "Toggle:SetState") then
                 State = Value
                 UpdateToggle(true)
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, State)
             end
         end,
         SetDescription = function(self, NewDescription)
@@ -5607,6 +5818,10 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
     end
 
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "TextInput", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "string" then
+        DefaultValue = SaveBinding.Value
+    end
     local InputType = Options.Type or "Text"
     local ValidTypes = {
         Text = true,
@@ -5825,10 +6040,13 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
             Size = UDim2.new(1, 0, 0, 2)
         }):Play()
         updateHover(false)
-        if validateInput(InputBox.Text) and Callback then
-            EH:Try(function()
-                Callback(InputBox.Text)
-            end)
+        if validateInput(InputBox.Text) then
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, InputBox.Text)
+            if Callback then
+                EH:Try(function()
+                    Callback(InputBox.Text)
+                end)
+            end
         else
             InputBox.Text = LastValidValue
         end
@@ -5843,6 +6061,12 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
         end)
     end
 
+    if SaveBinding.HasValue and SaveBinding.ApplyCallback and Callback then
+        EH:Try(function()
+            Callback(InputBox.Text)
+        end)
+    end
+
     return {
         GetValue = function(self)
             return InputBox.Text
@@ -5852,6 +6076,7 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
                 InputBox.Text = Value
                 LastValidValue = Value
                 clearError()
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, Value)
             end
         end,
         SetPlaceholder = function(self, Placeholder)
@@ -5863,6 +6088,7 @@ function SimpleUI:CreateTextInput(Page, Text, DefaultValue, Callback, Options)
             InputBox.Text = ""
             LastValidValue = ""
             clearError()
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, "")
         end,
         GetInputType = function(self)
             return InputType
@@ -5927,6 +6153,13 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
         Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateKeybind") == false) and nil or Callback
     end
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "Keybind", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "string" then
+        local SavedKey = Enum.KeyCode[SaveBinding.Value]
+        if SavedKey then
+            DefaultKey = SavedKey
+        end
+    end
     local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
     local IsMobile = self.Utility:IsMobile()
     local Window = self.Utility:GetWindowFromElement(Page)
@@ -6085,6 +6318,7 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
                     end
                     UpdateDisplay()
                     SetupBind()
+                    SimpleUI.SaveManager:WriteBinding(SaveBinding, CurrentKey and CurrentKey.Name or nil)
                 end
             end)
     end)
@@ -6133,6 +6367,7 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
             CurrentKey = Key
             UpdateDisplay()
             SetupBind()
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, CurrentKey and CurrentKey.Name or nil)
         end,
         Clear = function(self)
             CurrentKey = nil
@@ -6141,6 +6376,7 @@ function SimpleUI:CreateKeybind(Page, Text, DefaultKey, Callback, Options)
                 BindConnection:Disconnect()
                 BindConnection = nil
             end
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, nil)
         end,
         SetDescription = function(self, NewDescription)
             local HadDescription = Description ~= nil and Description.Visible
@@ -6206,6 +6442,10 @@ function SimpleUI:CreateSlider(Page, Text, Min, Max, DefaultValue, Callback, Opt
         Callback = (EH:ValidateType(Callback, "function", "Callback", "CreateSlider") == false) and nil or Callback
     end
     Options = Options or {}
+    local SaveBinding = self.SaveManager:GetBinding(Options, "Slider", Text)
+    if SaveBinding.Enabled and type(SaveBinding.Value) == "number" then
+        DefaultValue = math.clamp(SaveBinding.Value, Min, Max)
+    end
     local Theme = self.ThemeManager:GetCurrentTheme(self.Utility:GetWindowFromElement(Page))
     local Window = self.Utility:GetWindowFromElement(Page)
     local Increment = Options.Increment or 1
@@ -6342,6 +6582,7 @@ function SimpleUI:CreateSlider(Page, Text, Min, Max, DefaultValue, Callback, Opt
         Fill.Size = UDim2.new(Percent, 0, 1, 0)
         Thumb.Position = UDim2.new(Percent, 0, 0.5, 0)
         ValueLabel.Text = tostring(Value)
+        SimpleUI.SaveManager:WriteBinding(SaveBinding, Value)
         if Callback then
             EH:Try(function()
                 Callback(Value)
@@ -6728,6 +6969,14 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
     local IsMultiSelect = DropdownOptions.MultiSelect or false
     local ChangedEvent = Instance.new("BindableEvent")
     local HasDescription = DropdownOptions.Description and DropdownOptions.Description ~= ""
+    local SaveBinding = self.SaveManager:GetBinding(DropdownOptions, "Dropdown", Text)
+    if SaveBinding.Enabled then
+        if IsMultiSelect and type(SaveBinding.Value) == "table" then
+            DefaultValue = SaveBinding.Value
+        elseif not IsMultiSelect and type(SaveBinding.Value) == "string" then
+            DefaultValue = SaveBinding.Value
+        end
+    end
 
     local Zones = self.ComponentBuilder:CreateContainer({
         Parent = Page,
@@ -6924,10 +7173,10 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
     }, ScrollList)
 
     self.Utility:CreateInstance("UIPadding", {
-        PaddingTop = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
-        PaddingBottom = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
-        PaddingLeft = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal),
-        PaddingRight = UDim.new(0, IsMobile and 0 or self.Constants.Spacing.Normal)
+        PaddingTop = UDim.new(0, IsMobile and 0 or 1),
+        PaddingBottom = UDim.new(0, IsMobile and 0 or 1),
+        PaddingLeft = UDim.new(0, IsMobile and 0 or 1),
+        PaddingRight = UDim.new(0, IsMobile and 0 or 1)
     }, ScrollList)
 
     local NormalizedOptions, OptionDataMap = self.DropdownManager:NormalizeOptions(Options)
@@ -7018,6 +7267,20 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
         self.DropdownManager:UpdateDisplayText(DisplayLabel, SelectedValues, IsMultiSelect)
     end
 
+    local function SerializeSelection()
+        if IsMultiSelect then
+            local values = {}
+            for OptionText, Selected in pairs(SelectedValues) do
+                if Selected then
+                    table.insert(values, OptionText)
+                end
+            end
+            table.sort(values)
+            return values
+        end
+        return SelectedValues
+    end
+
     local function FilterOptions(Query)
         Query = Query:lower()
         for _, Child in ipairs(ScrollList:GetChildren()) do
@@ -7092,12 +7355,12 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
         }, OptionButton)
 
         self.Utility:CreateInstance("UIPadding", {
-            PaddingLeft = UDim.new(0, IsMobile and 4 or 14),
-            PaddingRight = UDim.new(0, IsMobile and 4 or self.Constants.Padding.Medium)
+            PaddingLeft = UDim.new(0, IsMobile and 4 or 6),
+            PaddingRight = UDim.new(0, IsMobile and 2 or self.Constants.Padding.Small)
         }, OptionButton)
 
         local Indicator = self.Utility:CreateInstance("Frame", {
-            Size = UDim2.new(0, IsMobile and 1 or 4, 0.5, 0),
+            Size = UDim2.new(0, IsMobile and 1 or 2, 0.35, 0),
             Position = UDim2.new(0, IsMobile and 0.1 or 2, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
             BackgroundColor3 = CurrentTheme.Accent,
@@ -7130,6 +7393,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
                 UpdateIndicator()
                 UpdateDisplay()
                 local Selected = SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap)
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, SerializeSelection())
                 if Callback then
                     EH:Try(function()
                         Callback(Selected)
@@ -7154,6 +7418,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
                 UpdateDisplay()
                 CloseDropdown()
                 local Selected = SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap)
+                SimpleUI.SaveManager:WriteBinding(SaveBinding, SerializeSelection())
                 if Callback then
                     EH:Try(function()
                         Callback(Selected)
@@ -7197,6 +7462,12 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
 
     UpdateDisplay()
     UpdateDisplayColor()
+
+    if SaveBinding.HasValue and SaveBinding.ApplyCallback and Callback then
+        EH:Try(function()
+            Callback(SimpleUI.DropdownManager:GetSelectedData(SelectedValues, IsMultiSelect, OptionDataMap))
+        end)
+    end
 
     Display.Activated:Connect(function()
         if IsToggling then
@@ -7292,6 +7563,7 @@ function SimpleUI:CreateDropdown(Page, Text, Options, DefaultValue, Callback, Dr
                 end
             end
             UpdateDisplay()
+            SimpleUI.SaveManager:WriteBinding(SaveBinding, SerializeSelection())
             ChangedEvent:Fire(Value)
             if Callback then
                 EH:Try(function()
@@ -7582,12 +7854,13 @@ local State = {
         waterCFrame = nil,
         locked = false,
         interrupted = false,
+        interruptReason = nil,
         running = false
     },
 
     Sell = {
         mode = "Teleport",
-        type = "Threshold",
+        type = "Auto",
         threshold = 300,
         delay = 60,
         autoSell = false,
@@ -7599,6 +7872,8 @@ local State = {
         selected = nil,
         data = nil,
         autoClaim = false,
+        autoStart = false,
+        autoStartRunning = false,
         waiting = false
     },
 
@@ -7615,6 +7890,12 @@ local State = {
         Players = {},
         Totems = {},
         Connections = {}
+    },
+
+    Barriers = {
+        vines = false,
+        abyssalGate = false,
+        peakObstruction = false
     },
 
     Pan = {
@@ -7638,7 +7919,10 @@ local State = {
     },
 
     Hunting = {
-        autoGeode = false
+        autoGeode = false,
+        autoTreasure = false,
+        autoTreasureRunning = false,
+        autoTreasurePausedFarm = false
     }
 }
 
@@ -8574,6 +8858,66 @@ do
         }
     end
 
+    function Movement.walkToTarget(target, config)
+        config = config or {}
+        local character = Player.Character or Player.CharacterAdded:Wait()
+        local hrp = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:WaitForChild("Humanoid")
+        local route = config.Route or {target.Position or target}
+        local stopDist = config.StopDistance or 5
+        local shouldContinue = config.ShouldContinue or function()
+            return true
+        end
+
+        for _, point in ipairs(route) do
+            if not shouldContinue() then
+                return false
+            end
+
+            local position
+            if typeof(point) == "Vector3" then
+                position = point
+            elseif typeof(point) == "CFrame" then
+                position = point.Position
+            elseif typeof(point) == "table" and point.Position then
+                position = point.Position
+            end
+
+            if position then
+                local done = false
+                local reached = false
+                local connection
+                connection = humanoid.MoveToFinished:Connect(function(ok)
+                    reached = ok
+                    done = true
+                end)
+
+                humanoid:MoveTo(position)
+
+                local timeout = math.max(6, (hrp.Position - position).Magnitude / math.max(humanoid.WalkSpeed, 8) + 4)
+                local elapsed = 0
+                while not done and elapsed < timeout and shouldContinue() do
+                    if (hrp.Position - position).Magnitude <= stopDist then
+                        reached = true
+                        break
+                    end
+                    task.wait(0.1)
+                    elapsed = elapsed + 0.1
+                end
+
+                if connection then
+                    connection:Disconnect()
+                end
+
+                if not shouldContinue() or not reached then
+                    return false
+                end
+            end
+        end
+
+        return true
+    end
+
     function Movement.teleportToTarget(target, options)
         local character = Player.Character or Player.CharacterAdded:Wait()
         local hrp = character:WaitForChild("HumanoidRootPart")
@@ -8846,6 +9190,31 @@ do
 
         return closest, closestDist
     end
+
+    function MerchantModule.getSellPosition(merchantHrp, options)
+        options = options or {}
+        if not merchantHrp then
+            return nil
+        end
+
+        local basePosition = merchantHrp.Position
+        local outwardDistance = options.OutwardDistance or 12
+        local verticalOffset = options.VerticalOffset or 20
+        local char = Player.Character
+        local playerHrp = char and char:FindFirstChild("HumanoidRootPart")
+        local direction = playerHrp and (playerHrp.Position - basePosition) or nil
+
+        if not direction or direction.Magnitude < 1 then
+            direction = -merchantHrp.CFrame.LookVector
+        end
+
+        local horizontalDirection = Vector3.new(direction.X, 0, direction.Z)
+        if horizontalDirection.Magnitude < 1 then
+            horizontalDirection = Vector3.new(0, 0, -1)
+        end
+
+        return basePosition + (horizontalDirection.Unit * outwardDistance) + Vector3.new(0, verticalOffset, 0)
+    end
 end
 
 local SellModule = {}
@@ -8872,6 +9241,32 @@ do
         end
 
         return count
+    end
+
+    function SellModule.getBackpackSpaceFromLabel()
+        local toolUI = PlayerGui and PlayerGui:FindFirstChild("ToolUI")
+        local fillingPan = toolUI and toolUI:FindFirstChild("FillingPan")
+        local inventorySpace = fillingPan and fillingPan:FindFirstChild("InventorySpace")
+
+        if not inventorySpace or not inventorySpace:IsA("TextLabel") then
+            return nil, nil, nil
+        end
+
+        local text = inventorySpace.Text or ""
+        local current, max = text:match("([%d,]+)%s*/%s*([%d,]+)")
+        current = current and tonumber(current:gsub(",", ""))
+        max = max and tonumber(max:gsub(",", ""))
+
+        if not current or not max then
+            return nil, nil, text
+        end
+
+        return current, max, text
+    end
+
+    function SellModule.isBackpackAtCapacity()
+        local current, max = SellModule.getBackpackSpaceFromLabel()
+        return current ~= nil and max ~= nil and max > 0 and current >= max
     end
 
     function SellModule.execute()
@@ -8916,7 +9311,8 @@ do
 
         Utility.createNotification("Found merchant, teleporting and selling..", 5)
 
-        local sellSuccess = Movement.teleportToTarget(closestHrp.Position, {
+        local sellPosition = MerchantModule.getSellPosition(closestHrp)
+        local sellSuccess = Movement.teleportToTarget(sellPosition, {
             Mode = "Critical",
             FireRemoteFunc = function()
                 Utility.createNotification("Selling all valuables...", 3)
@@ -9008,6 +9404,7 @@ do
         end
 
         applyDefaults(config, mode)
+        local sellPosition = MerchantModule.getSellPosition(closestHrp)
 
         if mode == "Tween" then
             local completed = false
@@ -9039,7 +9436,7 @@ do
                 completed = true
             end
 
-            Movement.tweenToTarget(closestHrp, config)
+            Movement.tweenToTarget(sellPosition, config)
 
             repeat
                 task.wait()
@@ -9050,7 +9447,7 @@ do
             config.FireRemoteFunc = function()
                 return SellModule.execute()
             end
-            return Movement.teleportToTarget(closestHrp, config)
+            return Movement.teleportToTarget(sellPosition, config)
         end
     end
 end
@@ -9164,6 +9561,22 @@ do
         end
 
         return false, "Server rejected the request."
+    end
+
+    function ExcavationModule.autoStartCycle()
+        local status = ExcavationModule.getCurrentStatus()
+
+        if status == "Finished" then
+            ExcavationModule.claim()
+            task.wait(1)
+            status = ExcavationModule.getCurrentStatus()
+        end
+
+        if status == "None" then
+            return ExcavationModule.start()
+        end
+
+        return false, status == "Active" and "Excavation already active." or "Waiting for excavation state."
     end
 
     function ExcavationModule.getNames()
@@ -10595,9 +11008,77 @@ do
     end
 end
 
+local LegitWaypointReader = {}
+do
+    LegitWaypointReader.Routes = {
+        [tostring(game.PlaceId)] = {
+            Default = {
+                Dig = {},
+                Wash = {},
+                Merchant = {}
+            }
+        }
+    }
+
+    local function toPosition(point)
+        if typeof(point) == "Vector3" then
+            return point
+        elseif typeof(point) == "CFrame" then
+            return point.Position
+        elseif typeof(point) == "table" then
+            if point.Position then
+                return toPosition(point.Position)
+            elseif point.X and point.Y and point.Z then
+                return Vector3.new(point.X, point.Y, point.Z)
+            end
+        end
+        return nil
+    end
+
+    function LegitWaypointReader:getAreaKey()
+        local area = Player:GetAttribute("CurrentArea")
+        return area and tostring(area) or "Default"
+    end
+
+    function LegitWaypointReader:getAreaRoutes()
+        local placeRoutes = self.Routes[tostring(game.PlaceId)] or self.Routes[game.PlaceId] or {}
+        local areaKey = self:getAreaKey()
+        return placeRoutes[areaKey] or placeRoutes.Default or placeRoutes
+    end
+
+    function LegitWaypointReader:getVariants(category)
+        local routes = self:getAreaRoutes()
+        return routes[category] or routes[string.lower(category)] or {}
+    end
+
+    function LegitWaypointReader:buildRoute(category, targetCFrame)
+        local variants = self:getVariants(category)
+        local selected = {}
+
+        if type(variants) == "table" and #variants > 0 then
+            if type(variants[1]) == "table" and not variants[1].X and not variants[1].Position then
+                selected = variants[math.random(1, #variants)] or {}
+            else
+                selected = variants
+            end
+        end
+
+        local route = {}
+        for _, point in ipairs(selected) do
+            local position = toPosition(point)
+            if position then
+                table.insert(route, position)
+            end
+        end
+
+        table.insert(route, targetCFrame.Position)
+        return route
+    end
+end
+
 local AutoFarmModule = {}
 do
-    function AutoFarmModule.moveToLocation(targetCFrame)
+    function AutoFarmModule.moveToLocation(targetCFrame, routeType)
         local completed = false
         local success = false
 
@@ -10606,8 +11087,19 @@ do
             CFrame = targetCFrame
         }
 
-        if State.AutoFarm.travelMode == "Tween" then
-            Movement.tweenToTarget(targetObj, {
+        local controller
+
+        if State.AutoFarm.travelMode == "Legit" then
+            success = Movement.walkToTarget(targetObj, {
+                Route = LegitWaypointReader:buildRoute(routeType or "Dig", targetCFrame),
+                StopDistance = 5,
+                ShouldContinue = function()
+                    return State.AutoFarm.active and not State.AutoFarm.interrupted
+                end
+            })
+            completed = true
+        elseif State.AutoFarm.travelMode == "Tween" then
+            controller = Movement.tweenToTarget(targetObj, {
                 CruiseHeight = 4,
                 MinHeight = 1,
                 MaxHeight = 6,
@@ -10634,17 +11126,21 @@ do
         end
 
         local elapsed = 0
-        while not completed and elapsed < 45 and State.AutoFarm.active do
+        while not completed and elapsed < 45 and State.AutoFarm.active and not State.AutoFarm.interrupted do
             task.wait(0.05)
             elapsed = elapsed + 0.05
         end
 
-        if success then
+        if not completed and controller and controller.stop then
+            controller.stop()
+        end
+
+        if success and not State.AutoFarm.interrupted then
             CharacterLock.lock(targetCFrame)
             State.AutoFarm.locked = true
         end
 
-        return success
+        return success and not State.AutoFarm.interrupted
     end
 
     function AutoFarmModule.doAction(actionType, expectedRegion)
@@ -10659,7 +11155,7 @@ do
             end
 
             local killSwitch = function()
-                return State.AutoFarm.active
+                return State.AutoFarm.active and not State.AutoFarm.interrupted
             end
 
             local r = PanModule.handleAction(State.AutoFarm.actionMode, actionType, true, killSwitch)
@@ -10673,11 +11169,18 @@ do
         TaskManager:setCurrentTask(taskName)
         TaskManager:setNextTask(nextTask)
 
-        if not AutoFarmModule.moveToLocation(targetCFrame) then
+        if not AutoFarmModule.moveToLocation(targetCFrame, actionType) then
             return false
         end
 
         task.wait(0.1)
+
+        if State.AutoFarm.interrupted then
+            return false
+        end
+
+        TaskManager:setCurrentTask(nextTask or actionType)
+        TaskManager:setNextTask("AutoFarm")
 
         if not AutoFarmModule.doAction(actionType, expectedRegion) then
             return false
@@ -10693,11 +11196,13 @@ do
         end
 
         local shouldSell = false
-        local mode = State.Sell.type or "Threshold"
+        local mode = State.Sell.type or "Auto"
 
-        if mode == "Threshold" then
+        if mode == "Auto" then
+            shouldSell = SellModule.isBackpackAtCapacity()
+        elseif mode == "Threshold" then
             shouldSell = SellModule.getInventoryCount() >= (tonumber(State.Sell.threshold) or 50)
-        elseif mode == "Time" then
+        elseif mode == "Duration" then
             shouldSell = State.Sell._scheduledSell or
                              (os.clock() - (State.Sell._lastSell or 0) >= (tonumber(State.Sell.delay) or 300))
         end
@@ -10721,12 +11226,46 @@ do
             State.AutoFarm.locked = false
         end
 
+        State.AutoFarm.interrupted = false
+        State.AutoFarm.interruptReason = nil
+
         if TaskManager:getMainTask() == "AutoFarm" then
             TaskManager:finishTask("AutoFarm")
         end
 
         TaskManager:clearSubTasks()
         State.AutoFarm.running = false
+    end
+
+    function AutoFarmModule.pause(reason)
+        if not (State.AutoFarm.active and State.AutoFarm.running) then
+            return false
+        end
+
+        State.AutoFarm.interrupted = true
+        State.AutoFarm.interruptReason = reason or "Pause"
+
+        if State.AutoFarm.locked then
+            CharacterLock.unlock()
+            State.AutoFarm.locked = false
+        end
+
+        return true
+    end
+
+    function AutoFarmModule.resume(reason)
+        if reason and State.AutoFarm.interruptReason and State.AutoFarm.interruptReason ~= reason then
+            return false
+        end
+
+        if not State.AutoFarm.interrupted then
+            State.AutoFarm.interruptReason = nil
+            return false
+        end
+
+        State.AutoFarm.interrupted = false
+        State.AutoFarm.interruptReason = nil
+        return true
     end
 
     function AutoFarmModule.start()
@@ -10737,6 +11276,7 @@ do
         State.AutoFarm.active = true
         State.AutoFarm.running = true
         State.AutoFarm.interrupted = false
+        State.AutoFarm.interruptReason = nil
 
         if not State.AutoFarm.travelMode or State.AutoFarm.travelMode == "" then
             Utility.createNotification("❌ Select travel mode!")
@@ -10796,12 +11336,16 @@ do
                                     if panStatus.isFull then
                                         if not AutoFarmModule.performTask("MovingToWater", "WashPan",
                                             State.AutoFarm.waterCFrame, "Wash", "Water") then
-                                            State.AutoFarm.active = false
+                                            if not State.AutoFarm.interrupted then
+                                                State.AutoFarm.active = false
+                                            end
                                         end
                                     else
                                         if not AutoFarmModule.performTask("MovingToSand", "DigSand",
                                             State.AutoFarm.sandCFrame, "Dig", "Deposit") then
-                                            State.AutoFarm.active = false
+                                            if not State.AutoFarm.interrupted then
+                                                State.AutoFarm.active = false
+                                            end
                                         end
                                     end
                                 end)
@@ -10834,6 +11378,8 @@ do
 
     function AutoFarmModule.stop()
         State.AutoFarm.active = false
+        State.AutoFarm.interrupted = false
+        State.AutoFarm.interruptReason = nil
     end
 end
 
@@ -10852,6 +11398,8 @@ do
         mapsCompleted = 0,
         currentMap = nil,
         currentMapGUID = nil,
+        previousShovelName = nil,
+        previousShovelGUID = nil,
         startTime = nil
     }
 
@@ -11072,6 +11620,98 @@ do
         return nil
     end
 
+    function HuntingModule.findTool(predicate)
+        local containers = {Character, Player.Backpack, BackpackTwo}
+        for _, container in ipairs(containers) do
+            if container then
+                for _, item in ipairs(container:GetChildren()) do
+                    if item:IsA("Tool") and predicate(item) then
+                        return item
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    function HuntingModule.equipTool(tool)
+        if not tool then
+            return false
+        end
+
+        ReplicatedStorage.Remotes.CustomBackpack.EquipRemote:FireServer(tool)
+        task.wait(0.35)
+        return true
+    end
+
+    function HuntingModule.getEquippedShovel()
+        if not Character then
+            return nil
+        end
+
+        local equipped = Character:FindFirstChildOfClass("Tool")
+        if equipped and (equipped:GetAttribute("ItemType") == "Shovel" or equipped.Name:find("Shovel")) then
+            return equipped
+        end
+        return nil
+    end
+
+    function HuntingModule.storeCurrentShovel()
+        local shovel = HuntingModule.getEquippedShovel()
+        HuntingModule.treasureState.previousShovelName = shovel and shovel.Name or nil
+        HuntingModule.treasureState.previousShovelGUID = shovel and shovel:GetAttribute("GUID") or nil
+    end
+
+    function HuntingModule.restoreStoredShovel()
+        local guid = HuntingModule.treasureState.previousShovelGUID
+        local name = HuntingModule.treasureState.previousShovelName
+
+        if not guid and not name then
+            return false
+        end
+
+        local shovel = HuntingModule.findTool(function(tool)
+            return tool:GetAttribute("ItemType") == "Shovel" and
+                       ((guid and tool:GetAttribute("GUID") == guid) or (name and tool.Name == name))
+        end)
+
+        HuntingModule.treasureState.previousShovelName = nil
+        HuntingModule.treasureState.previousShovelGUID = nil
+        return HuntingModule.equipTool(shovel)
+    end
+
+    function HuntingModule.prepareTreasureTool()
+        HuntingModule.storeCurrentShovel()
+
+        local rustyShovel = HuntingModule.findTool(function(tool)
+            return tool.Name == "Rusty Shovel" or tool:GetAttribute("Name") == "Rusty Shovel"
+        end)
+
+        if rustyShovel then
+            HuntingModule.equipTool(rustyShovel)
+            return rustyShovel
+        end
+
+        return HuntingModule.getPan()
+    end
+
+    function HuntingModule.getTreasureCollectTool()
+        local rustyShovel = HuntingModule.findTool(function(tool)
+            return tool.Name == "Rusty Shovel" or tool:GetAttribute("Name") == "Rusty Shovel"
+        end)
+
+        if rustyShovel and rustyShovel.Parent ~= Character then
+            HuntingModule.equipTool(rustyShovel)
+        end
+
+        local equipped = Character and Character:FindFirstChildOfClass("Tool") or nil
+        if equipped and equipped:FindFirstChild("Scripts") and equipped.Scripts:FindFirstChild("Collect") then
+            return equipped
+        end
+
+        return HuntingModule.getPan()
+    end
+
     function HuntingModule.huntSingleMap(map)
         if not map or not map.Parent then
             return false
@@ -11087,13 +11727,13 @@ do
             return false
         end
 
-        local pan = HuntingModule.getPan()
-        if not pan then
+        local treasureTool = HuntingModule.getTreasureCollectTool()
+        if not treasureTool then
             return false
         end
 
         local targetCFrame = typeof(location) == "CFrame" and location or CFrame.new(location)
-        local collect = pan:FindFirstChild("Scripts") and pan.Scripts:FindFirstChild("Collect")
+        local collect = treasureTool:FindFirstChild("Scripts") and treasureTool.Scripts:FindFirstChild("Collect")
 
         if not collect then
             return false
@@ -11135,14 +11775,20 @@ do
         return false
     end
 
-    function HuntingModule.startTreasureHunting()
+    function HuntingModule.startTreasureHunting(options)
+        options = options or {}
         if HuntingModule.treasureState.isHunting then
             return false
         end
 
         HuntingModule.treasureState.isHunting = true
-        HuntingModule.treasureState.mapsCompleted = 0
+        if not options.PreserveCount then
+            HuntingModule.treasureState.mapsCompleted = 0
+        end
+        HuntingModule.treasureState.currentMap = nil
+        HuntingModule.treasureState.currentMapGUID = nil
         HuntingModule.treasureState.startTime = tick()
+        HuntingModule.prepareTreasureTool()
 
         task.spawn(function()
             while HuntingModule.treasureState.isHunting do
@@ -11165,6 +11811,9 @@ do
             end
 
             HuntingModule.treasureState.isHunting = false
+            HuntingModule.treasureState.currentMap = nil
+            HuntingModule.treasureState.currentMapGUID = nil
+            HuntingModule.restoreStoredShovel()
         end)
 
         return true
@@ -11172,6 +11821,8 @@ do
 
     function HuntingModule.stopTreasureHunting()
         HuntingModule.treasureState.isHunting = false
+        HuntingModule.treasureState.currentMap = nil
+        HuntingModule.treasureState.currentMapGUID = nil
     end
 
     function HuntingModule.isTreasureHunting()
@@ -11351,29 +12002,87 @@ end
 
 local BarrierRemovalModule = {}
 do
-    function BarrierRemovalModule.removeVines()
-        local vines = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("Vines")
-        if vines then
-            vines:Destroy()
+    BarrierRemovalModule._states = {}
+
+    local function rememberPart(cache, part)
+        if cache[part] then
+            return
         end
+
+        cache[part] = {
+            CanCollide = part.CanCollide,
+            CanTouch = part.CanTouch,
+            CanQuery = part.CanQuery,
+            Transparency = part.Transparency
+        }
     end
 
-    function BarrierRemovalModule.removeAbyssalGate()
+    function BarrierRemovalModule.getVines()
+        return Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("Vines")
+    end
+
+    function BarrierRemovalModule.getAbyssalGate()
         local abyssAssets = Map and Map:FindFirstChild("LushCaverns") and Map.LushCaverns:FindFirstChild("AbyssAssets")
-        local gate = abyssAssets and abyssAssets:FindFirstChild("Gate")
-        if gate then
-            gate:Destroy()
-        end
+        return abyssAssets and abyssAssets:FindFirstChild("Gate")
     end
 
-    function BarrierRemovalModule.removeMountainBlock()
+    function BarrierRemovalModule.getMountainBlock()
         local mountains = Map and Map:FindFirstChild("Mountains")
         local added = mountains and mountains:FindFirstChild("Added")
-        local gateBlock = added and added:FindFirstChild("GateBlockScript") and
-                              added.GateBlockScript:FindFirstChild("GateBlockage")
-        if gateBlock then
-            gateBlock:Destroy()
+        return added and added:FindFirstChild("GateBlockScript") and added.GateBlockScript:FindFirstChild("GateBlockage")
+    end
+
+    function BarrierRemovalModule.setBarrierEnabled(key, root, enabled)
+        if not root then
+            return false
         end
+
+        local cache = BarrierRemovalModule._states[key] or {}
+        BarrierRemovalModule._states[key] = cache
+
+        local objects = root:IsA("BasePart") and {root} or root:GetDescendants()
+        for _, object in ipairs(objects) do
+            if object:IsA("BasePart") then
+                if enabled then
+                    local saved = cache[object]
+                    if saved then
+                        object.CanCollide = saved.CanCollide
+                        object.CanTouch = saved.CanTouch
+                        object.CanQuery = saved.CanQuery
+                        object.Transparency = saved.Transparency
+                    end
+                else
+                    rememberPart(cache, object)
+                    object.CanCollide = false
+                    object.CanTouch = false
+                    object.CanQuery = false
+                    object.Transparency = math.max(object.Transparency, 0.75)
+                end
+            end
+        end
+
+        if enabled then
+            for part in pairs(cache) do
+                if not part.Parent then
+                    cache[part] = nil
+                end
+            end
+        end
+
+        return true
+    end
+
+    function BarrierRemovalModule.toggleVines(disabled)
+        return BarrierRemovalModule.setBarrierEnabled("vines", BarrierRemovalModule.getVines(), not disabled)
+    end
+
+    function BarrierRemovalModule.toggleAbyssalGate(disabled)
+        return BarrierRemovalModule.setBarrierEnabled("abyssalGate", BarrierRemovalModule.getAbyssalGate(), not disabled)
+    end
+
+    function BarrierRemovalModule.toggleMountainBlock(disabled)
+        return BarrierRemovalModule.setBarrierEnabled("peakObstruction", BarrierRemovalModule.getMountainBlock(),
+            not disabled)
     end
 
     function BarrierRemovalModule.removeCrocodiles()
@@ -11504,10 +12213,14 @@ local function initializeMainTab()
         TextSize = 15
     })
 
-    SimpleUI:CreateDropdown(AutoFarmSection.Container, "Movement Method", {"Tween", "Teleport"}, "Teleport",
+    SimpleUI:CreateDropdown(AutoFarmSection.Container, "Movement Method", {"Legit", "Tween", "Teleport"}, "Teleport",
         function(selection)
             State.AutoFarm.travelMode = selection
-        end)
+        end, {
+            Save = {
+                Key = "prospecting.auto_farm.movement_method"
+            }
+        })
 
     SimpleUI:CreateButton(AutoFarmSection.Container, "Save Dig Location", function()
         if PanModule.getRegion(HumanoidRootPart) == "Deposit" then
@@ -11583,11 +12296,15 @@ local function initializeMainTab()
         TextSize = 15
     })
 
-    SimpleUI:CreateDropdown(SellSection.Container, "Selling Trigger Mode", {"Threshold", "Duration"}, "Threshold",
+    SimpleUI:CreateDropdown(SellSection.Container, "Selling Trigger Mode", {"Auto", "Threshold", "Duration"}, "Auto",
         function(selection)
             State.Sell.type = selection
             Utility.createNotification("Selling mode changed to: " .. selection)
-        end)
+        end, {
+            Save = {
+                Key = "prospecting.sell.trigger_mode"
+            }
+        })
 
     SimpleUI:CreateTextInput(SellSection.Container, "Configure Threshold or Duration", nil, function(input)
         local result, kind = Utility.validateSellValue(input)
@@ -11602,7 +12319,11 @@ local function initializeMainTab()
         else
             Utility.createNotification("Enter a value between 10-2000 items or 30 seconds to 1 day.", 10)
         end
-    end)
+    end, {
+        Save = {
+            Key = "prospecting.sell.trigger_value"
+        }
+    })
 
     SimpleUI:CreateButton(SellSection.Container, "Sell All Items Now", function()
         if TaskManager:getMainTask() then
@@ -11630,7 +12351,7 @@ local function initializeMainTab()
         if state then
             task.spawn(function()
                 while State.Sell.autoSell do
-                    if State.Sell.type == "Time" then
+                    if State.Sell.type == "Duration" then
                         local delay = tonumber(State.Sell.delay) or 300
                         if os.clock() - State.Sell._lastSell >= delay then
                             State.Sell._scheduledSell = true
@@ -11646,6 +12367,9 @@ local function initializeMainTab()
 
     SimpleUI:CreateParagraph(SellSection.Container, "Selling Configuration",
         {"Select your selling trigger method and configure the corresponding threshold or duration below.", {
+            Text = "Auto Mode: Automatically sells when the backpack UI shows your inventory is full.",
+            IsSubField = true
+        }, {
             Text = "Threshold Mode: Automatically sells when your inventory reaches a specified item count.",
             IsSubField = true
         }, {
@@ -11672,6 +12396,83 @@ local function initializeHuntingTab()
     local treasureStatus = SimpleUI:CreateParagraph(TreasureSection.Container, "Hunt Status",
         {"Idle", "No maps detected"})
 
+    local function setTreasureStatus(status, detail)
+        treasureStatus:SetFields({"Status: " .. status, detail})
+    end
+
+    local function getTreasureStatusText()
+        local status = HuntingModule.getTreasureHuntStatus()
+        local mapText = status.currentMap and ("Current map: " .. status.currentMap) or "Searching for maps"
+        return "Maps completed: " .. status.mapsCompleted, mapText
+    end
+
+    local function isAutoFarmWashPending()
+        if not (State.AutoFarm.active and State.AutoFarm.running) then
+            return false
+        end
+
+        local currentTask = TaskManager:getCurrentTask()
+        local nextTask = TaskManager:getNextTask()
+        if currentTask == "WashPan" or nextTask == "WashPan" then
+            return true
+        end
+
+        local ok, panStatus = pcall(function()
+            return PanModule.getStatus()
+        end)
+
+        return ok and panStatus and panStatus.isFull == true
+    end
+
+    local function waitForAutoFarmWash()
+        if not isAutoFarmWashPending() then
+            return true
+        end
+
+        local startedAt = tick()
+        setTreasureStatus("Waiting", "Pan is ready to wash; finishing wash before treasure hunt")
+
+        while State.Hunting.autoTreasure and isAutoFarmWashPending() do
+            if tick() - startedAt > 120 then
+                setTreasureStatus("Waiting", "Wash has not completed yet; treasure hunt will retry soon")
+                return false
+            end
+            task.wait(0.5)
+        end
+
+        return State.Hunting.autoTreasure
+    end
+
+    local function pauseAutoFarmForTreasure()
+        if State.Hunting.autoTreasurePausedFarm then
+            return true
+        end
+
+        if not waitForAutoFarmWash() then
+            return false
+        end
+
+        if AutoFarmModule.pause("TreasureHunt") then
+            State.Hunting.autoTreasurePausedFarm = true
+            setTreasureStatus("Pausing Farm", "Treasure map found; auto farm is paused until maps are cleared")
+            task.wait(0.35)
+        end
+
+        return true
+    end
+
+    local function resumeAutoFarmFromTreasure()
+        if not State.Hunting.autoTreasurePausedFarm then
+            return
+        end
+
+        State.Hunting.autoTreasurePausedFarm = false
+        if AutoFarmModule.resume("TreasureHunt") and State.AutoFarm.active then
+            setTreasureStatus("Resuming Farm", "Treasure maps cleared; auto farm resumed")
+            task.wait(0.5)
+        end
+    end
+
     SimpleUI:CreateParagraph(TreasureSection.Container, "Treasure Hunt Instructions",
         {"Ensure you have a treasure map in your inventory before starting.", {
             Text = "The system will automatically navigate to the map location and collect items.",
@@ -11682,41 +12483,155 @@ local function initializeHuntingTab()
         }})
 
     SimpleUI:CreateButton(TreasureSection.Container, "Start Treasure Hunt", function()
+        if State.Hunting.autoTreasure then
+            setTreasureStatus("Auto Running", "Disable auto treasure hunt before starting a manual hunt")
+            return
+        end
+
         if HuntingModule.isTreasureHunting() then
-            treasureStatus:SetFields({"Status: Already Running", "Hunt in progress"})
+            setTreasureStatus("Already Running", "Hunt in progress")
             return
         end
 
         local map = HuntingModule.findNextMap()
         if not map then
-            treasureStatus:SetFields({"Status: Failed", "No treasure maps found in inventory"})
+            setTreasureStatus("Failed", "No treasure maps found in inventory")
             return
         end
 
         if HuntingModule.startTreasureHunting() then
-            treasureStatus:SetFields({"Status: Active", "Hunting in progress"})
+            setTreasureStatus("Active", "Hunting in progress")
             task.spawn(function()
                 while HuntingModule.isTreasureHunting() do
-                    local status = HuntingModule.getTreasureHuntStatus()
-                    treasureStatus:SetFields({"Status: Active", "Maps completed: " .. status.mapsCompleted})
+                    local progress, mapText = getTreasureStatusText()
+                    treasureStatus:SetFields({"Status: Active", progress, {
+                        Text = mapText,
+                        IsSubField = true
+                    }})
                     task.wait(1)
                 end
-                treasureStatus:SetFields({"Status: Completed",
-                                          "Hunt finished - " .. HuntingModule.treasureState.mapsCompleted ..
-                    " maps hunted"})
+                setTreasureStatus("Completed", "Hunt finished - " .. HuntingModule.treasureState.mapsCompleted ..
+                    " maps hunted")
             end)
         else
-            treasureStatus:SetFields({"Status: Failed", "Unable to start hunt"})
+            setTreasureStatus("Failed", "Unable to start hunt")
         end
     end)
 
     SimpleUI:CreateButton(TreasureSection.Container, "Stop Treasure Hunt", function()
+        State.Hunting.autoTreasure = false
+
         if not HuntingModule.isTreasureHunting() then
-            treasureStatus:SetFields({"Status: Idle", "No hunt in progress"})
+            resumeAutoFarmFromTreasure()
+            setTreasureStatus("Idle", "No hunt in progress")
             return
         end
         HuntingModule.stopTreasureHunting()
-        treasureStatus:SetFields({"Status: Stopped", "Hunt halted"})
+        resumeAutoFarmFromTreasure()
+        setTreasureStatus("Stopped", "Hunt halted")
+    end)
+
+    SimpleUI:CreateToggle(TreasureSection.Container, "Enable Auto Treasure Hunt", false, function(state)
+        State.Hunting.autoTreasure = state
+
+        if not state then
+            if HuntingModule.isTreasureHunting() then
+                HuntingModule.stopTreasureHunting()
+            end
+            resumeAutoFarmFromTreasure()
+            setTreasureStatus("Idle", "Auto treasure hunt disabled")
+            return
+        end
+
+        if State.Hunting.autoTreasureRunning then
+            setTreasureStatus("Already Running", "Auto treasure hunt is already active")
+            return
+        end
+
+        State.Hunting.autoTreasureRunning = true
+        setTreasureStatus("Starting", "Initializing auto treasure hunt...")
+
+        task.spawn(function()
+            while State.Hunting.autoTreasure do
+                local ok, err = pcall(function()
+                    if HuntingModule.isTreasureHunting() then
+                        local progress, mapText = getTreasureStatusText()
+                        treasureStatus:SetFields({"Status: Active", progress, {
+                            Text = mapText,
+                            IsSubField = true
+                        }})
+                        task.wait(1)
+                        return
+                    end
+
+                    local map = HuntingModule.findNextMap()
+                    if not map then
+                        resumeAutoFarmFromTreasure()
+                        setTreasureStatus("Waiting", "No treasure maps found, checking again soon")
+                        task.wait(3)
+                        return
+                    end
+
+                    if not pauseAutoFarmForTreasure() then
+                        task.wait(2)
+                        return
+                    end
+                    setTreasureStatus("Preparing", "Starting hunt on map: " .. map.Name)
+                    task.wait(0.25)
+
+                    if not HuntingModule.startTreasureHunting({
+                        PreserveCount = true
+                    }) then
+                        setTreasureStatus("Retrying", "Could not start hunt yet")
+                        task.wait(2)
+                        return
+                    end
+
+                    local deadline = tick() + 180
+                    local lastMapGUID = nil
+                    while State.Hunting.autoTreasure and HuntingModule.isTreasureHunting() do
+                        local status = HuntingModule.getTreasureHuntStatus()
+                        if status.currentMapGUID and status.currentMapGUID ~= lastMapGUID then
+                            lastMapGUID = status.currentMapGUID
+                            deadline = tick() + 180
+                        end
+
+                        local progress, mapText = getTreasureStatusText()
+                        treasureStatus:SetFields({"Status: Active", progress, {
+                            Text = mapText,
+                            IsSubField = true
+                        }})
+
+                        if tick() >= deadline then
+                            setTreasureStatus("Timeout", "Hunt took too long, restarting cycle")
+                            HuntingModule.stopTreasureHunting()
+                            break
+                        end
+
+                        task.wait(1)
+                    end
+                end)
+
+                if not ok then
+                    warn("AutoTreasure Error: " .. tostring(err))
+                    resumeAutoFarmFromTreasure()
+                    State.Hunting.autoTreasure = false
+                    setTreasureStatus("Error", "Auto treasure hunt stopped after an error")
+                    break
+                end
+
+                task.wait(0.35)
+            end
+
+            if HuntingModule.isTreasureHunting() then
+                HuntingModule.stopTreasureHunting()
+            end
+
+            resumeAutoFarmFromTreasure()
+            State.Hunting.autoTreasure = false
+            State.Hunting.autoTreasureRunning = false
+            setTreasureStatus("Idle", "Auto treasure hunt disabled")
+        end)
     end)
 
     local GeodeSection = SimpleUI:CreateSection(RightPage, "Geode Extraction", {
@@ -12529,7 +13444,11 @@ local function initializeMiscellaneousTab()
         function(s)
             State.Excavation.selected = s
             excavationStatus:SetFields({"Status: Ready", "Selected: " .. tostring(s)})
-        end)
+        end, {
+            Save = {
+                Key = "prospecting.excavation.selected_site"
+            }
+        })
 
     SimpleUI:CreateButton(ExcavationSection.Container, "Begin Excavation", function()
         if not State.Excavation.selected then
@@ -12562,7 +13481,53 @@ local function initializeMiscellaneousTab()
                 task.wait(1)
             end
         end)
-    end)
+    end, {
+        Save = {
+            Key = "prospecting.excavation.auto_claim"
+        }
+    })
+
+    SimpleUI:CreateToggle(ExcavationSection.Container, "Auto Start Excavation", false, function(state)
+        State.Excavation.autoStart = state
+
+        if not state then
+            excavationStatus:SetFields({"Status: Auto-Start Disabled", "Site: " .. tostring(State.Excavation.selected)})
+            return
+        end
+
+        if State.Excavation.autoStartRunning then
+            excavationStatus:SetFields({"Status: Auto-Start Running", "Site: " .. tostring(State.Excavation.selected)})
+            return
+        end
+
+        State.Excavation.autoStartRunning = true
+        excavationStatus:SetFields({"Status: Auto-Start Enabled", "Site: " .. tostring(State.Excavation.selected)})
+
+        task.spawn(function()
+            while State.Excavation.autoStart do
+                if not State.Excavation.selected then
+                    excavationStatus:SetFields({"Status: Waiting", "Select an excavation site to auto-start"})
+                    task.wait(2)
+                    continue
+                end
+
+                local ok, msg = ExcavationModule.autoStartCycle()
+                if ok then
+                    excavationStatus:SetFields({"Status: Running", "Site: " .. tostring(State.Excavation.selected)})
+                elseif msg ~= "Excavation already active." then
+                    excavationStatus:SetFields({"Status: Waiting", tostring(msg)})
+                end
+
+                task.wait(5)
+            end
+
+            State.Excavation.autoStartRunning = false
+        end)
+    end, {
+        Save = {
+            Key = "prospecting.excavation.auto_start"
+        }
+    })
 
     local PlayerSettingsSection = SimpleUI:CreateSection(LeftPage, "Character Settings", {
         Style = "box",
@@ -12578,17 +13543,29 @@ local function initializeMiscellaneousTab()
 
     SimpleUI:CreateSection(PlayerSettingsSection.Container, "Humanoid Properties")
 
-    local jumpPower = Humanoid.JumpPower or 50
+    local jumpPower = (Humanoid and Humanoid.JumpPower) or 50
     local walkSpeedValue = Humanoid and Humanoid.WalkSpeed or 16
+
+    local function applySavedHumanoidSettings()
+        if not Humanoid then
+            return
+        end
+
+        Humanoid.WalkSpeed = walkSpeedValue
+        Humanoid.UseJumpPower = true
+        Humanoid.JumpPower = jumpPower
+    end
 
     SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Movement Speed", 0, 100, walkSpeedValue, function(val)
         pcall(function()
             walkSpeedValue = val
-            if Humanoid then
-                Humanoid.WalkSpeed = val
-            end
+            applySavedHumanoidSettings()
         end)
-    end)
+    end, {
+        Save = {
+            Key = "prospecting.character.walk_speed"
+        }
+    })
 
     if Humanoid then
         Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
@@ -12601,12 +13578,13 @@ local function initializeMiscellaneousTab()
     SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Jump Height", 1, 100, jumpPower, function(val)
         pcall(function()
             jumpPower = val
-            if Humanoid then
-                Humanoid.UseJumpPower = true
-                Humanoid.JumpPower = val
-            end
+            applySavedHumanoidSettings()
         end)
-    end)
+    end, {
+        Save = {
+            Key = "prospecting.character.jump_power"
+        }
+    })
 
     if Humanoid then
         Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
@@ -12617,11 +13595,19 @@ local function initializeMiscellaneousTab()
         end)
     end
 
+    Player.CharacterAdded:Connect(function()
+        task.wait(1)
+        applySavedHumanoidSettings()
+    end)
+
     SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Camera Field of View", 30, 120, Camera.FieldOfView,
         function(value)
             Camera.FieldOfView = value
         end, {
-            Increment = 1
+            Increment = 1,
+            Save = {
+                Key = "prospecting.character.camera_fov"
+            }
         })
 
     local fogDensity = 0.1
@@ -12637,7 +13623,10 @@ local function initializeMiscellaneousTab()
     SimpleUI:CreateSlider(PlayerSettingsSection.Container, "Environmental Fog Density", 0.30, 1, 0.40, function(value)
         fogDensity = value
     end, {
-        Increment = 0.01
+        Increment = 0.01,
+        Save = {
+            Key = "prospecting.character.fog_density"
+        }
     })
 
     local RemoveBarriersSection = SimpleUI:CreateSection(RightPage, "Environmental Barriers", {
@@ -12652,22 +13641,40 @@ local function initializeMiscellaneousTab()
         TextSize = 15
     })
 
-    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Vine Blockades", function()
-        BarrierRemovalModule.removeVines()
+    SimpleUI:CreateToggle(RemoveBarriersSection.Container, "Disable Vine Blockades", false, function(state)
+        State.Barriers.vines = state
+        if not BarrierRemovalModule.toggleVines(state) then
+            Utility.createNotification("Vine blockades were not found.", 4)
+        end
     end, {
-        Description = "Clears vine obstacles in the Deeproot region."
+        Description = "Temporarily disables vine collision without deleting the objects.",
+        Save = {
+            Key = "prospecting.barriers.vines"
+        }
     })
 
-    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Abyssal Gate", function()
-        BarrierRemovalModule.removeAbyssalGate()
+    SimpleUI:CreateToggle(RemoveBarriersSection.Container, "Disable Abyssal Gate", false, function(state)
+        State.Barriers.abyssalGate = state
+        if not BarrierRemovalModule.toggleAbyssalGate(state) then
+            Utility.createNotification("Abyssal Gate was not found.", 4)
+        end
     end, {
-        Description = "Removes the 25,000 item barrier blocking access to Abyssal Depths."
+        Description = "Temporarily disables the Abyssal Gate collision and can restore it.",
+        Save = {
+            Key = "prospecting.barriers.abyssal_gate"
+        }
     })
 
-    SimpleUI:CreateButton(RemoveBarriersSection.Container, "Remove Peak Obstruction", function()
-        BarrierRemovalModule.removeMountainBlock()
+    SimpleUI:CreateToggle(RemoveBarriersSection.Container, "Disable Peak Obstruction", false, function(state)
+        State.Barriers.peakObstruction = state
+        if not BarrierRemovalModule.toggleMountainBlock(state) then
+            Utility.createNotification("Peak obstruction was not found.", 4)
+        end
     end, {
-        Description = "Removes the final rock barrier to reach the summit peak."
+        Description = "Temporarily disables the summit blockage and can restore it.",
+        Save = {
+            Key = "prospecting.barriers.peak_obstruction"
+        }
     })
 
     local ServerSection = SimpleUI:CreateSection(RightPage, "Server Management", {
@@ -12727,12 +13734,19 @@ local function initializeSettingsTab()
         else
             InventoryFilterModule.destroy()
         end
-    end)
+    end, {
+        Save = {
+            Key = "prospecting.settings.inventory_filter"
+        }
+    })
 
     SimpleUI:CreateSlider(page, "Interface Scale", 0.5, 2, window.GetScale(), function(value)
         window:SetScale(value, true)
     end, {
-        Increment = 0.001
+        Increment = 0.001,
+        Save = {
+            Key = "prospecting.settings.interface_scale"
+        }
     })
 
     local themes = {}
@@ -12743,13 +13757,20 @@ local function initializeSettingsTab()
     SimpleUI:CreateDropdown(page, "Select Color Theme", themes, nil, function(val)
         window:SetTheme(val, true)
     end, {
-        Description = "Choose from " .. (#themes > 0 and #themes or "a variety of") .. " available themes."
+        Description = "Choose from " .. (#themes > 0 and #themes or "a variety of") .. " available themes.",
+        Save = {
+            Key = "prospecting.settings.theme"
+        }
     })
 
     if not SimpleUI.Utility:IsMobile() then
         SimpleUI:CreateKeybind(page, "Toggle Interface Visibility", Enum.KeyCode.Q, function(key)
             window.Toggle()
-        end)
+        end, {
+            Save = {
+                Key = "prospecting.settings.toggle_keybind"
+            }
+        })
     end
 end
 
