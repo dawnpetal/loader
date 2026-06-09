@@ -1,0 +1,13 @@
+{
+  "name": "Survive the Apocalypse",
+  "version": "1.0",
+  "description": "Automates various tasks in the game Survive the Apocalypse.",
+  "author": "DawnPetal",
+  "last_updated": "2026-05-19",
+  "features": [
+    "ESP"
+  ],
+  "prerequisites": {
+    "LoopFramework": "utils/LoopFramework.lua"
+  }
+}
