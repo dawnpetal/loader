@@ -8,6 +8,7 @@
     "ESP"
   ],
   "prerequisites": {
-    "LoopFramework": "utils/LoopFramework.lua"
+    "LoopFramework": "utils/LoopFramework.lua",
+    "SimpleUI": "utils/SimpleUI.lua"
   }
 }
